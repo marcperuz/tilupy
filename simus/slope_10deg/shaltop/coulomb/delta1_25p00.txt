@@ -1,0 +1,13 @@
+tmax 40
+dt_im 0.5
+cflhyp 0.25
+eps0 1e-15
+nx 320
+ny 220
+per 800
+pery 550
+file_m_init ../m.d
+file_z_init ../z.d
+icomp 1
+delta1 25
+folder_output delta1_25p00

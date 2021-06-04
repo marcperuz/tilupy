@@ -8,25 +8,24 @@ Created on Wed May 26 14:41:54 2021
 
 import os
 import platform
+import importlib
 
-import init_benchmark
-import init_shaltop
-import init_ravaflow
+from swmb.init import init_benchmark
+from swmb.init import init_shaltop
+from swmb.init import init_ravaflow
 
-if platform.system() == 'Linux':
-    folder_base = '/media/peruzzetto/SSD'
-elif platform.system() == 'Windows':
-    folder_base = 'F:/'
-
-folder_benchmark = os.path.join(folder_base, 'shaltop/benchmark')
+folder_benchmark = '../simus'
 
 folder_slope = os.path.join(folder_benchmark, 'slope_10deg')
+os.makedirs(folder_slope, exist_ok=True)
 
-#%% Make initial topograhies and initial mass
+# %% Make initial topograhies and initial mass
 init_benchmark.make_constant_slope(folder_slope)
 
-#%% Prepare simulations for different codes
-init_shaltop.make_simus('coulomb', dict(delta1=[15, 20, 25]), folder_slope,
-                        os.path.join(folder_slope, 'shaltop'))
-# init_ravaflow.make_simus('coulomb', dict(delta1=[15, 20, 25]), folder_slope,
-#                          os.path.join(folder_slope, 'ravaflow'))
+# %% Prepare simulations for different codes
+for code in ['shaltop', 'ravaflow']:
+    folder_out = os.path.join(folder_slope, code)
+    os.makedirs(folder_out, exist_ok=True)
+    module = importlib.import_module('swmb.init.init_'+code)
+    module.make_simus('coulomb', dict(delta1=[15, 20, 25]), folder_slope,
+                      folder_out)
