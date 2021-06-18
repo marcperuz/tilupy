@@ -8,15 +8,15 @@ Created on Tue May 25 15:18:31 2021
 
 import os
 import numpy as np
-import itertools
-import platform
 
-readme_param_match = dict(tmax='tmax',
+import swmb.notations
+
+README_PARAM_MATCH = dict(tmax='tmax',
                           CFL='cflhyp',
                           h_min='eps0',
                           dt_im_output='dt_im')
 
-shaltop_law_id = dict(coulomb=1,
+SHALTOP_LAW_ID = dict(coulomb=1,
                       voellmy=8,
                       bingham=6,
                       muI=7)
@@ -93,18 +93,7 @@ def write_params_file(params, sup_data={}, directory=None,
                 file_params.write('{:s} {:s}\n'.format(name, val))
 
 
-def readme_to_params(folder_data):
-
-    params = dict()
-    with open(os.path.join(folder_data, 'README.txt'), 'r') as f:
-        for line in f:
-            (key, val) = line.split()
-            if key in readme_param_match:
-                params[readme_param_match[key]] = val
-    return params
-
-
-def make_simus(law, rheol_params, folder_data, folder_out):
+def make_simus(law, rheol_params, folder_data, folder_out, readme_file):
     """
     Write shaltop initial file for simple slope test case
 
@@ -122,7 +111,6 @@ def make_simus(law, rheol_params, folder_data, folder_out):
     None.
 
     """
-
     # Get topography and initial mass, and write them in Shaltop format
     zfile = os.path.join(folder_data, 'topo.asc')
     mfile = os.path.join(folder_data, 'mass.asc')
@@ -132,7 +120,7 @@ def make_simus(law, rheol_params, folder_data, folder_out):
     np.savetxt(os.path.join(folder_out, 'm.d'), m.T.flatten())
 
     # Get simulation parameters from README.txt and raster .asc files
-    params = readme_to_params(folder_data)
+    params = swmb.notations.readme_to_params(readme_file, README_PARAM_MATCH)
     params['nx'] = len(x)
     params['ny'] = len(y)
     params['per'] = dx*len(x)
@@ -142,29 +130,21 @@ def make_simus(law, rheol_params, folder_data, folder_out):
 
     # Folder for rheological law, and set params accordingly
     folder_law = os.path.join(folder_out, law)
-    params['icomp'] = shaltop_law_id[law]
+    params['icomp'] = SHALTOP_LAW_ID[law]
 
     param_names = [param for param in rheol_params]
-    param_vals = [rheol_params[param] for param in rheol_params]
-    n_params = len(param_names)
 
-    text = ''
-    for param_name in param_names:
-        if param_name.startswith('delta'):
-            text += param_name + '_{:05.2f}_'
-        elif param_name == 'ksi':
-            text += param_name + '_{:06.1f}_'
-    text = text[:-1]
+    texts = swmb.notations.make_rheol_string(rheol_params, law)
 
     # Run shaltop file
     run_shaltop_file = os.path.join(folder_law, 'run_shaltop.sh')
     file_txt = ""
 
-    for param_set in zip(*param_vals):
+    for i in range(len(rheol_params[param_names[0]])):
 
-        simu_text = text.format(*param_set).replace('.', 'p')
-        for i, param_name in enumerate(param_names):
-            params[param_name] = param_set[i]
+        simu_text = texts[i]
+        for param_name in param_names:
+            params[param_name] = rheol_params[param_name][i]
         params['folder_output'] = simu_text
         os.makedirs(os.path.join(folder_law, simu_text), exist_ok=True)
         write_params_file(params, directory=folder_law,

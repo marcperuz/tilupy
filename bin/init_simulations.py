@@ -7,25 +7,31 @@ Created on Wed May 26 14:41:54 2021
 """
 
 import os
-import platform
 import importlib
 
-from swmb.init import init_benchmark
-from swmb.init import init_shaltop
-from swmb.init import init_ravaflow
+import swmb.initdata
+import swmb.models
 
 folder_benchmark = '../simus'
 
-folder_slope = os.path.join(folder_benchmark, 'slope_10deg')
-os.makedirs(folder_slope, exist_ok=True)
+# %% Make simus for simple plane
+
+# Prepare folders
+folder_topo = os.path.join(folder_benchmark, 'slope_10deg')
+
+subfolders = [os.path.join(folder_topo, 'h_min_1em3'),
+              os.path.join(folder_topo, 'h_min_1em15')]
 
 # %% Make initial topograhies and initial mass
-init_benchmark.make_constant_slope(folder_slope)
+for folder in subfolders:
+    swmb.initdata.make_constant_slope(folder_topo)
 
 # %% Prepare simulations for different codes
 for code in ['shaltop', 'ravaflow']:
-    folder_out = os.path.join(folder_slope, code)
-    os.makedirs(folder_out, exist_ok=True)
-    module = importlib.import_module('swmb.init.init_'+code)
-    module.make_simus('coulomb', dict(delta1=[15, 20, 25]), folder_slope,
-                      folder_out)
+    for folder in subfolders:
+        readme_file = os.path.join(folder, 'README.txt')
+        folder_out = os.path.join(folder, code)
+        os.makedirs(folder_out, exist_ok=True)
+        module = importlib.import_module('swmb.models.'+code+'.initsimus')
+        module.make_simus('coulomb', dict(delta1=[15, 20, 25]), folder_topo,
+                          folder_out, readme_file)

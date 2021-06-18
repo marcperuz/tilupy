@@ -20,11 +20,6 @@ STATIC_DATA_2D = []
 NP_OPERATORS = ['max', 'mean', 'std', 'sum', 'min']
 OTHER_OPERATORS = ['final', 'initial']
 
-LABELS = dict(h='Thickness (m)',
-              hmax='Maximum thickness (m)',
-              hfinal='Final thickness (m)',
-              u='Velocity (m s$^{-1}$)')
-
 for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
         STATIC_DATA_2D.append(name+stat)

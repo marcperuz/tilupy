@@ -14,12 +14,12 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.axes_grid1 as mplt
 
 import swmb.dem
-import swmb.read.plot as plt_fn
+import swmb.plot as plt_fn
 import swmb.notations
 import swmb
 
-from swmb.read.results import LABELS
-from swmb.read.results import STATIC_DATA_2D
+from swmb.notations import LABELS
+from swmb.read import STATIC_DATA_2D
 
 
 def compare_spatial_results(results, name, stat, import_kwargs=None,
@@ -158,23 +158,26 @@ def compare_spatial_results(results, name, stat, import_kwargs=None,
                     dpi=dpi)
 
 
-def compare_simus(codes, topo_name, law, rheol_params, output_name, stat_name,
+def compare_simus(codes, topo_name, law,
+                  rheol_params, output_name, stat_name,
+                  subfolder_topo='',
                   folder_benchmark=None, folder_out=None, **kwargs):
     """Compare simulations with different codes."""
 
     modules = dict()
     for c in codes:
-        modules[c] = importlib.import_module('swmb.read.'+c)
+        modules[c] = importlib.import_module('swmb.models.'+c+'.read')
 
     if folder_benchmark is None:
         folder_benchmark = os.getcwd()
 
     folder_topo = os.path.join(folder_benchmark, topo_name)
 
-    txt_params = swmb.notations.make_rheol_string(rheol_params)
+    txt_params = swmb.notations.make_rheol_string(rheol_params, law)
 
     if folder_out is None:
-        folder_out = os.path.join(folder_topo, 'comparison', law)
+        folder_out = os.path.join(folder_topo, subfolder_topo,
+                                  'comparison', law)
         os.makedirs(folder_out, exist_ok=True)
 
     file = np.os.path.join(folder_topo, 'topo.asc')
@@ -182,7 +185,7 @@ def compare_simus(codes, topo_name, law, rheol_params, output_name, stat_name,
 
     simus = []
     for code in codes:
-        folder_simus = os.path.join(folder_topo, code, law)
+        folder_simus = os.path.join(folder_topo, subfolder_topo, code, law)
         simus.append(modules[code].Results(txt_params, folder_simus))
 
     if output_name+stat_name in STATIC_DATA_2D:

@@ -8,7 +8,7 @@ Created on Tue Jun  1 15:27:36 2021
 import os
 
 import numpy as np
-import swmb.read.results as results
+import swmb.read
 
 # Dictionnary with results names lookup table, to match code output names
 LOOKUP_NAMES = dict(h='rho',
@@ -75,7 +75,7 @@ def read_file_init(file, nx, ny):
     return data
 
 
-class Results(results.Results):
+class Results(swmb.read.Results):
     """Results of shaltop simulations."""
 
     def __init__(self, text_rheol, folder_base, **varargs):
@@ -195,7 +195,7 @@ class Results(results.Results):
                 d = h*u**2
             t = self.tim
 
-        return results.TemporalResults(name, d, t)
+        return swmb.read.TemporalResults(name, d, t)
 
     def get_static_output(self, name, stat,
                           d=None, from_file=False, **varargs):
@@ -222,7 +222,7 @@ class Results(results.Results):
             data = self.get_temporal_output(name)
             d = data.get_temporal_stat(stat).d
 
-        return results.StaticResults(name+stat, d)
+        return swmb.read.StaticResults(name+stat, d)
 
     def get_u(self):
         """ Compute velocity norm from results """
