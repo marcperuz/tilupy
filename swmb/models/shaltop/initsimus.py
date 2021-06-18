@@ -146,7 +146,14 @@ def make_simus(law, rheol_params, folder_data, folder_out, readme_file):
         for param_name in param_names:
             params[param_name] = rheol_params[param_name][i]
         params['folder_output'] = simu_text
-        os.makedirs(os.path.join(folder_law, simu_text), exist_ok=True)
+        folder_results = os.path.join(folder_law, simu_text)
+        os.makedirs(folder_results, exist_ok=True)
+        with open(os.path.join(folder_results, '.gitignore'), 'w') as fid:
+            fid.write('# Ignore everything in this directory')
+            fid.write('*')
+            fid.write('# Except this file')
+            fid.write('!.gitignore')
+
         write_params_file(params, directory=folder_law,
                           file_name=simu_text+'.txt')
         file_txt += 'start_time=`date +%s`\n'

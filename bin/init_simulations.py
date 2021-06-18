@@ -23,8 +23,7 @@ subfolders = [os.path.join(folder_topo, 'h_min_1em3'),
               os.path.join(folder_topo, 'h_min_1em15')]
 
 # %% Make initial topograhies and initial mass
-for folder in subfolders:
-    swmb.initdata.make_constant_slope(folder_topo)
+swmb.initdata.make_constant_slope(folder_topo)
 
 # %% Prepare simulations for different codes
 for code in ['shaltop', 'ravaflow']:
