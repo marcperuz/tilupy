@@ -6,7 +6,11 @@ Created on Tue Jun  1 14:20:52 2021
 @author: peruzzetto
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
+
+import swmb.notations as notations
+import swmb.plot as plt_fn
 
 RAW_STATES = ['h', 'ux', 'uy']
 
@@ -28,7 +32,7 @@ for stat in NP_OPERATORS + OTHER_OPERATORS:
 class TemporalResults:
     """ Time dependent result of simulation """
 
-    def __init__(self, name, d, t):
+    def __init__(self, name, d, t, x=None, y=None, z=None):
         # 0d, 1d or 2d result, plus one dimension for time.
         self.d = d
         # 1d array with times, matching last dimension of self.d
@@ -53,6 +57,30 @@ class TemporalResults:
         else:
             dnew = np.sum(self.d*cellsize, axis=axis)
         self.d = dnew
+        
+    def plot(self, axe=None, figsize=None, folder_out=None,
+             x=None, y=None, z=None, **kwargs):
+        """ Plot results as time dependent"""
+        
+        if axe is None:
+            fig, axe = plt.subplots(1, 1, figsize=figsize)
+        
+        if self.d.ndim == 1:
+            axe.plot(self.t, self.d, **kwargs)
+            axe.set_xlabel('Time (s)')
+            axe.set_ylabel(notations.LABELS[self.name])
+            
+        elif self.d.ndim == 2:
+            raise NotImplementedError('Plot of 1D data as time functions not implemented yet')
+            
+        elif self.d.ndim == 3:
+            if folder_out is None:
+                raise TypeError('folder_out must me specified for temporal plot of 2D data')
+            if x is None or y is None or z is None:
+                raise TypeError('x, y or z data missing')
+            plt_fn.plot_maps(x, y, z, self.d, self.t,
+                             self.name, folder_out, 
+                             figsize=figsize, **kwargs)
 
 
 class StaticResults:
@@ -118,6 +146,7 @@ class Results:
         """Get cos(slope) of topography"""
         [Fx, Fy] = np.gradient(self.zinit, self.x, self.y)
         costh = 1/np.sqrt(1 + Fx**2 + Fy**2)
+        return costh
 
     @property
     def costh(self):

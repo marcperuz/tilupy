@@ -78,7 +78,7 @@ def read_file_init(file, nx, ny):
 class Results(swmb.read.Results):
     """Results of shaltop simulations."""
 
-    def __init__(self, text_rheol, folder_base, **varargs):
+    def __init__(self, file_params, folder_base=None, **varargs):
         """
         Init simulation results.
 
@@ -88,8 +88,12 @@ class Results(swmb.read.Results):
             File where simulation parameters will be read
 
         """
-        file_params = os.path.join(folder_base, text_rheol + '.txt')
-        self.folder_base = folder_base
+        if not '.' in file_params:
+            file_params = os.path.join(folder_base, file_params + '.txt')
+        if folder_base is None:
+            self.folder_base = os.getcwd()
+        else:
+            self.folder_base = folder_base
         self.code = 'shaltop'
         self.params = read_params(file_params)
         self.set_axes()
@@ -149,10 +153,14 @@ class Results(swmb.read.Results):
 
     def set_zinit(self, zinit=None):
         """Set zinit, initial topography."""
-        path_zinit = os.path.join(self.folder_base,
-                                  self.params['file_z_init'])
-        zinit = read_file_init(path_zinit, self.nx, self.ny)
-        self.zinit = zinit
+        if 'file_z_init' in self.params:
+            path_zinit = os.path.join(self.folder_base,
+                                      self.params['file_z_init'])
+            self.zinit = read_file_init(path_zinit, self.nx, self.ny)
+        else:
+            path_zinit = os.path.join(self.folder_base, self.folder_output,
+                                      'z.bin')
+            self.zinit = np.squeeze(read_file_bin(path_zinit, self.nx, self.ny))
 
     def get_temporal_output(self, name, d=None, t=None, **varargs):
         """

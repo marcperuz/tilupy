@@ -15,7 +15,7 @@ import swmb.compare
 if platform.system() == 'Linux':
     folder_base = '/media/peruzzetto/SSD'
 elif platform.system() == 'Windows':
-    folder_base = 'F:/'
+    folder_base = 'E:/'
 
 folder_benchmark = os.path.join(folder_base, 'shaltop/benchmark')
 

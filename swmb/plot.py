@@ -8,6 +8,7 @@ Created on Wed Jun  2 16:16:39 2021
 
 import matplotlib
 import copy
+import os
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -47,7 +48,7 @@ def centered_map(cmap, vmin, vmax, ncolors=256):
         (colors2[:ncolors-npos, :], colors1[npos:, :]), axis=0)
     # colors[ncolors-npos-1,:]=np.ones((1,4))
     # colors[ncolors-npos,:]=np.ones((1,4))
-    new_map = matplotlib.colors.LinearSegmentedColormap.from_list(
+    new_map = mcolors.LinearSegmentedColormap.from_list(
         'my_colormap', colors)
 
     return new_map
@@ -56,14 +57,13 @@ def centered_map(cmap, vmin, vmax, ncolors=256):
 def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
               step_contour_bold=0, contour_labels_properties=None,
               label_contour=True, contour_label_effect=None,
-              axe=None, vert_exag=1,
+              axe=None,
+              vert_exag=1, fraction=1, ndv=0, uniform_grey=None,
               contours_prop=None, contours_bold_prop=None,
               figsize=(10, 10),
               interpolation=None,
               sea_level=0, sea_color=None, alpha=1, azdeg=315, altdeg=45,
-              zmin=None, zmax=None,
-              blend_mode='overlay', fraction=1, ndv=0,
-              plot_colorbar=False, colorbar_kwargs=None):
+              zmin=None, zmax=None):
     """
     Plot topography with hillshading.
 
@@ -107,16 +107,10 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
         DESCRIPTION. The default is False.
     cmap_terrain : TYPE, optional
         DESCRIPTION. The default is 'gist_earth'.
-    blend_mode : TYPE, optional
-        DESCRIPTION. The default is 'overlay'.
     fraction : TYPE, optional
         DESCRIPTION. The default is 1.
     ndv : TYPE, optional
         DESCRIPTION. The default is 0.
-    plot_colorbar : TYPE, optional
-        DESCRIPTION. The default is False.
-    colorbar_kwargs : TYPE, optional
-        DESCRIPTION. The default is None.
 
     Returns
     -------
@@ -150,8 +144,11 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
     axe.set_xlabel('X (m)')
     axe.set_aspect('equal')
 
-    shaded_topo = ls.hillshade(z, vert_exag=vert_exag, dx=dx, dy=dy,
-                               fraction=fraction)
+    if uniform_grey is None:
+        shaded_topo = ls.hillshade(z, vert_exag=vert_exag, dx=dx, dy=dy,
+                                   fraction=1)
+    else:
+        shaded_topo = np.ones(z.shape)*uniform_grey
     axe.imshow(shaded_topo, cmap='gray', origin='lower', extent=im_extent,
                interpolation=interpolation, alpha=alpha, vmin=0, vmax=1)
 
@@ -224,7 +221,7 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
         else:
             cmap = 'seismic'
     if maxval*minval >= 0:
-        color_map = matplotlib.cm.get_cmap(cmap)
+        color_map = matplotlib.cm.get_cmap(cmap).copy()
     else:
         color_map = centered_map(cmap, minval, maxval)
 
@@ -232,18 +229,18 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
         nbounds = len(cmap_intervals)
         cgen = [color_map(1.*i/(nbounds-1)) for i in range(nbounds)]
         if extend_cc == 'max':
-            color_map = matplotlib.colors.ListedColormap(cgen[:-1])
+            color_map = mcolors.ListedColormap(cgen[:-1])
             color_map.set_over(cgen[-1])
         elif extend_cc == 'min':
-            color_map = matplotlib.colors.ListedColormap(cgen[1:])
+            color_map = mcolors.ListedColormap(cgen[1:])
             color_map.set_under(cgen[0])
         elif extend_cc == 'both':
-            color_map = matplotlib.colors.ListedColormap(cgen[1:-1])
+            color_map = mcolors.ListedColormap(cgen[1:-1])
             color_map.set_under(cgen[0])
             color_map.set_over(cgen[-1])
         elif extend_cc == 'neither':
-            color_map = matplotlib.colors.ListedColormap(cgen)
-        norm = matplotlib.colors.BoundaryNorm(cmap_intervals, color_map.N)
+            color_map = mcolors.ListedColormap(cgen)
+        norm = mcolors.BoundaryNorm(cmap_intervals, color_map.N)
         maxval = None
         minval = None
     else:
@@ -285,7 +282,54 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
     if plot_colorbar:
         colorbar_kwargs = {} if colorbar_kwargs is None else colorbar_kwargs
         cc = colorbar(fim, cax=axecc, **colorbar_kwargs)
+        
+    return axe
+        
 
+def plot_maps(x, y, z, data, t, file_name, folder_out, 
+              figsize=None, dpi=None, fmt='png',
+              **kwargs):
+    """
+    Plot and save maps of simulations outputs at successive time steps
+
+    Parameters
+    ----------
+    x : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    data : TYPE
+        DESCRIPTION.
+    t : TYPE
+        DESCRIPTION.
+    file_name : TYPE
+        DESCRIPTION.
+    folder_out : TYPE
+        DESCRIPTION.
+    dpi : TYPE, optional
+        DESCRIPTION. The default is None.
+    fmt : TYPE, optional
+        DESCRIPTION. The default is 'png'.
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    nfigs = len(t)
+    if nfigs != data.shape[2]:
+        raise ValueError('length of t must be similar to the last dimension of data')
+    file_path = os.path.join(folder_out, file_name + '_{:04d}.' + fmt)
+    title_fmt = 't = {:.2f} s'
+    
+    for i in range(nfigs):
+        axe = plot_data_on_topo(x, y, z, data[:, :, i], axe=None,
+                                figsize=figsize,
+                                **kwargs)
+        axe.set_title(title_fmt.format(t[i]))
+        axe.figure.savefig(file_path.format(i), dpi=dpi)
+        
 
 def colorbar(mappable, ax=None,
              cax=None, size="5%", pad=0.05, position='right',
