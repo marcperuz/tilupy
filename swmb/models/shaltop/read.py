@@ -56,6 +56,43 @@ def read_params(file):
 
     return params
 
+def get_axes(**varargs):
+    """Set x and y axes."""
+    if 'x0' in varargs :
+        x0 = varargs['x0']
+    else:
+        x0 = 0
+    if 'y0' in varargs:
+        y0 = varargs['y0']
+    else:
+        y0 = 0
+
+    nx = varargs['nx']
+    ny = varargs['ny']
+    dx = varargs['per']/nx
+    dy = varargs['pery']/ny
+    x = dx*np.arange(nx)+dx/2
+    y = dy*np.arange(ny)+dy/2
+
+    try:
+        coord_pos = varargs['coord_pos']
+    except KeyError:
+        coord_pos = 'bottom_left'
+
+    if coord_pos == 'bottom_left':
+        x = x+x0
+        y = y+y0
+    elif coord_pos == 'upper_right':
+        x = x+x0-x[-1]
+        y = y+y0-y[-1]
+    elif coord_pos == 'upper_left':
+        x = x+x0
+        y = y+y0-y[-1]
+    elif coord_pos == 'lower_right':
+        x = x+x0-x[-1]
+        y = y+y0
+
+    return x, y
 
 def read_file_bin(file, nx, ny):
     """Read shaltop .bin result file."""
@@ -78,7 +115,7 @@ def read_file_init(file, nx, ny):
 class Results(swmb.read.Results):
     """Results of shaltop simulations."""
 
-    def __init__(self, file_params, folder_base=None, **varargs):
+    def __init__(self, file_params=None, folder_base=None, **varargs):
         """
         Init simulation results.
 
@@ -88,16 +125,26 @@ class Results(swmb.read.Results):
             File where simulation parameters will be read
 
         """
+        
+        if file_params is None:
+            file_params = 'params.txt'
+        if folder_base is None:
+            folder_base = os.getcwd()
+            
         if not '.' in file_params:
             file_params = os.path.join(folder_base, file_params + '.txt')
-        if folder_base is None:
-            self.folder_base = os.getcwd()
-        else:
-            self.folder_base = folder_base
-        self.code = 'shaltop'
-        self.params = read_params(file_params)
-        self.set_axes()
+        
+        params = read_params(file_params)
+        x, y = get_axes(**params)
+        
+        varargs.update(dict(code='shaltop',
+                            htype='normal',
+                            params=params,
+                            ))
+        
+        super().__init__(x, y, **varargs)
 
+        self.folder_base = folder_base
         # Folder where results are stored
         if 'folder_output' not in self.params:
             self.folder_output = os.path.join(self.folder_base,
@@ -109,58 +156,25 @@ class Results(swmb.read.Results):
         # Get time of outputs
         self.tim = np.loadtxt(os.path.join(self.folder_output, 'time_im.d'))
 
-    def set_axes(self, x=None, y=None, **varargs):
-        """Set x and y axes."""
-        if 'x0' in self.params and 'y0' in self.params:
-            x0 = self.params['x0']
-            y0 = self.params['y0']
-        elif 'x0' in varargs and 'y0' in varargs:
-            x0 = varargs['x0']
-            y0 = varargs['y0']
-        else:
-            x0 = 0
-            y0 = 0
-
-        nx = self.params['nx']
-        ny = self.params['ny']
-        dx = self.params['per']/nx
-        dy = self.params['pery']/ny
-        x = dx*np.arange(nx)+dx/2
-        y = dy*np.arange(ny)+dy/2
-
-        try:
-            coord_pos = varargs['coord_pos']
-        except KeyError:
-            coord_pos = 'bottom_left'
-
-        if coord_pos == 'bottom_left':
-            x = x+x0
-            y = y+y0
-        elif coord_pos == 'upper_right':
-            x = x+x0-x[-1]
-            y = y+y0-y[-1]
-        elif coord_pos == 'upper_left':
-            x = x+x0
-            y = y+y0-y[-1]
-        elif coord_pos == 'lower_right':
-            x = x+x0-x[-1]
-            y = y+y0
-
-        self.x = x
-        self.y = y
-        self.nx = nx
-        self.ny = ny
+    
+        
+    @property
+    def zinit(self):
+        """ Compute or get cos(slope) of topography """
+        if self._zinit is None:
+            self.set_zinit()
+        return self._zinit
 
     def set_zinit(self, zinit=None):
         """Set zinit, initial topography."""
         if 'file_z_init' in self.params:
             path_zinit = os.path.join(self.folder_base,
                                       self.params['file_z_init'])
-            self.zinit = read_file_init(path_zinit, self.nx, self.ny)
+            self._zinit = read_file_init(path_zinit, self.nx, self.ny)
         else:
             path_zinit = os.path.join(self.folder_base, self.folder_output,
                                       'z.bin')
-            self.zinit = np.squeeze(read_file_bin(path_zinit, self.nx, self.ny))
+            self._zinit = np.squeeze(read_file_bin(path_zinit, self.nx, self.ny))
 
     def get_temporal_output(self, name, d=None, t=None, **varargs):
         """
@@ -241,7 +255,7 @@ class Results(swmb.read.Results):
                             'ut' + '.bin')
         ut = read_file_bin(file, self.nx, self.ny)
 
-        [Fx, Fy] = np.gradient(self.zinit, self.x, self.y)
+        [Fx, Fy] = np.gradient(self.zinit, self.y, self.x)
         u = u*self.costh[:, :, np.newaxis]
         ut = ut*self.costh[:, :, np.newaxis]
         d = np.sqrt(u**2 + ut**2 + (Fx[:, :, np.newaxis]*u

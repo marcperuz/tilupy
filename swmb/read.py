@@ -9,6 +9,8 @@ Created on Tue Jun  1 14:20:52 2021
 import matplotlib.pyplot as plt
 import numpy as np
 
+import os
+
 import swmb.notations as notations
 import swmb.plot as plt_fn
 
@@ -16,7 +18,7 @@ RAW_STATES = ['h', 'ux', 'uy']
 
 TEMPORAL_DATA_0D = ['hu2int', 'vol']
 TEMPORAL_DATA_1D = ['']
-TEMPORAL_DATA_2D = ['h', 'ux', 'uy', 'hu', 'hu2']
+TEMPORAL_DATA_2D = ['h', 'u', 'ux', 'uy', 'hu', 'hu2']
 STATIC_DATA_0D = []
 STATIC_DATA_1D = []
 STATIC_DATA_2D = []
@@ -74,12 +76,10 @@ class TemporalResults:
             raise NotImplementedError('Plot of 1D data as time functions not implemented yet')
             
         elif self.d.ndim == 3:
-            if folder_out is None:
-                raise TypeError('folder_out must me specified for temporal plot of 2D data')
             if x is None or y is None or z is None:
                 raise TypeError('x, y or z data missing')
             plt_fn.plot_maps(x, y, z, self.d, self.t,
-                             self.name, folder_out, 
+                             self.name, folder_out=folder_out, 
                              figsize=figsize, **kwargs)
 
 
@@ -102,8 +102,8 @@ class Results:
     classes.
     """
 
-    def __init__(self, x, y, zinit, t=None, h=None, u=None, htype='normal',
-                 params=None):
+    def __init__(self, x, y, code=None, zinit=None, t=None, htype='normal',
+                 params=None, h_thresh=None):
         """
         Create from given topography, thicknesses and velocities.
 
@@ -117,14 +117,6 @@ class Results:
             1D array for y-axis
         zinit : ndarray
             2D array giving the topography (size len(x)*len(y))
-        t : ndarray, optional
-            1D array giving times of outputs (default None)
-        h : ndarray, optional
-            3D array giving the heights, size len(x)*len(y)*len(t)
-            (default None)
-        u : ndarray, optional
-            3D array giving the norm of velocity, size len(x)*len(y)*len(t)
-            (default None)
         htype : str, optional
             Direction in which flow height is given, 'normal' to topography
             or 'vertical' (default 'normal')
@@ -134,17 +126,33 @@ class Results:
 
         self.x = x
         self.y = y
-        self.zinit = zinit
-        self.t = t
+        self.nx = len(x)
+        self.ny = len(y)
+        self.code = code
         self.htype = htype
-        self.h = TemporalResults(self.t, h)
-        self.u = TemporalResults(self.t, h)
-        self.params = None
+        self.params = params
+        self.h_thresh = h_thresh
+        
+        self._zinit = zinit
         self._costh = None
+        self._h = None
+        
 
+    @property
+    def zinit(self):
+        """ Get initial topography """
+        return self._zinit
+    
+    @property
+    def h(self):
+        """ Get initial topography """
+        if self._h is None:
+            self._h = self.get_temporal_output('h').d
+        return self._h
+    
     def get_costh(self):
         """Get cos(slope) of topography"""
-        [Fx, Fy] = np.gradient(self.zinit, self.x, self.y)
+        [Fx, Fy] = np.gradient(self.zinit, self.y, self.x)
         costh = 1/np.sqrt(1 + Fx**2 + Fy**2)
         return costh
 
@@ -160,3 +168,27 @@ class Results:
 
     def get_static_output(self, name, stat):
         return StaticResults(name+stat, None)
+    
+    def plot(self, name, save=True, **kwargs):
+        
+        if save:
+            folder_out = os.path.join(self.folder_output, 'plots')
+            os.makedirs(folder_out, exist_ok=True)
+        else:
+            folder_out = None
+            
+        if name in TEMPORAL_DATA_2D:
+            data = self.get_temporal_output(name)
+            if self.h_thresh is not None and name != 'h':
+               data.d[self.h<self.h_thresh] = np.nan 
+        elif name in STATIC_DATA_2D:
+            data = self.get_static_output(name)
+        
+        if 'x' not in kwargs:
+            kwargs['x'] = self.x
+        if 'y' not in kwargs:
+            kwargs['y'] = self.y
+        if 'z' not in kwargs:
+            kwargs['z'] = self.zinit
+            
+        data.plot(**kwargs)

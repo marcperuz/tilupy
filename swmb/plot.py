@@ -204,9 +204,9 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
 
     # Get min and max values
     if maxval is None:
-        maxval = f.max()
+        maxval = np.nanmax(f)
     if minval is None:
-        minval = f.min()
+        minval = np.nanmin(f)
 
     f[f <= minval] = minval-1
     if minval_abs:
@@ -286,7 +286,7 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
     return axe
         
 
-def plot_maps(x, y, z, data, t, file_name, folder_out, 
+def plot_maps(x, y, z, data, t, file_name, folder_out=None, 
               figsize=None, dpi=None, fmt='png',
               **kwargs):
     """
@@ -320,7 +320,8 @@ def plot_maps(x, y, z, data, t, file_name, folder_out,
     nfigs = len(t)
     if nfigs != data.shape[2]:
         raise ValueError('length of t must be similar to the last dimension of data')
-    file_path = os.path.join(folder_out, file_name + '_{:04d}.' + fmt)
+    if folder_out is not None:
+        file_path = os.path.join(folder_out, file_name + '_{:04d}.' + fmt)
     title_fmt = 't = {:.2f} s'
     
     for i in range(nfigs):
@@ -328,7 +329,8 @@ def plot_maps(x, y, z, data, t, file_name, folder_out,
                                 figsize=figsize,
                                 **kwargs)
         axe.set_title(title_fmt.format(t[i]))
-        axe.figure.savefig(file_path.format(i), dpi=dpi)
+        if folder_out is not None:
+            axe.figure.savefig(file_path.format(i), dpi=dpi)
         
 
 def colorbar(mappable, ax=None,
