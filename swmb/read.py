@@ -169,18 +169,19 @@ class Results:
     def get_static_output(self, name, stat):
         return StaticResults(name+stat, None)
     
-    def plot(self, name, save=True, **kwargs):
+    def plot(self, name, save=True, h_thresh=None, **kwargs):
         
         if save:
             folder_out = os.path.join(self.folder_output, 'plots')
             os.makedirs(folder_out, exist_ok=True)
-        else:
-            folder_out = None
+            kwargs['folder_out'] = folder_out
             
         if name in TEMPORAL_DATA_2D:
             data = self.get_temporal_output(name)
-            if self.h_thresh is not None and name != 'h':
-               data.d[self.h<self.h_thresh] = np.nan 
+            if h_thresh is None:
+                h_thresh = self.h_thresh
+            if h_thresh is not None:
+               data.d[self.h<h_thresh] = np.nan 
         elif name in STATIC_DATA_2D:
             data = self.get_static_output(name)
         

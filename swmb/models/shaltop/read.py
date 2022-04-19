@@ -126,10 +126,10 @@ class Results(swmb.read.Results):
 
         """
         
-        if file_params is None:
-            file_params = 'params.txt'
         if folder_base is None:
             folder_base = os.getcwd()
+        if file_params is None:
+            file_params = os.path.join(folder_base, 'params.txt')
             
         if not '.' in file_params:
             file_params = os.path.join(folder_base, file_params + '.txt')
