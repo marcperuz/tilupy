@@ -145,17 +145,18 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
     axe.set_aspect('equal')
 
     if uniform_grey is None:
-        shaded_topo = ls.hillshade(z, vert_exag=vert_exag, dx=dx, dy=dy,
+        shaded_topo = ls.hillshade(z,
+                                   vert_exag=vert_exag, dx=dx, dy=dy,
                                    fraction=1)
     else:
         shaded_topo = np.ones(z.shape)*uniform_grey
-    axe.imshow(shaded_topo, cmap='gray', origin='lower', extent=im_extent,
+    axe.imshow(shaded_topo, cmap='gray', extent=im_extent,
                interpolation=interpolation, alpha=alpha, vmin=0, vmax=1)
 
     if contours_prop is None:
         contours_prop = dict(alpha=0.5, colors='k',
                              linewidths=0.5)
-    axe.contour(z, extent=im_extent,
+    axe.contour(x, y, np.flip(z, axis=0), extent=im_extent,
                 levels=levels,
                 **contours_prop)
 
@@ -275,7 +276,7 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
 
     # Plot data
     fim = axe.imshow(f, extent=im_extent, cmap=color_map,
-                     vmin=minval, vmax=maxval, origin='lower',
+                     vmin=minval, vmax=maxval,
                      interpolation='none', norm=norm, zorder=4)
 
     # Plot colorbar

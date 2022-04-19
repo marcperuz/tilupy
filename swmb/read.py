@@ -28,7 +28,7 @@ OTHER_OPERATORS = ['final', 'initial']
 
 for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
-        STATIC_DATA_2D.append(name+stat)
+        STATIC_DATA_2D.append(name + '_' + stat)
 
 
 class TemporalResults:
@@ -91,6 +91,20 @@ class StaticResults:
         self.d = d
         # Name of data
         self.name = name
+        
+    def plot(self, axe=None, figsize=None, folder_out=None,
+             x=None, y=None, z=None, **kwargs):
+        """ Plot results as time dependent"""
+        
+        if axe is None:
+            fig, axe = plt.subplots(1, 1, figsize=figsize)
+        
+        if x is None or y is None or z is None:
+            raise TypeError('x, y or z data missing')
+            
+        plt_fn.plot_data_on_topo(x, y, z, self.d, axe=axe,
+                                 figsize=figsize,
+                                 **kwargs)
 
 
 class Results:
@@ -181,9 +195,10 @@ class Results:
             if h_thresh is None:
                 h_thresh = self.h_thresh
             if h_thresh is not None:
-               data.d[self.h<h_thresh] = np.nan 
+                data.d[self.h<h_thresh] = np.nan 
         elif name in STATIC_DATA_2D:
-            data = self.get_static_output(name)
+            state, stat = name.split('_')
+            data = self.get_static_output(state, stat)
         
         if 'x' not in kwargs:
             kwargs['x'] = self.x

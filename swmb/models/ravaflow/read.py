@@ -77,7 +77,7 @@ def read_ascii(file):
 
     """
     dem = np.loadtxt(file, skiprows=6)
-    dem = np.flip(dem, axis=0).T
+    # dem = np.flip(dem, axis=0).T
     grid = {}
     with open(file, 'r') as fid:
         for i in range(6):
