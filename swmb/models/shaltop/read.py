@@ -129,10 +129,12 @@ class Results(swmb.read.Results):
         if folder_base is None:
             folder_base = os.getcwd()
         if file_params is None:
-            file_params = os.path.join(folder_base, 'params.txt')
+            file_params = 'params.txt'
             
         if not '.' in file_params:
-            file_params = os.path.join(folder_base, file_params + '.txt')
+            file_params = file_params + '.txt'
+            
+        file_params = os.path.join(folder_base, file_params)
         
         params = read_params(file_params)
         x, y = get_axes(**params)
@@ -220,7 +222,7 @@ class Results(swmb.read.Results):
         return swmb.read.TemporalResults(name, d, t)
 
     def get_static_output(self, name, stat,
-                          d=None, from_file=False, **varargs):
+                          d=None, from_file=True, **varargs):
         """
         Read 2D time dependent simulation results.
 
@@ -244,7 +246,7 @@ class Results(swmb.read.Results):
             data = self.get_temporal_output(name)
             d = data.get_temporal_stat(stat).d
 
-        return swmb.read.StaticResults(name+stat, d)
+        return swmb.read.StaticResults(name+'_'+stat, d)
 
     def get_u(self):
         """ Compute velocity norm from results """

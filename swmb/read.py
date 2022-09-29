@@ -60,8 +60,9 @@ class TemporalResults:
             dnew = np.sum(self.d*cellsize, axis=axis)
         self.d = dnew
         
-    def plot(self, axe=None, figsize=None, folder_out=None,
-             x=None, y=None, z=None, **kwargs):
+    def plot(self, axe=None, figsize=None, folder_out=None, fmt='png', dpi=150,
+             x=None, y=None, z=None, sup_plt_fn=None, sup_plt_fn_args=None,
+             **kwargs):
         """ Plot results as time dependent"""
         
         if axe is None:
@@ -80,7 +81,17 @@ class TemporalResults:
                 raise TypeError('x, y or z data missing')
             plt_fn.plot_maps(x, y, z, self.d, self.t,
                              self.name, folder_out=folder_out, 
-                             figsize=figsize, **kwargs)
+                             figsize=figsize, fmt=fmt, dpi=dpi,
+                             sup_plt_fn=sup_plt_fn,
+                             sup_plt_fn_args=sup_plt_fn_args,
+                             **kwargs)
+            
+        if self.d.ndim != 3 and sup_plt_fn is not None:
+            if sup_plt_fn_args is None:
+                sup_plt_fn_args = dict()
+            sup_plt_fn(axe, **sup_plt_fn_args)
+            
+        return axe, fig
 
 
 class StaticResults:
@@ -92,8 +103,9 @@ class StaticResults:
         # Name of data
         self.name = name
         
-    def plot(self, axe=None, figsize=None, folder_out=None,
-             x=None, y=None, z=None, **kwargs):
+    def plot(self, axe=None, figsize=None, folder_out=None, fmt='png', dpi=150,
+             x=None, y=None, z=None, 
+             sup_plt_fn=None, sup_plt_fn_args=None, **kwargs):
         """ Plot results as time dependent"""
         
         if axe is None:
@@ -102,9 +114,19 @@ class StaticResults:
         if x is None or y is None or z is None:
             raise TypeError('x, y or z data missing')
             
-        plt_fn.plot_data_on_topo(x, y, z, self.d, axe=axe,
-                                 figsize=figsize,
-                                 **kwargs)
+        axe = plt_fn.plot_data_on_topo(x, y, z, self.d, axe=axe,
+                                       figsize=figsize,
+                                       **kwargs)
+        if sup_plt_fn is not None:
+            if sup_plt_fn_args is None:
+                sup_plt_fn_args = dict()
+            sup_plt_fn(axe, **sup_plt_fn_args)
+        
+        if folder_out is not None:
+            file_out = os.path.join(folder_out, self.name + '.' + fmt)
+            axe.figure.savefig(file_out, dpi=dpi)
+        
+        return axe, fig
 
 
 class Results:
@@ -117,7 +139,7 @@ class Results:
     """
 
     def __init__(self, x, y, code=None, zinit=None, t=None, htype='normal',
-                 params=None, h_thresh=None):
+                 params=None, h_thresh=None, **varargs):
         """
         Create from given topography, thicknesses and velocities.
 
@@ -181,14 +203,18 @@ class Results:
         return TemporalResults(name, None, None)
 
     def get_static_output(self, name, stat):
-        return StaticResults(name+stat, None)
+        return StaticResults(name+'_'+stat, None)
     
-    def plot(self, name, save=True, h_thresh=None, **kwargs):
+    def plot(self, name, save=True, dpi=150, fmt='png',
+             h_thresh=None, from_file=False,
+             **kwargs):
         
         if save:
             folder_out = os.path.join(self.folder_output, 'plots')
             os.makedirs(folder_out, exist_ok=True)
             kwargs['folder_out'] = folder_out
+            kwargs['dpi'] = dpi
+            kwargs['fmt'] = fmt
             
         if name in TEMPORAL_DATA_2D:
             data = self.get_temporal_output(name)
@@ -198,7 +224,7 @@ class Results:
                 data.d[self.h<h_thresh] = np.nan 
         elif name in STATIC_DATA_2D:
             state, stat = name.split('_')
-            data = self.get_static_output(state, stat)
+            data = self.get_static_output(state, stat, from_file=from_file)
         
         if 'x' not in kwargs:
             kwargs['x'] = self.x
@@ -207,4 +233,5 @@ class Results:
         if 'z' not in kwargs:
             kwargs['z'] = self.zinit
             
-        data.plot(**kwargs)
+        axe, fig = data.plot(**kwargs)
+        return axe, fig

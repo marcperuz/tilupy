@@ -150,6 +150,7 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
                                    fraction=1)
     else:
         shaded_topo = np.ones(z.shape)*uniform_grey
+    shaded_topo[z == ndv] = np.nan
     axe.imshow(shaded_topo, cmap='gray', extent=im_extent,
                interpolation=interpolation, alpha=alpha, vmin=0, vmax=1)
 
@@ -191,8 +192,8 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
                       cmap_intervals=None, extend_cc='max',
                       topo_kwargs=None, sup_plot=None,
                       plot_colorbar=True, axecc=None, colorbar_kwargs=None,
-                      mask=None, alpha_mask=None, color_mask='k'
-                      ):
+                      mask=None, alpha_mask=None, color_mask='k',
+                      xlims=None, ylims=None):
     """
     Plot array data on topo.
 
@@ -284,11 +285,20 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
         colorbar_kwargs = {} if colorbar_kwargs is None else colorbar_kwargs
         cc = colorbar(fim, cax=axecc, **colorbar_kwargs)
         
+    # Adjust axes limits
+    if xlims is not None:
+        axe.set_xlim(xlims[0], xlims[1])
+        
+    if ylims is not None:
+        axe.set_ylim(ylims[0], ylims[1])
+        
     return axe
         
 
 def plot_maps(x, y, z, data, t, file_name, folder_out=None, 
               figsize=None, dpi=None, fmt='png',
+              sup_plt_fn=None,
+              sup_plt_fn_args=None,
               **kwargs):
     """
     Plot and save maps of simulations outputs at successive time steps
@@ -330,6 +340,10 @@ def plot_maps(x, y, z, data, t, file_name, folder_out=None,
                                 figsize=figsize,
                                 **kwargs)
         axe.set_title(title_fmt.format(t[i]))
+        if sup_plt_fn is not None:
+            if sup_plt_fn_args is None:
+                sup_plt_fn_args = dict()
+            sup_plt_fn(axe, **sup_plt_fn_args)
         if folder_out is not None:
             axe.figure.savefig(file_path.format(i), dpi=dpi)
         
