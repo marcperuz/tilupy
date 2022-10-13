@@ -125,6 +125,7 @@ class Results(swmb.read.Results):
             File where simulation parameters will be read
 
         """
+        super().__init__()
         
         if folder_base is None:
             folder_base = os.getcwd()
@@ -142,9 +143,11 @@ class Results(swmb.read.Results):
         varargs.update(dict(code='shaltop',
                             htype='normal',
                             params=params,
-                            ))
+                            x=x, y=y,
+                            nx=len(x), ny=len(y)))
         
-        super().__init__(x, y, **varargs)
+        for key in varargs:
+            setattr(self, key, varargs[key])
 
         self.folder_base = folder_base
         # Folder where results are stored
@@ -238,6 +241,9 @@ class Results(swmb.read.Results):
             DESCRIPTION.
 
         """
+        if stat in ['final', 'initial']:
+            hh = self.get_temporal_output('h')
+            return hh.get_temporal_stat(stat)
         if from_file:
             file = os.path.join(self.folder_output,
                                 LOOKUP_NAMES[name] + stat + '.bin')

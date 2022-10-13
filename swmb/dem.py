@@ -9,7 +9,23 @@ Created on Thu Jun  3 12:29:52 2021
 import os
 import numpy as np
 
+def read_raster(file):
+    if file.endswith('.asc') or file.endswith('.txt'):
+        return read_ascii(file)
+    elif file.endswith('.tif') or file.endswith('.tif'):
+        return read_tiff(file)
 
+def read_tiff(file):
+    
+    import rasterio
+    with rasterio.open(file, 'r') as src:
+        dem = src.read(1)
+        ny, nx = dem.shape
+        x = np.linspace(src.bounds.left, src.bounds.right, nx)
+        y = np.linspace(src.bounds.bottom, src.bounds.top, ny)
+        dx = x[1] - x[0]
+    return x, y, dem, dx
+    
 def read_ascii(file):
     """
     Read ascii grid file to numpy ndarray.

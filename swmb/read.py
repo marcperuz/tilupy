@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import os
+import importlib
 
 import swmb.notations as notations
 import swmb.plot as plt_fn
@@ -30,6 +31,8 @@ for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
         STATIC_DATA_2D.append(name + '_' + stat)
 
+DATA_NAMES = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
+DATA_NAMES += STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
 
 class TemporalResults:
     """ Time dependent result of simulation """
@@ -50,7 +53,7 @@ class TemporalResults:
             dnew = self.d[..., -1]
         elif stat == 'initial':
             dnew = self.d[..., 0]
-        return StaticResults(name+stat, dnew)
+        return StaticResults(name + '_' + stat, dnew)
 
     def spatial_integration(self, axis=(0, 1), cellsize=None):
         """ Spatial integration along one or two axes """
@@ -128,7 +131,6 @@ class StaticResults:
         
         return axe, fig
 
-
 class Results:
     """ Results of thin-layer model simulation
 
@@ -138,40 +140,21 @@ class Results:
     classes.
     """
 
-    def __init__(self, x, y, code=None, zinit=None, t=None, htype='normal',
-                 params=None, h_thresh=None, **varargs):
+    def __init__(self, *args, **kwargs):
         """
-        Create from given topography, thicknesses and velocities.
+        Call init function used for code in inherited classes.
 
         It is not recommended
 
         Parameters
         ----------
-        x : ndarray
-            1D array for x-axis
-        y : ndarray
-            1D array for y-axis
-        zinit : ndarray
-            2D array giving the topography (size len(x)*len(y))
-        htype : str, optional
-            Direction in which flow height is given, 'normal' to topography
-            or 'vertical' (default 'normal')
-        params : dict, optional
-            Dictionnary with simulation parameters. The default is None.
+        code : string
+            Name of code from which results must be read.
         """
-
-        self.x = x
-        self.y = y
-        self.nx = len(x)
-        self.ny = len(y)
-        self.code = code
-        self.htype = htype
-        self.params = params
-        self.h_thresh = h_thresh
-        
-        self._zinit = zinit
-        self._costh = None
+        self._h_max = None
         self._h = None
+        self._costh = None
+        self._zinit = None
         
 
     @property
@@ -181,10 +164,17 @@ class Results:
     
     @property
     def h(self):
-        """ Get initial topography """
+        """ Get thickness """
         if self._h is None:
             self._h = self.get_temporal_output('h').d
         return self._h
+    
+    @property
+    def h_max(self):
+        """ Get maximum thickness """
+        if self._h_max is None:
+            self._h_max = self.get_static_output('h', 'max').d
+        return self._h_max
     
     def get_costh(self):
         """Get cos(slope) of topography"""
@@ -208,6 +198,8 @@ class Results:
     def plot(self, name, save=True, dpi=150, fmt='png',
              h_thresh=None, from_file=False,
              **kwargs):
+        
+        assert(name in DATA_NAMES)
         
         if save:
             folder_out = os.path.join(self.folder_output, 'plots')
@@ -235,3 +227,24 @@ class Results:
             
         axe, fig = data.plot(**kwargs)
         return axe, fig
+    
+    
+def get_results(code, **kwargs):
+    """
+    Get simulation results for a given code. This function calls the 
+    appropriate module.
+
+    Parameters
+    ----------
+    code : TYPE
+        DESCRIPTION.
+    **kwargs : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    module = importlib.import_module('swmb.models.'+code+'.read')
+    return module.Results(**kwargs)

@@ -158,7 +158,7 @@ def read_asciis(file_prefix, folder=None, ind=None, nodigit=False):
 class Results(swmb.read.Results):
     """Results of shaltop simulations."""
 
-    def __init__(self, text_rheol, folder_base, **varargs):
+    def __init__(self, text_rheol=None, folder_base=None, **varargs):
         """
         Init simulation results.
 
