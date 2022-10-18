@@ -242,13 +242,18 @@ class Results(swmb.read.Results):
 
         """
         if stat in ['final', 'initial']:
-            hh = self.get_temporal_output('h')
+            hh = self.get_temporal_output(name)
             return hh.get_temporal_stat(stat)
         if from_file:
             file = os.path.join(self.folder_output,
                                 LOOKUP_NAMES[name] + stat + '.bin')
-            d = np.squeeze(read_file_bin(file, self.nx, self.ny))
-        else:
+            if os.path.isfile(file):
+                d = np.squeeze(read_file_bin(file, self.nx, self.ny))
+            else:
+                print(file + ' was not found, ' + name + '_' + stat
+                      + ' computed from temporal output.')
+                from_file = False
+        if not from_file:
             data = self.get_temporal_output(name)
             d = data.get_temporal_stat(stat).d
 

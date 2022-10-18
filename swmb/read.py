@@ -53,7 +53,7 @@ class TemporalResults:
             dnew = self.d[..., -1]
         elif stat == 'initial':
             dnew = self.d[..., 0]
-        return StaticResults(name + '_' + stat, dnew)
+        return StaticResults(self.name + '_' + stat, dnew)
 
     def spatial_integration(self, axis=(0, 1), cellsize=None):
         """ Spatial integration along one or two axes """
@@ -196,7 +196,7 @@ class Results:
         return StaticResults(name+'_'+stat, None)
     
     def plot(self, name, save=True, dpi=150, fmt='png',
-             h_thresh=None, from_file=False,
+             h_thresh=None, from_file=False, display_plot=True,
              **kwargs):
         
         assert(name in DATA_NAMES)
@@ -207,6 +207,10 @@ class Results:
             kwargs['folder_out'] = folder_out
             kwargs['dpi'] = dpi
             kwargs['fmt'] = fmt
+            
+        if not display_plot:
+            backend = plt.get_backend()
+            plt.switch_backend('Agg')
             
         if name in TEMPORAL_DATA_2D:
             data = self.get_temporal_output(name)
@@ -226,6 +230,10 @@ class Results:
             kwargs['z'] = self.zinit
             
         axe, fig = data.plot(**kwargs)
+        
+        if not display_plot:
+            plt.switch_backend(backend)
+        
         return axe, fig
     
     

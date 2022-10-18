@@ -13,6 +13,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import seaborn as sns
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -283,6 +284,8 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
     # Plot colorbar
     if plot_colorbar:
         colorbar_kwargs = {} if colorbar_kwargs is None else colorbar_kwargs
+        if cmap_intervals is not None and extend_cc is not None:
+            colorbar_kwargs['extend'] = extend_cc
         cc = colorbar(fim, cax=axecc, **colorbar_kwargs)
         
     # Adjust axes limits
@@ -398,3 +401,89 @@ def colorbar(mappable, ax=None,
         cax.yaxis.tick_left()
         cax.xaxis.set_label_position('left')
     return cc
+
+
+def plot_heatmaps(df, values, index, columns, figsize=None, ncols=3,
+                  heatmap_kws=None, notations=None, best_values=None):
+    
+    nplots = len(values)
+    ncols = min(nplots, ncols)
+    nrows = int(np.ceil(nplots/ncols))
+    fig = plt.figure(figsize=figsize)
+    positions = range(1,nplots + 1)
+    axes = []
+    
+    for i in range(nplots):
+        axe = fig.add_subplot(nrows, ncols, i+1)
+        axes.append(axe)
+        data = df.pivot(index=index, columns=columns,
+                        values=values[i]).astype(float)
+        if heatmap_kws is None:
+            kws = dict()
+        elif isinstance(heatmap_kws, dict):
+            if values[i] in heatmap_kws:
+                kws = heatmap_kws[values[i]]
+            else:
+                kws = heatmap_kws
+            
+        if 'cmap' not in kws:
+            minval = data.min().min()
+            maxval = data.max().max()
+            if minval*maxval<0:
+                val = max(np.abs(minval), maxval)
+                kws['cmap'] = 'seismic'
+                kws['vmin'] = -val
+                kws['vmax'] = val
+                
+        if 'cbar_kws' not in kws:
+            kws['cbar_kws'] = dict(pad=0.03)
+        
+        if notations is not None:
+            if 'label' not in kws['cbar_kws']:
+                if values[i] in notations:
+                    kws['cbar_kws']['label'] = notations[values[i]]
+                else:
+                    kws['cbar_kws']['label'] = values[i]
+            
+        sns.heatmap(data, ax = axe, **kws)
+        
+        if best_values is not None:
+            best_value = best_values[values[i]]
+            array = np.array(data)
+            irow = np.arange(data.shape[0])
+            if best_value == 'min':
+                ind = np.argmin(array, axis=1)
+                i2 = np.argmin(array[irow, ind])
+            if best_value == 'min_abs':
+                ind = np.argmin(np.abs(array), axis=1)
+                i2 = np.argmin(np.abs(array[irow, ind]))
+            elif best_value == 'max':
+                ind = np.argmax(array, axis=1)
+                i2 = np.argmax(array[irow, ind])
+            axe.plot(ind + 0.5, np.arange(data.shape[0])+0.5, ls='',
+                     marker='o', mfc='w', mec='k', mew=0.5, ms=5)
+            axe.plot(ind[i2] + 0.5, i2+0.5, ls='',
+                     marker='o', mfc='w', mec='k', mew=0.8, ms=9)
+        
+    axes = np.array(axes).reshape((nrows, ncols))
+    for i in range(nrows):
+        for j in range(1, ncols):
+            axes[i, j].set_ylabel('')
+            # axes[i, j].set_yticklabels([])
+    
+    for i in range(nrows-1):
+        for j in range(ncols):
+            axes[i, j].set_xlabel('')
+            # axes[i, j].set_xticklabels([])
+            
+    if notations is not None:
+        for i in range(nrows):
+            axes[i, 0].set_ylabel(notations[index])
+        for j in range(ncols):
+            axes[-1, j].set_xlabel(notations[columns])
+        
+    fig.tight_layout()
+        
+    return fig
+    
+    

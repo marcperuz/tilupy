@@ -34,6 +34,7 @@ def CSI(simu, observation=None, h_threshs=[1], state='h_final'):
         
 def diff_runout(simu, point=None, h_threshs=[1],
                 section=None, orientation='W-E',
+                state='h_max',
                 get_contour_kws=None):
     
     res = []
@@ -42,7 +43,11 @@ def diff_runout(simu, point=None, h_threshs=[1],
     if get_contour_kws is None:
         get_contour_kws = dict()
         
-    d=simu.h_max
+    if state == 'h_max':
+        d=simu.h_max
+    else:
+        strs = state.split('_')
+        d = simu.get_static_output(strs[0], strs[1]).d
     xc, yc = utils.get_contour(simu.x,simu.y,d,h_threshs, **get_contour_kws)
     
     for h in h_threshs:
@@ -51,8 +56,10 @@ def diff_runout(simu, point=None, h_threshs=[1],
         
     return h_threshs, res
     
-def eval_simus(simus, methods, methods_kws, code='shaltop',
-               recorded_params=['delta1'], calib_parameter='h_thresh'):
+def eval_simus(simus, methods, calib_parameters, methods_kws,
+               code='shaltop',
+               recorded_params=['delta1'],
+               calib_parameter_name='h_threshs'):
     """
     Evaluate simulation results with different methods
 
@@ -72,7 +79,7 @@ def eval_simus(simus, methods, methods_kws, code='shaltop',
         methods = [methods]
     if not isinstance(methods_kws, list):
         methods_args = [methods]
-            
+
     if isinstance(simus, dict):
         simus=pd.DataFrame(simus)
     if isinstance(simus, pd.DataFrame):
@@ -90,25 +97,28 @@ def eval_simus(simus, methods, methods_kws, code='shaltop',
     for method in methods:
         fn[method] = globals()[method]
         simus2[method] = np.nan
-    simus2[calib_parameter] = np.nan
+    simus2[calib_parameter_name] = np.nan
+    
+    ns = len(simus_list)
+    nc = len(calib_parameters)
+    nn = ns*nc
         
-    res = pd.DataFrame(columns=simus2.columns)    
+    res = pd.DataFrame(columns=simus2.columns, index=np.arange(nn))    
         
     for i, simu in enumerate(simus_list):
+        # Initiate fields
+        istart = i*nc
+        iend = (i+1)*nc
+        res.iloc[istart:iend, :] = simus2.loc[i, :].copy()
         for j, method in enumerate(methods):
             kws = methods_kws[j]
-            calib_param, calib_res = fn[method](simu, **kws)
-            for k in range(len(calib_res)):
-                n = res.shape[0]
-                res.loc[n] = np.nan
-                # Initiate fiels
-                res.loc[n, :] = simus2.loc[i, :].copy()
-                # Specify simulation parameters
-                for param in recorded_params:
-                    res.loc[n, param] = simu.params[param]
-                res.loc[n, calib_parameter] = calib_param[k]
-                res.loc[n, method] = calib_res[k]
-                
+            kws[calib_parameter_name] = calib_parameters
+            _, calib_res = fn[method](simu, **kws)
+            for param in recorded_params:
+                res.loc[:, param].iloc[istart:iend] = simu.params[param]
+            res.loc[:, calib_parameter_name].iloc[istart:iend] = calib_parameters
+            res.loc[:, method].iloc[istart:iend] = calib_res
+            
     return res
 
 

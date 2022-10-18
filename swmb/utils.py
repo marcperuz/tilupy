@@ -37,7 +37,10 @@ def diff_runout(x_contour, y_contour, point_ref, section=None,
         
     assert(isinstance(section, geom.LineString))
     section = revert_line(section, orientation)
-    intersections = np.array(section.intersection(contour).geoms)
+    intersections = section.intersection(contour)
+    if isinstance(intersections, geom.MultiPoint):
+        intersections = geom.LineString(section.intersection(contour))
+    intersections = np.array(intersections.coords)
     if orientation == 'W-E':
         i = np.argmax(intersections[:,0])
     if orientation == 'E-W':
@@ -48,7 +51,19 @@ def diff_runout(x_contour, y_contour, point_ref, section=None,
         i = np.argmin(intersections[:,1])
     intersection = geom.Point(intersections[i,:])
     
-    return section.project(point) - section.project(intersection)
+    #######
+    # plt.figure()
+    # cont = np.array(contour.coords)
+    # sec = np.array(section.coords)
+    # inter = np.array(intersection.coords)
+    # pt = np.array(point.coords)
+    # plt.plot(cont[:,0], cont[:,1],
+    #           sec[:,0], sec[:,1],
+    #           pt[:,0], pt[:,1], 'o',
+    #           inter[:,0], inter[:,1],'x')
+    #######
+    
+    return section.project(intersection) - section.project(point)
     
 def revert_line(line, orientation='W-E'):
     
@@ -88,10 +103,11 @@ def get_contour(x,y,z,zlevels,indstep=1,maxdist=30, closed_contour=True):
     else:
         x2, y2, z2 = x, y, z
     
-    plt.ioff()
+    backend = plt.get_backend()
+    plt.switch_backend('Agg')
     plt.figure()
     ax=plt.gca()    
-    cs=ax.contour(x2,y2,z2,zlevels)
+    cs=ax.contour(x2, y2, np.flip(z2, 0), zlevels)
     nn1=1
     v1=np.zeros((1,2))
     xcontour={}
@@ -101,8 +117,8 @@ def get_contour(x,y,z,zlevels,indstep=1,maxdist=30, closed_contour=True):
             if (p.vertices.shape[0]>nn1):
                 v1=p.vertices
                 nn1=p.vertices.shape[0]
-        xc = [v1[::indstep,1]]
-        yc = [v1[::indstep,0]]
+        xc = [v1[::indstep,0]]
+        yc = [v1[::indstep,1]]
         if maxdist is not None and not closed_contour:
             ddx=np.abs(v1[0,0]-v1[-1,0])
             ddy=np.abs(v1[0,1]-v1[-1,1])
@@ -112,4 +128,5 @@ def get_contour(x,y,z,zlevels,indstep=1,maxdist=30, closed_contour=True):
                 yc[0]=None
         xcontour[zlevels[indlevel]]=xc[0]
         ycontour[zlevels[indlevel]]=yc[0]
+    plt.switch_backend(backend)
     return xcontour,ycontour
