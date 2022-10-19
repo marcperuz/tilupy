@@ -5,12 +5,22 @@ Created on Thu Jun  3 12:20:34 2021
 
 @author: peruzzetto
 """
+import swmb
+LANGUAGE = 'english'
 
-LABELS = dict(h='Thickness (m)',
-              hmax='Maximum thickness (m)',
-              hfinal='Final thickness (m)',
-              u='Velocity (m s$^{-1}$)')
-
+def get_labels():
+    # LANGUAGE = language
+    if swmb.config['language'] == 'english':
+        labels = dict(h='Thickness (m)',
+                      h_max='Maximum thickness (m)',
+                      h_final='Final thickness (m)',
+                      u='Velocity (m s$^{-1}$)')
+    elif swmb.config['language'] == 'french':
+        labels = dict(h='Epaisseur (m)',
+                      h_max='Epaisseur maximale (m)',
+                      h_final='Epaisseur finale (m)',
+                      u='Vitesse (m s$^{-1}$)')
+    return labels 
 
 def readme_to_params(file, readme_param_match=None):
     """

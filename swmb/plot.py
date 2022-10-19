@@ -169,7 +169,8 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
     if step_contour_bold > 0:
         lmin = np.ceil(np.nanmin(z)/step_contour_bold)*step_contour_bold
         levels = np.arange(lmin, np.nanmax(z), step_contour_bold)
-        cs = axe.contour(z, extent=im_extent,
+        cs = axe.contour(x, y, np.flip(z, axis=0),
+                         extent=im_extent,
                          levels=levels,
                          **contours_bold_prop)
         if label_contour:
@@ -352,7 +353,7 @@ def plot_maps(x, y, z, data, t, file_name, folder_out=None,
         
 
 def colorbar(mappable, ax=None,
-             cax=None, size="5%", pad=0.05, position='right',
+             cax=None, size="5%", pad=0.1, position='right',
              **kwargs):
     """
     Create nice colorbar matching height/width of axe.

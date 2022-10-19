@@ -221,6 +221,14 @@ class Results:
         elif name in STATIC_DATA_2D:
             state, stat = name.split('_')
             data = self.get_static_output(state, stat, from_file=from_file)
+            
+        if name in TEMPORAL_DATA_2D + STATIC_DATA_2D:
+            if 'colorbar_kwargs' not in kwargs:
+                kwargs['colorbar_kwargs'] = dict()
+            if 'label' not in kwargs['colorbar_kwargs']:
+                labels = notations.get_labels()
+                kwargs['colorbar_kwargs']['label'] = labels[name]
+                
         
         if 'x' not in kwargs:
             kwargs['x'] = self.x
