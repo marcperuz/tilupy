@@ -13,8 +13,8 @@ import swmb.read
 # Dictionnary with results names lookup table, to match code output names
 LOOKUP_NAMES = dict(h='rho',
                     u='unorm', ux='u', uy='ut',
-                    hu='momentum', hu2='ek',
-                    vol='vol', ekint='ekint')
+                    hu='momentum', hu2int='ek',
+                    vol='vol')
 
 # Classify results
 STATES_OUTPUT = ['h', 'ux', 'uy']
@@ -23,6 +23,8 @@ FORCES_OUTPUT = []
 for axis in ['x', 'y']:
     for f in forces:
         FORCES_OUTPUT.append(f + axis)
+        
+INTEGRATED_OUTPUT = ['ek', 'ep', 'etot']
 
 
 def read_params(file):
@@ -205,6 +207,13 @@ class Results(swmb.read.Results):
                                 LOOKUP_NAMES[name] + '.bin')
             d = read_file_bin(file, self.nx, self.ny)
             t = self.tim
+            
+        # Raed integrated kinetic energy
+        if name in ['hu2int']:
+            array = np.loadtxt(os.path.join(self.folder_output,
+                                            LOOKUP_NAMES[name] + '.d'))
+            d = array[:, 1]
+            t = array[:, 0]
 
         # Compute the velocity
         if name == 'u':

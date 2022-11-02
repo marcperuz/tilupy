@@ -6,21 +6,34 @@ Created on Thu Jun  3 12:20:34 2021
 @author: peruzzetto
 """
 import swmb
-LANGUAGE = 'english'
+LABELS = dict(h='Thickness (m)',
+              h_max='Maximum thickness (m)',
+              u_max='Maximum velocity (m)',
+              h_final='Final thickness (m)',
+              u='Velocity (m s$^{-1}$)')
 
-def get_labels():
+
+def get_labels(language=None):
     # LANGUAGE = language
-    if swmb.config['language'] == 'english':
+    if language is None:
+        language = swmb.config['language']
+    if language == 'english':
         labels = dict(h='Thickness (m)',
                       h_max='Maximum thickness (m)',
+                      u_max='Maximum velocity (m)',
                       h_final='Final thickness (m)',
                       u='Velocity (m s$^{-1}$)')
-    elif swmb.config['language'] == 'french':
+    elif language == 'french':
         labels = dict(h='Epaisseur (m)',
                       h_max='Epaisseur maximale (m)',
+                      u_max='Vitesse maximale (m)',
                       h_final='Epaisseur finale (m)',
                       u='Vitesse (m s$^{-1}$)')
     return labels 
+
+def set_labels(language=None):
+    global LABELS
+    LABELS = get_labels(language=language)
 
 def readme_to_params(file, readme_param_match=None):
     """
@@ -54,7 +67,7 @@ def readme_to_params(file, readme_param_match=None):
     return params
 
 
-def make_rheol_string_fmt(rheoldict):
+def make_rheol_string_fmt(rheoldict, law='coulomb'):
     """Make string from rheological parameters."""
     text = ''
     for name in ['delta1', 'delta2', 'delta3', 'delta4']:
@@ -83,10 +96,16 @@ def make_rheol_string(rheoldict, law):
 
     for i in range(nparams):
         if law == 'coulomb':
+            txt_fmt = 'delta1_{:05.2f}'
             text = txt_fmt.format(rheoldict['delta1'][i]).replace('.', 'p')
         if law == 'voellmy':
+            txt_fmt = 'delta1_{:05.2f}_ksi_{:06.1f}'
             text = txt_fmt.format(rheoldict['delta1'][i],
                                   rheoldict['ksi'][i]).replace('.', 'p')
+        if law == 'pouliquen_2002':
+            txt_fmt = 'delta1_{:05.2f}_L_{:05.2f}'
+            text = txt_fmt.format(rheoldict['delta1'][i],
+                                  rheoldict['wlong'][i]).replace('.', 'p')
         texts.append(text)
 
     if nparams == 1:

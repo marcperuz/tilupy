@@ -12,8 +12,12 @@ class Config(dict):
             
 config = Config(**_default_config)
 
-def set_param(key, value):
-    config.update(**{key: value})
+def set_config(**kwargs):
+    config.update(**kwargs)
+    
+    if 'language' in kwargs:
+        import swmb.notations
+        swmb.notations.set_labels()
     
 import swmb.notations
     

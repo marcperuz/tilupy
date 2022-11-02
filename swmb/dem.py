@@ -82,7 +82,24 @@ def write_ascii(x, y, z, file_out):
     nx = z.shape[1]
     ny = z.shape[0]
     cellsize = x[1] - x[0]
-    header_txt = 'ncols {:.0f}\nnrows {:.0f}\nxllcorner 0\nyllcorner 0\n'
+    header_txt = 'ncols {:.0f}\nnrows {:.0f}\nxllcorner {:.5f}\nyllcorner {:.5f}\n'
     header_txt += 'cellsize {:.4f}\nnodata_value -99999'
-    header_txt = header_txt.format(nx, ny, cellsize)
+    header_txt = header_txt.format(nx, ny, x[0], y[0], cellsize)
     np.savetxt(file_out, z, header=header_txt, comments='')
+    
+def write_raster(x, y, z, file_out, file_fmt=None):
+    
+    # File format read from file_out overrides file_fmt
+    fmt = file_out.split('.')
+    if len(fmt)>1:
+        file_fmt = fmt[-1]
+    else:
+        file_out = file_out + '.' + file_fmt
+    
+    if file_fmt not in ['ascii', 'txt', 'tif', 'tiff']:
+        raise ValueError('File format not implemented in write_raster')
+        
+    if file_fmt in ['ascii', 'txt']:
+        write_ascii(x, y, z, file_out)
+    else:
+        raise NotImplementedError()

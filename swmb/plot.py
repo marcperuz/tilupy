@@ -404,8 +404,10 @@ def colorbar(mappable, ax=None,
     return cc
 
 
-def plot_heatmaps(df, values, index, columns, figsize=None, ncols=3,
-                  heatmap_kws=None, notations=None, best_values=None):
+
+def plot_heatmaps(df, values, index, columns, aggfunc='mean', figsize=None, ncols=3,
+                  heatmap_kws=None, notations=None, best_values=None,
+                  plot_best_value = 'point', text_kwargs=None):
     
     nplots = len(values)
     ncols = min(nplots, ncols)
@@ -417,8 +419,8 @@ def plot_heatmaps(df, values, index, columns, figsize=None, ncols=3,
     for i in range(nplots):
         axe = fig.add_subplot(nrows, ncols, i+1)
         axes.append(axe)
-        data = df.pivot(index=index, columns=columns,
-                        values=values[i]).astype(float)
+        data = df.pivot_table(index=index, columns=columns,
+                              values=values[i], aggfunc=aggfunc).astype(float)
         if heatmap_kws is None:
             kws = dict()
         elif isinstance(heatmap_kws, dict):
@@ -439,12 +441,13 @@ def plot_heatmaps(df, values, index, columns, figsize=None, ncols=3,
         if 'cbar_kws' not in kws:
             kws['cbar_kws'] = dict(pad=0.03)
         
-        if notations is not None:
-            if 'label' not in kws['cbar_kws']:
-                if values[i] in notations:
-                    kws['cbar_kws']['label'] = notations[values[i]]
-                else:
-                    kws['cbar_kws']['label'] = values[i]
+        if notations is None:
+            kws['cbar_kws']['label'] = values[i]
+        else:
+            if values[i] in notations:
+                kws['cbar_kws']['label'] = notations[values[i]]
+            else:
+                kws['cbar_kws']['label'] = values[i]
             
         sns.heatmap(data, ax = axe, **kws)
         
@@ -452,19 +455,42 @@ def plot_heatmaps(df, values, index, columns, figsize=None, ncols=3,
             best_value = best_values[values[i]]
             array = np.array(data)
             irow = np.arange(data.shape[0])
+            
             if best_value == 'min':
-                ind = np.argmin(array, axis=1)
-                i2 = np.argmin(array[irow, ind])
+                ind = np.nanargmin(array, axis=1)
+                i2 = np.nanargmin(array[irow, ind])
             if best_value == 'min_abs':
-                ind = np.argmin(np.abs(array), axis=1)
-                i2 = np.argmin(np.abs(array[irow, ind]))
+                ind = np.nanargmin(np.abs(array), axis=1)
+                i2 = np.nanargmin(np.abs(array[irow, ind]))
             elif best_value == 'max':
-                ind = np.argmax(array, axis=1)
-                i2 = np.argmax(array[irow, ind])
-            axe.plot(ind + 0.5, np.arange(data.shape[0])+0.5, ls='',
-                     marker='o', mfc='w', mec='k', mew=0.5, ms=5)
-            axe.plot(ind[i2] + 0.5, i2+0.5, ls='',
-                     marker='o', mfc='w', mec='k', mew=0.8, ms=9)
+                ind = np.nanargmax(array, axis=1)
+                i2 = np.nanargmax(array[irow, ind])
+                
+            if plot_best_value == 'point':
+                axe.plot(ind + 0.5, irow+0.5, ls='',
+                         marker='o', mfc='w', mec='k', mew=0.5, ms=5)
+                axe.plot(ind[i2] + 0.5, i2+0.5, ls='',
+                         marker='o', mfc='w', mec='k', mew=0.8, ms=9)
+            elif plot_best_value == 'text':
+                indx = list(ind)
+                indx.pop(i2)
+                indy = list(irow)
+                indy.pop(i2)
+                default_kwargs = dict(ha='center', va='center',
+                                      fontsize=8)
+                if text_kwargs is None:
+                    text_kwargs = default_kwargs
+                else:
+                    text_kwargs = dict(default_kwargs, **text_kwargs)                       
+                for i, j in zip(indx, indy):
+                    axe.text(i + 0.5, j+0.5,
+                             '{:.2g}'.format(array[j, i]),
+                             **text_kwargs)
+                text_kwargs2 = dict(text_kwargs, fontweight = 'bold')
+                axe.text(ind[i2] + 0.5, i2+0.5,
+                          '{:.2g}'.format(array[i2, ind[i2]]),
+                          **text_kwargs2)
+                
         
     axes = np.array(axes).reshape((nrows, ncols))
     for i in range(nrows):
