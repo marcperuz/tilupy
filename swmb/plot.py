@@ -192,7 +192,7 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
 def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
                       cmap=None, minval=None, maxval=None, minval_abs=None,
                       cmap_intervals=None, extend_cc='max',
-                      topo_kwargs=None, sup_plot=None,
+                      topo_kwargs=None, sup_plot=None, alpha=1,
                       plot_colorbar=True, axecc=None, colorbar_kwargs=None,
                       mask=None, alpha_mask=None, color_mask='k',
                       xlims=None, ylims=None):
@@ -212,11 +212,11 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
     if minval is None:
         minval = np.nanmin(f)
 
-    f[f <= minval] = minval-1
+    f[f < minval] = np.nan
     if minval_abs:
-        f[np.abs(f) <= minval_abs] = minval-1
+        f[np.abs(f) <= minval_abs] = np.nan
     else:
-        f[f == 0] = minval-1
+        f[f == 0] = np.nan
 
     # Define colormap type
     if cmap is None:
@@ -230,26 +230,13 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
         color_map = centered_map(cmap, minval, maxval)
 
     if cmap_intervals is not None:
-        nbounds = len(cmap_intervals)
-        cgen = [color_map(1.*i/(nbounds-1)) for i in range(nbounds)]
-        if extend_cc == 'max':
-            color_map = mcolors.ListedColormap(cgen[:-1])
-            color_map.set_over(cgen[-1])
-        elif extend_cc == 'min':
-            color_map = mcolors.ListedColormap(cgen[1:])
-            color_map.set_under(cgen[0])
-        elif extend_cc == 'both':
-            color_map = mcolors.ListedColormap(cgen[1:-1])
-            color_map.set_under(cgen[0])
-            color_map.set_over(cgen[-1])
-        elif extend_cc == 'neither':
-            color_map = mcolors.ListedColormap(cgen)
-        norm = mcolors.BoundaryNorm(cmap_intervals, color_map.N)
+        norm = matplotlib.colors.BoundaryNorm(cmap_intervals, 256,
+                                              extend=extend_cc)
         maxval = None
         minval = None
     else:
         norm = None
-    color_map.set_under([1, 1, 1], alpha=0)
+    # color_map.set_under([1, 1, 1], alpha=0)
 
     # Initialize figure properties
     dx = x[1]-x[0]
@@ -279,7 +266,7 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
 
     # Plot data
     fim = axe.imshow(f, extent=im_extent, cmap=color_map,
-                     vmin=minval, vmax=maxval,
+                     vmin=minval, vmax=maxval, alpha=alpha,
                      interpolation='none', norm=norm, zorder=4)
 
     # Plot colorbar
