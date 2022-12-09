@@ -11,13 +11,13 @@ import numpy as np
 import swmb.read
 
 # Dictionnary with results names lookup table, to match code output names
-LOOKUP_NAMES = dict(h='rho',
+LOOKUP_NAMES = dict(h='rho', hvert='rho',
                     u='unorm', ux='u', uy='ut',
                     hu='momentum', hu2int='ek',
                     vol='vol')
 
 # Classify results
-STATES_OUTPUT = ['h', 'ux', 'uy']
+STATES_OUTPUT = ['h', 'ux', 'uy', 'hvert']
 forces = ['facc', 'fcurv', 'ffric', 'fgrav', 'fpression']
 FORCES_OUTPUT = []
 for axis in ['x', 'y']:
@@ -206,6 +206,8 @@ class Results(swmb.read.Results):
             file = os.path.join(self.folder_output,
                                 LOOKUP_NAMES[name] + '.bin')
             d = read_file_bin(file, self.nx, self.ny)
+            if name == 'hvert':
+                d = d/self.costh[:, :, np.newaxis]
             t = self.tim
             
         # Raed integrated kinetic energy
@@ -252,6 +254,8 @@ class Results(swmb.read.Results):
         """
         if stat in ['final', 'initial']:
             hh = self.get_temporal_output(name)
+            if name == 'hvert':
+                hh.d = hh.d/self.costh[:, :, np.newaxis]
             return hh.get_temporal_stat(stat)
         if from_file:
             file = os.path.join(self.folder_output,
@@ -264,6 +268,8 @@ class Results(swmb.read.Results):
                 from_file = False
         if not from_file:
             data = self.get_temporal_output(name)
+            if name == 'hvert':
+                hh.d = hh.d/self.costh
             d = data.get_temporal_stat(stat).d
 
         return swmb.read.StaticResults(name+'_'+stat, d)

@@ -60,6 +60,44 @@ def read_ascii(file):
 
     return x, y, dem, dx
 
+def write_tiff(x, y, z, file_out, **kwargs):
+    """
+    Write raster as tif file
+
+    Parameters
+    ----------
+    x : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    z : TYPE
+        DESCRIPTION.
+    file_out : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    import rasterio
+    from rasterio.transform import Affine
+    if 'driver' not in kwargs:
+        kwargs['driver'] = 'GTiff'
+    res = (x[-1]-x[0])/(len(x)-1)
+    transform = Affine.translation(x[0] - res / 2, y[-1] - res / 2)\
+        * Affine.scale(res, -res)
+    with rasterio.open(
+            file_out,
+            'w',
+            height=z.shape[0],
+            width=z.shape[1],
+            count=1,
+            dtype=z.dtype,
+            transform=transform,
+            **kwargs) as dst:
+        dst.write(z, 1)
+    
 
 def write_ascii(x, y, z, file_out):
     """
@@ -87,7 +125,7 @@ def write_ascii(x, y, z, file_out):
     header_txt = header_txt.format(nx, ny, x[0], y[0], cellsize)
     np.savetxt(file_out, z, header=header_txt, comments='')
     
-def write_raster(x, y, z, file_out, file_fmt=None):
+def write_raster(x, y, z, file_out, file_fmt=None, **kwargs):
     
     # File format read from file_out overrides file_fmt
     fmt = file_out.split('.')
@@ -101,5 +139,7 @@ def write_raster(x, y, z, file_out, file_fmt=None):
         
     if file_fmt in ['ascii', 'txt']:
         write_ascii(x, y, z, file_out)
+    elif file_fmt in ['tif', 'tiff']:
+        write_tiff(x, y, z, file_out, **kwargs)
     else:
         raise NotImplementedError()

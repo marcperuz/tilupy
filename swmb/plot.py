@@ -205,14 +205,31 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
 
     """
     f = copy.copy(data)
-
+       
+    # Remove values below and above minval and maxval, depending on whether
+    # cmap_intervals are given with or without extend_cc
+    if cmap_intervals is not None:
+        norm = matplotlib.colors.BoundaryNorm(cmap_intervals, 256,
+                                              extend=extend_cc)
+        if extend_cc in ['neither', 'max']:
+            minval = cmap_intervals[0]
+            f[f < minval] = np.nan
+        elif extend_cc in ['neither', 'min']:
+            maxval = cmap_intervals[-1]
+            f[f > maxval] = np.nan
+    else:
+        norm = None
+        if maxval is not None:
+            f[f > maxval] = np.nan
+        if minval is not None:
+            f[f < minval] = np.nan
+    
     # Get min and max values
     if maxval is None:
         maxval = np.nanmax(f)
     if minval is None:
         minval = np.nanmin(f)
 
-    f[f < minval] = np.nan
     if minval_abs:
         f[np.abs(f) <= minval_abs] = np.nan
     else:
@@ -335,6 +352,7 @@ def plot_maps(x, y, z, data, t, file_name, folder_out=None,
             if sup_plt_fn_args is None:
                 sup_plt_fn_args = dict()
             sup_plt_fn(axe, **sup_plt_fn_args)
+        axe.figure.tight_layout(pad=0.1)
         if folder_out is not None:
             axe.figure.savefig(file_path.format(i), dpi=dpi)
         

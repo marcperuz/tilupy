@@ -16,11 +16,11 @@ import swmb.notations as notations
 import swmb.plot as plt_fn
 import swmb.dem
 
-RAW_STATES = ['h', 'ux', 'uy']
+RAW_STATES = ['hvert', 'h', 'ux', 'uy']
 
 TEMPORAL_DATA_0D = ['hu2int', 'vol']
 TEMPORAL_DATA_1D = ['']
-TEMPORAL_DATA_2D = ['h', 'u', 'ux', 'uy', 'hu', 'hu2']
+TEMPORAL_DATA_2D = ['hvert', 'h', 'u', 'ux', 'uy', 'hu', 'hu2']
 STATIC_DATA_0D = []
 STATIC_DATA_1D = []
 STATIC_DATA_2D = []
@@ -94,6 +94,7 @@ class TemporalResults:
                              sup_plt_fn=sup_plt_fn,
                              sup_plt_fn_args=sup_plt_fn_args,
                              **kwargs)
+            axe, fig = None, None
             
         if self.d.ndim != 3 and sup_plt_fn is not None:
             if sup_plt_fn_args is None:
@@ -103,7 +104,7 @@ class TemporalResults:
         return axe, fig
     
     def save(self, folder=None, file_name=None, file_fmt='txt', time=None,
-             x=None, y=None):
+             x=None, y=None, **kwargs):
         
         if self.d.ndim == 1:
             raise NotImplementedError()
@@ -137,7 +138,7 @@ class TemporalResults:
             for i in range(inds):
                 file_out = file_name + '_{:04d}.'.format(i) + file_fmt
                 swmb.dem.write_raster(x, y, self.d[:, :, i], file_out,
-                                      file_fmt=file_fmt)
+                                      file_fmt=file_fmt, **kwargs)
                 
 
 
@@ -185,12 +186,14 @@ class StaticResults:
         
         if folder_out is not None:
             file_out = os.path.join(folder_out, self.name + '.' + fmt)
-            axe.figure.savefig(file_out, dpi=dpi)
+            axe.figure.tight_layout(pad=0.1)
+            axe.figure.savefig(file_out, dpi=dpi, bbox_inches='tight',
+                               pad_inches=0.05)
         
         return axe, fig
     
     def save(self, folder=None, file_name=None, file_fmt='txt', time=None,
-             x=None, y=None):
+             x=None, y=None, **kwargs):
         
         if x is None:
             x = self.x
@@ -207,7 +210,7 @@ class StaticResults:
             file_name = os.path.join(folder, file_name)
             
         swmb.dem.write_raster(x, y, self.d, file_name,
-                              file_fmt=file_fmt)
+                              file_fmt=file_fmt, **kwargs)
             
         
 
