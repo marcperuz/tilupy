@@ -272,15 +272,15 @@ class Results:
             self._costh = self.get_costh()
         return self._costh
 
-    def get_temporal_output(self, name):
-        return TemporalResults(name, None, None)
+    def get_temporal_output(self, name, h_thresh=None):
+        return TemporalResults(name, None, None, h_thresh=h_thresh)
 
     def get_static_output(self, name, stat):
         return StaticResults(name+'_'+stat, None)
     
-    def get_output(self, name, from_file=True):
+    def get_output(self, name, from_file=True, h_thresh=None):
         if name in TEMPORAL_DATA_2D:
-            data = self.get_temporal_output(name)
+            data = self.get_temporal_output(name, h_thresh=h_thresh)
         elif name in STATIC_DATA_2D:
             state, stat = name.split('_')
             data = self.get_static_output(state, stat, from_file=from_file)
@@ -303,7 +303,7 @@ class Results:
             backend = plt.get_backend()
             plt.switch_backend('Agg')
         
-        data = self.get_output(name, from_file=from_file)
+        data = self.get_output(name, from_file=from_file, h_thresh=h_thresh)
             
         if name in TEMPORAL_DATA_2D + STATIC_DATA_2D:
             if 'colorbar_kwargs' not in kwargs:
@@ -345,9 +345,6 @@ class Results:
             
         data.save(folder=folder, file_name=file_name, file_fmt=file_fmt,
                   **kwargs)
-            
-            
-    
     
 def get_results(code, **kwargs):
     """
@@ -368,3 +365,9 @@ def get_results(code, **kwargs):
     """
     module = importlib.import_module('swmb.models.'+code+'.read')
     return module.Results(**kwargs)
+
+def use_thickness_threshold(simu, array, h_thresh):
+    
+    thickness = simu.get_temporal_output('h')
+    array[thickness.d<h_thresh] = 0
+    return array

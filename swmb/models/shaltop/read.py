@@ -232,6 +232,10 @@ class Results(swmb.read.Results):
             elif name == 'hu2':
                 d = h*u**2
             t = self.tim
+            
+        if 'h_thresh' in varargs and d.ndim==3:
+            d = swmb.read.use_thickness_threshold(self, d,
+                                                  varargs['h_thresh'])
 
         return swmb.read.TemporalResults(name, d, t)
 
