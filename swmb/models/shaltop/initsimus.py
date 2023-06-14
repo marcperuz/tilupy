@@ -58,7 +58,7 @@ def read_ascii(file):
     return x, y, dem, dx
 
 
-def write_params_file(params, sup_data={}, directory=None,
+def write_params_file(params, directory=None,
                       file_name='params.txt'):
     """
     Write params file for shaltop simulations

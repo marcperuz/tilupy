@@ -17,7 +17,6 @@ import seaborn as sns
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-
 def centered_map(cmap, vmin, vmax, ncolors=256):
     """
     Create centered colormap
@@ -219,8 +218,8 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
             f[f > maxval] = np.nan
     else:
         norm = None
-        if maxval is not None:
-            f[f > maxval] = np.nan
+        # if maxval is not None:
+        #     f[f > maxval] = np.nan
         if minval is not None:
             f[f < minval] = np.nan
     

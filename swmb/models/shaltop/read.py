@@ -174,13 +174,13 @@ class Results(swmb.read.Results):
 
     def set_zinit(self, zinit=None):
         """Set zinit, initial topography."""
-        if 'file_z_init' in self.params:
+        path_zinit = os.path.join(self.folder_base, self.folder_output,
+                                  'z.bin')
+        if not os.path.isfile(path_zinit) and 'file_z_init' in self.params:
             path_zinit = os.path.join(self.folder_base,
                                       self.params['file_z_init'])
-            self._zinit = read_file_init(path_zinit, self.nx, self.ny)
+            self._zinit = read_file_init(path_zinit, self.nx, self.ny)  
         else:
-            path_zinit = os.path.join(self.folder_base, self.folder_output,
-                                      'z.bin')
             self._zinit = np.squeeze(read_file_bin(path_zinit, self.nx, self.ny))
 
     def get_temporal_output(self, name, d=None, t=None, **varargs):
