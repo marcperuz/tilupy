@@ -10,6 +10,7 @@ LABELS = dict(h='Thickness (m)',
               h_max='Maximum thickness (m)',
               u_max='Maximum velocity (m)',
               h_final='Final thickness (m)',
+              h_initial='Initial thickness (m)',
               u='Velocity (m s$^{-1}$)')
 
 
@@ -22,12 +23,14 @@ def get_labels(language=None):
                       h_max='Maximum thickness (m)',
                       u_max='Maximum velocity (m s$^{-1}$)',
                       h_final='Final thickness (m)',
+                      h_initial='Initial thickness (m)',
                       u='Velocity (m s$^{-1}$)')
     elif language == 'french':
         labels = dict(h='Epaisseur (m)',
                       h_max='Epaisseur maximale (m)',
                       u_max='Vitesse maximale (m s$^{-1}$)',
                       h_final='Epaisseur finale (m)',
+                      h_initial='Epaisseur initiale (m)',
                       u='Vitesse (m s$^{-1}$)')
     return labels 
 

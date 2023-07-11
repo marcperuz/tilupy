@@ -134,7 +134,7 @@ def write_raster(x, y, z, file_out, file_fmt=None, **kwargs):
     else:
         file_out = file_out + '.' + file_fmt
     
-    if file_fmt not in ['ascii', 'txt', 'tif', 'tiff']:
+    if file_fmt not in ['asc', 'ascii', 'txt', 'tif', 'tiff']:
         raise ValueError('File format not implemented in write_raster')
         
     if file_fmt.startswith('tif'):
@@ -144,7 +144,7 @@ def write_raster(x, y, z, file_out, file_fmt=None, **kwargs):
             print('rasterio is required to write tif files. Switching to asc format')
             file_fmt = 'asc'
         
-    if file_fmt in ['ascii', 'txt']:
+    if file_fmt in ['asc', 'ascii', 'txt']:
         write_ascii(x, y, z, file_out)
     elif file_fmt in ['tif', 'tiff']:
         write_tiff(x, y, z, file_out, **kwargs)

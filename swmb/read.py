@@ -25,12 +25,18 @@ STATIC_DATA_0D = []
 STATIC_DATA_1D = []
 STATIC_DATA_2D = []
 
+TOPO_DATA_2D = ['z', 'zinit', 'costh']
+
 NP_OPERATORS = ['max', 'mean', 'std', 'sum', 'min']
 OTHER_OPERATORS = ['final', 'initial']
 
+COMPUTED_STATIC_DATA_2D = []
+
 for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
-        STATIC_DATA_2D.append(name + '_' + stat)
+        COMPUTED_STATIC_DATA_2D.append(name + '_' + stat)
+        
+STATIC_DATA_2D += COMPUTED_STATIC_DATA_2D
 
 DATA_NAMES = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
 DATA_NAMES += STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
@@ -253,6 +259,11 @@ class Results:
         return self._zinit
     
     @property
+    def z(self):
+        """ Alias for zinit"""
+        return self.zinit
+    
+    @property
     def h(self):
         """ Get thickness """
         if self._h is None:
@@ -282,15 +293,15 @@ class Results:
     def get_temporal_output(self, name, h_thresh=None):
         return TemporalResults(name, None, None, h_thresh=h_thresh)
 
-    def get_static_output(self, name, stat):
-        return StaticResults(name+'_'+stat, None)
+    def get_static_output(self, name, **kwargs):
+        return StaticResults(name, None, **kwargs)
     
-    def get_output(self, name, from_file=True, h_thresh=None):
+    def get_output(self, name, **kwargs):
         if name in TEMPORAL_DATA_2D:
-            data = self.get_temporal_output(name, h_thresh=h_thresh)
+            data = self.get_temporal_output(name, **kwargs)
         elif name in STATIC_DATA_2D:
             state, stat = name.split('_')
-            data = self.get_static_output(state, stat, from_file=from_file)
+            data = self.get_static_output(name, **kwargs)
         return data
     
     def plot(self, name, save=True, folder_out=None, dpi=150, fmt='png',
@@ -338,21 +349,28 @@ class Results:
     def save(self, name, folder=None, file_name=None, file_fmt='txt',
              from_file=True, **kwargs):
         
-        assert(name in DATA_NAMES)
-        
-        data = self.get_output(name, from_file=from_file)
-        if data.d.ndim>1:
-            if 'x' not in kwargs:
-                kwargs['x'] = self.x
-            if 'y' not in kwargs:
-                kwargs['y'] = self.y
-        
         if folder is None:
             folder = os.path.join(self.folder_output, 'processed')
             os.makedirs(folder, exist_ok=True)
+        
+        if name in DATA_NAMES:
+            data = self.get_output(name, from_file=from_file)
+            if data.d.ndim>1:
+                if 'x' not in kwargs:
+                    kwargs['x'] = self.x
+                if 'y' not in kwargs:
+                    kwargs['y'] = self.y
+                
+            data.save(folder=folder, file_name=file_name, file_fmt=file_fmt,
+                      **kwargs)
             
-        data.save(folder=folder, file_name=file_name, file_fmt=file_fmt,
-                  **kwargs)
+        elif name in TOPO_DATA_2D:
+            if file_name is None:
+                file_name = name
+            file_out = os.path.join(folder, file_name)
+            swmb.dem.write_raster(self.x, self.y, getattr(self, name),
+                                  file_out, file_fmt=file_fmt, **kwargs)
+            
     
 def get_results(code, **kwargs):
     """

@@ -233,13 +233,13 @@ class Results(swmb.read.Results):
                 d = h*u**2
             t = self.tim
             
-        if 'h_thresh' in varargs and d.ndim==3:
+        if 'h_thresh' in varargs and varargs['h_thresh'] is not None and d.ndim==3:
             d = swmb.read.use_thickness_threshold(self, d,
                                                   varargs['h_thresh'])
 
         return swmb.read.TemporalResults(name, d, t)
 
-    def get_static_output(self, name, stat,
+    def get_static_output(self, name,
                           d=None, from_file=True, **varargs):
         """
         Read 2D time dependent simulation results.
@@ -256,27 +256,31 @@ class Results(swmb.read.Results):
             DESCRIPTION.
 
         """
-        if stat in ['final', 'initial']:
-            hh = self.get_temporal_output(name)
-            if name == 'hvert':
-                hh.d = hh.d/self.costh[:, :, np.newaxis]
-            return hh.get_temporal_stat(stat)
-        if from_file:
-            file = os.path.join(self.folder_output,
-                                LOOKUP_NAMES[name] + stat + '.bin')
-            if os.path.isfile(file):
-                d = np.squeeze(read_file_bin(file, self.nx, self.ny))
-            else:
-                print(file + ' was not found, ' + name + '_' + stat
-                      + ' computed from temporal output.')
-                from_file = False
-        if not from_file:
-            data = self.get_temporal_output(name)
-            if name == 'hvert':
-                hh.d = hh.d/self.costh
-            d = data.get_temporal_stat(stat).d
+        if name in swmb.read.COMPUTED_STATIC_DATA_2D:
+            state, stat = name.split('_')
+            if stat in ['final', 'initial']:
+                hh = self.get_temporal_output(state)
+                if state == 'hvert':
+                    hh.d = hh.d/self.costh[:, :, np.newaxis]
+                return hh.get_temporal_stat(stat)
+            if from_file:
+                file = os.path.join(self.folder_output,
+                                    LOOKUP_NAMES[state] + stat + '.bin')
+                if os.path.isfile(file):
+                    d = np.squeeze(read_file_bin(file, self.nx, self.ny))
+                else:
+                    print(file + ' was not found, ' + name + '_' + stat
+                          + ' computed from temporal output.')
+                    from_file = False
+            if not from_file:
+                data = self.get_temporal_output(state)
+                if state == 'hvert':
+                    hh.d = hh.d/self.costh
+                d = data.get_temporal_stat(stat).d
+        else:
+             raise(NotImplementedError())   
 
-        return swmb.read.StaticResults(name+'_'+stat, d)
+        return swmb.read.StaticResults(name, d)
 
     def get_u(self):
         """ Compute velocity norm from results """

@@ -60,7 +60,7 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
               axe=None,
               vert_exag=1, fraction=1, ndv=0, uniform_grey=None,
               contours_prop=None, contours_bold_prop=None,
-              figsize=(10, 10),
+              figsize=None,
               interpolation=None,
               sea_level=0, sea_color=None, alpha=1, azdeg=315, altdeg=45,
               zmin=None, zmax=None):
@@ -188,7 +188,7 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
                        vmin=0.5, origin='lower', interpolation='none')
 
 
-def plot_data_on_topo(x, y, z, data, axe=None, figsize=(10/2.54, 10/2.54),
+def plot_data_on_topo(x, y, z, data, axe=None, figsize=(15/2.54, 15/2.54),
                       cmap=None, minval=None, maxval=None, minval_abs=None,
                       cmap_intervals=None, extend_cc='max',
                       topo_kwargs=None, sup_plot=None, alpha=1,
@@ -353,7 +353,8 @@ def plot_maps(x, y, z, data, t, file_name, folder_out=None,
             sup_plt_fn(axe, **sup_plt_fn_args)
         axe.figure.tight_layout(pad=0.1)
         if folder_out is not None:
-            axe.figure.savefig(file_path.format(i), dpi=dpi)
+            axe.figure.savefig(file_path.format(i), dpi=dpi,
+                               bbox_inches='tight', pad_inches=0.05)
         
 
 def colorbar(mappable, ax=None,
