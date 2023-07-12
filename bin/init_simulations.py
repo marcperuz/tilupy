@@ -12,7 +12,8 @@ import importlib
 import swmb.initdata
 import swmb.models
 
-folder_benchmark = '../simus'
+tmp = os.path.abspath(__file__)
+folder_benchmark = os.path.join(tmp.split('bin')[0], 'data')
 
 # %% Make simus for simple plane
 

@@ -1,0 +1,30 @@
+# pyproject.toml
+
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swmb"
+version = "1.0.0"
+description = "Read the latest Real Python tutorials"
+readme = "README.md"
+authors = [{ name = "Marc Peruzzetto", email = "m.peruzzetto@brgm.fr" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: CeCILL-C",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["thin-layer", "shallow-water", "display", "benchmark"]
+dependencies = [
+    "numpy",
+    "matplotlib",
+]
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = ["rasterio"]
+
+[project.urls]
+Homepage = "https://github.com/marcperuz/swmb"

@@ -1,0 +1,7 @@
+# Ignore everything
+*
+
+# But not these files...
+!.gitignore
+!Frankslide_pile.asc
+!Frankslide_topography.asc

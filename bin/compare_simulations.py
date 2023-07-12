@@ -12,12 +12,8 @@ import os
 
 import swmb.compare
 
-if platform.system() == 'Linux':
-    folder_base = '/media/peruzzetto/SSD'
-elif platform.system() == 'Windows':
-    folder_base = 'E:/'
-
-folder_benchmark = os.path.join(folder_base, 'shaltop/benchmark')
+tmp = os.path.abspath(__file__)
+folder_benchmark = os.path.join(tmp.split('bin')[0], 'data')
 
 # %% Compare results for constant slope
 
