@@ -160,7 +160,7 @@ for delta in deltas:
 
 You must then run the simulations (see Shaltop documentation)
 
-### Process simulations
+### Process simulations in python script
 
 Once simulations are over, `tilupy`can be used to plot the results as images, where the flow state (thickness, velocity, ...)
 is shown with a colorscale on the underlying topography. Plots can be thouroughly customized (documentation not available yet).
@@ -210,3 +210,24 @@ maximum simulated thickness at each point of the grid. `h_final` is the simulate
 `tilupy` will load these characteristics directly from the simulation output when possible (e.g. Shaltop records a maximum thickness array),
 or compute then from the available data. For instance, if the simulation results contains a file whith the maximum thickness, `h_max` will be
 read from this file. Otherwise, `h_max` is computed from the simulation recorded temporal snapshots (which is supposedly less precise).
+
+### Process simulations in command line
+
+`tilupy` comes with command line scripts to allow for quick processing of results. They work similarly as the functions `tilupy.cmd.plot_results` and `tilupy.cmd.to_raster`, 
+although there are less options. 
+
+`tilupy_plot` will automatically plot and save results in a new folder `plot` located in the simulation output folder specified in the parameter file :
+
+```
+tilupy_plot [-h] [-n RES_NAME] [-p PARAM_FILES] [-f FOLDER] [--fmt FMT] [--vmin VMIN] [--vmax VMAX]
+                   [--minval_abs MINVAL_ABS]
+                   model
+```
+
+`RES_NAME` can be any of the strings listed in the previous section. For instance, to plot all thicknesses snaphsots from shaltop simulations in the current folder, type `tilupy_plot shaltop -n h`. If parameters files are located in `another/folder`, type, `tilupy shaltop -n h -f another/folder`. Similarly, to save  thicknesses snapshots as ascii rasters, use `tilupy_to_raster shaltop -n h --fmt asc`.
+
+```
+tilupy_to_raster [-h] [-n RES_NAME] [-p PARAM_FILES] [-f FOLDER] [--fmt {tif,tiff,txt,asc,ascii}] model
+```
+
+With both commands you can use the `-h` option do print help.
