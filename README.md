@@ -84,7 +84,7 @@ We give here a simple example to prepare simulations for SHALTOP, and process th
 
 Import the different required modules :
 
-```
+```python
 import os
 
 # Read an write rasters
@@ -97,13 +97,13 @@ import tilupy.models.shaltop.initsimus as shinit
 
 Define the folder where input data will be downloaded and simulations carried out :
 
-```
+```python
 FOLDER_BASE = '/path/to/myfolder'
 ```
 
 Import data from GitHub, and create subfolder for simulation results
 
-```
+```python
 folder_data = os.path.join(FOLDER_BASE, 'rasters')
 os.makedirs(folder_data, exist_ok=True)
 #raster_topo and raster_mass are the paths to the topography and initial mass rasters
@@ -116,7 +116,7 @@ os.makedirs(folder_simus, exist_ok=True)
 
 Convert downloaded rasters to Shaltop input file type, and store the properties of the resulting grid
 
-```
+```python
 shinit.raster_to_shaltop_txtfile(raster_topo,
                                  os.path.join(folder_simus, 'topography.d'))
 axes_props = shinit.raster_to_shaltop_txtfile(raster_mass,
@@ -124,7 +124,8 @@ axes_props = shinit.raster_to_shaltop_txtfile(raster_mass,
 ```
 
 Initiate simulations parameters. See the SHALTOP documentation for details.
-```
+
+```python
 params = dict(nx=axes_props['nx'], ny=axes_props['ny'],
               per=axes_props['nx']*axes_props['dx'],
               pery=axes_props['ny']*axes_props['dy'],
@@ -144,7 +145,7 @@ params = dict(nx=axes_props['nx'], ny=axes_props['ny'],
 
 Finally, prepare simulations for a set of given rheological parameters (here, three basal friction coefficients)
 
-```
+```python
 deltas = [15, 20, 25]
 for delta in deltas:
     params_txt = 'delta_{:05.2f}'.format(delta).replace('.', 'p')
@@ -168,7 +169,7 @@ For instance, the following code plots the flow thickness at each recorded time 
 100 m. The topography is represented as a shaded relief with thin contour lines every 10 m, and bold contour_lines every 100 m. Plots are saved
 in a folder created in `folder_out`, but not displayed in the terminal (if you work in a developping environnement such as `spyder`).
 
-```
+```python
 topo_kwargs = dict(contour_step=10, step_contour_bold=100)
 params_files = 'delta_*.txt'
 tilupy.cmd.plot_results('shaltop', 'h', params_files, folder_simus,
@@ -179,7 +180,7 @@ tilupy.cmd.plot_results('shaltop', 'h', params_files, folder_simus,
 
 The following code acts similarly, but plots the maximum thickness instead, and used a segmented colormap given by `cmap_intervals`.
 
-```
+```python
 tilupy.cmd.plot_results('shaltop', 'h_max', params_files, folder_simus,
                         save=True, display_plot=False, figsize=(15/2.54, 15/2.54),
                         cmap_intervals=[0.1, 5, 10, 25, 50, 100],
@@ -189,18 +190,19 @@ tilupy.cmd.plot_results('shaltop', 'h_max', params_files, folder_simus,
 It is also possible to save outputs back to rasters. The following code save all recorded thicknesses snapshots as tif files in a new folder
 created in `folder_out`.
 
-```
+```python
 tilupy.cmd.to_raster('shaltop', 'h_max', params_files,
                      folder_simus, fmt='tif')
 ```
 
 In the previous examples, the outputs that are plotted or saved can be chosen among
--`h` : Flow thickness in the direction perpendicular to the topography
--`hvert` : Flow thickness in the vertical direction
--`ux`and `uy` : Flow velocity in the X and Y direction (check whether it is in the cartesian reference frame or not)
--`u` : Norm of the flow velocity
--`hu` : Momentum (thickness * flow velocity)
--`hu2` : Kinetic energy (thickness * square flow velocity)
+
+- `h` : Flow thickness in the direction perpendicular to the topography
+- `hvert` : Flow thickness in the vertical direction
+- `ux`and `uy` : Flow velocity in the X and Y direction (check whether it is in the cartesian reference frame or not)
+- `u` : Norm of the flow velocity
+- `hu` : Momentum (thickness * flow velocity)
+- `hu2` : Kinetic energy (thickness * square flow velocity)
 
 It is also possible to extract 2D spatial static characteritics of the flow by using any of the previous states with `_[operation]`, where
 `[operation]` is chosen among, `max`, `mean`, `std`, `sum`, `min`, `final`, `initial`. For instance `h_max` is a 2D array with the
