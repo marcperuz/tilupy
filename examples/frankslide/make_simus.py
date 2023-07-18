@@ -7,9 +7,11 @@ Created on Tue Jul 11 18:37:05 2023
 
 import os
 
+# Read an write rasters
 import tilupy.raster
-import tilupy.cmd
+# Functions to download examples of elevation and initial mass rasters
 import tilupy.download_data
+#Submodule used to prepare Shaltop simulations
 import tilupy.models.shaltop.initsimus as shinit
 
 # !!! You may want to change folder_base !!!
@@ -56,7 +58,7 @@ params = dict(nx=axes_props['nx'], ny=axes_props['ny'],
 deltas = [15, 20, 25]
 for delta in deltas:
     params_txt = 'delta_{:05.2f}'.format(delta).replace('.', 'p')
-    params['folder_output'] = params_txt # Specify folder chere outputs are stored
+    params['folder_output'] = params_txt # Specify folder where outputs are stored
     params['delta1'] = delta # Specify the friction coefficient
     #Write parameter file
     shinit.write_params_file(params, directory=folder_simus,

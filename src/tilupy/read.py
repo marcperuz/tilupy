@@ -16,7 +16,7 @@ import tilupy.notations as notations
 import tilupy.plot as plt_fn
 import tilupy.raster
 
-RAW_STATES = ['hvert', 'h', 'ux', 'uy', 'u']
+RAW_STATES = ['hvert', 'h', 'ux', 'uy']
 
 TEMPORAL_DATA_0D = ['hu2int', 'vol']
 TEMPORAL_DATA_1D = ['']
