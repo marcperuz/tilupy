@@ -16,7 +16,7 @@ import tilupy.notations as notations
 import tilupy.plot as plt_fn
 import tilupy.raster
 
-RAW_STATES = ['hvert', 'h', 'ux', 'uy']
+RAW_STATES = ['hvert', 'h', 'ux', 'uy', 'u']
 
 TEMPORAL_DATA_0D = ['hu2int', 'vol']
 TEMPORAL_DATA_1D = ['']
@@ -75,7 +75,7 @@ class TemporalResults:
             dnew = np.sum(self.d*cellsize, axis=axis)
         self.d = dnew
         
-    def plot(self, axe=None, figsize=None, folder_out=None, file_fmt='png', dpi=150,
+    def plot(self, axe=None, figsize=None, folder_out=None, fmt='png', dpi=150,
              x=None, y=None, z=None, sup_plt_fn=None, sup_plt_fn_args=None,
              **kwargs):
         """ Plot results as time dependent"""
@@ -96,7 +96,7 @@ class TemporalResults:
                 raise TypeError('x, y or z data missing')
             plt_fn.plot_maps(x, y, z, self.d, self.t,
                              self.name, folder_out=folder_out, 
-                             figsize=figsize, fmt=file_fmt, dpi=dpi,
+                             figsize=figsize, fmt=fmt, dpi=dpi,
                              sup_plt_fn=sup_plt_fn,
                              sup_plt_fn_args=sup_plt_fn_args,
                              **kwargs)
@@ -109,7 +109,7 @@ class TemporalResults:
             
         return axe, fig
     
-    def save(self, folder=None, file_name=None, file_fmt='asc', time=None,
+    def save(self, folder=None, file_name=None, fmt='asc', time=None,
              x=None, y=None, **kwargs):
         
         if self.d.ndim == 1:
@@ -142,9 +142,9 @@ class TemporalResults:
                     inds = [np.argmin(time - np.abs(np.array(self.t)-time))]
             
             for i in range(inds):
-                file_out = file_name + '_{:04d}.'.format(i) + file_fmt
+                file_out = file_name + '_{:04d}.'.format(i) + fmt
                 tilupy.raster.write_raster(x, y, self.d[:, :, i], file_out,
-                                      file_fmt=file_fmt, **kwargs)
+                                      fmt=fmt, **kwargs)
                 
 
 
@@ -205,7 +205,7 @@ class StaticResults:
         
         return axe, fig
     
-    def save(self, folder=None, file_name=None, file_fmt='txt', time=None,
+    def save(self, folder=None, file_name=None, fmt='txt', time=None,
              x=None, y=None, **kwargs):
         
         if x is None:
@@ -217,13 +217,13 @@ class StaticResults:
             raise ValueError('x et y arrays must not be None')
             
         if file_name is None:
-            file_name = self.name + '.' + file_fmt
+            file_name = self.name + '.' + fmt
             
         if folder is not None:
             file_name = os.path.join(folder, file_name)
             
         tilupy.raster.write_raster(x, y, self.d, file_name,
-                              file_fmt=file_fmt, **kwargs)
+                              fmt=fmt, **kwargs)
             
         
 
@@ -346,7 +346,7 @@ class Results:
         
         return axe, fig
     
-    def save(self, name, folder=None, file_name=None, file_fmt='txt',
+    def save(self, name, folder=None, file_name=None, fmt='txt',
              from_file=True, **kwargs):
         
         if folder is None:
@@ -361,7 +361,7 @@ class Results:
                 if 'y' not in kwargs:
                     kwargs['y'] = self.y
                 
-            data.save(folder=folder, file_name=file_name, file_fmt=file_fmt,
+            data.save(folder=folder, file_name=file_name, fmt=fmt,
                       **kwargs)
             
         elif name in TOPO_DATA_2D:
@@ -369,7 +369,7 @@ class Results:
                 file_name = name
             file_out = os.path.join(folder, file_name)
             tilupy.raster.write_raster(self.x, self.y, getattr(self, name),
-                                  file_out, file_fmt=file_fmt, **kwargs)
+                                  file_out, fmt=fmt, **kwargs)
             
     
 def get_results(code, **kwargs):

@@ -125,28 +125,28 @@ def write_ascii(x, y, z, file_out):
     header_txt = header_txt.format(nx, ny, x[0], y[0], cellsize)
     np.savetxt(file_out, z, header=header_txt, comments='')
     
-def write_raster(x, y, z, file_out, file_fmt=None, **kwargs):
+def write_raster(x, y, z, file_out, fmt=None, **kwargs):
     
-    # File format read from file_out overrides file_fmt
+    # File format read from file_out overrides fmt
     fmt = file_out.split('.')
     if len(fmt)>1:
-        file_fmt = fmt[-1]
+        fmt = fmt[-1]
     else:
-        file_out = file_out + '.' + file_fmt
+        file_out = file_out + '.' + fmt
     
-    if file_fmt not in ['asc', 'ascii', 'txt', 'tif', 'tiff']:
+    if fmt not in ['asc', 'ascii', 'txt', 'tif', 'tiff']:
         raise ValueError('File format not implemented in write_raster')
         
-    if file_fmt.startswith('tif'):
+    if fmt.startswith('tif'):
         try:
             import rasterio
         except ImportError:
             print('rasterio is required to write tif files. Switching to asc format')
-            file_fmt = 'asc'
+            fmt = 'asc'
         
-    if file_fmt in ['asc', 'ascii', 'txt']:
+    if fmt in ['asc', 'ascii', 'txt']:
         write_ascii(x, y, z, file_out)
-    elif file_fmt in ['tif', 'tiff']:
+    elif fmt in ['tif', 'tiff']:
         write_tiff(x, y, z, file_out, **kwargs)
     else:
         raise NotImplementedError()

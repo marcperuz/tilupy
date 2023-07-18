@@ -6,7 +6,6 @@ Created on Tue Jul 11 18:37:05 2023
 """
 
 import os
-import numpy as np
 
 import tilupy.raster
 import tilupy.cmd
@@ -71,14 +70,4 @@ for delta in deltas:
     # shaltop "" delta_20p00.txt
     # shaltop "" delta_25p00.txt
 
-# %% Plot results
-# topo_kwargs = dict(contour_step=10, step_contour_bold=100)
-# tilupy.cmd.plot_results('shaltop', 'h', 'delta_*.txt', folder_simus,
-#                       save=True, display_plot=False, figsize=(15/2.54, 15/2.54),
-#                       minval=0.1, maxval=100,
-#                       topo_kwargs=topo_kwargs)
-# tilupy.cmd.plot_results('shaltop', 'h_max', 'delta_*.txt', folder_simus,
-#                       save=True, display_plot=False, figsize=(15/2.54, 15/2.54),
-#                       cmap_intervals=[0.1, 5, 10, 25, 50, 100],
-#                       topo_kwargs=topo_kwargs)
 

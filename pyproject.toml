@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tilupy"
-version = "1.0.0"
-description = "Prepare and process thin-layer simulations"
+version = "0.1.0"
+description = "Thin-layer models unified processing tool"
 readme = "README.md"
 authors = [{ name = "Marc Peruzzetto", email = "m.peruzzetto@brgm.fr" }]
 license = { file = "LICENSE" }
@@ -16,9 +16,9 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]
-keywords = ["thin-layer", "shallow-water", "display", "benchmark"]
+keywords = ["thin-layer", "shallow-water", "display", "simulation", "model", "processing", "benchmark"]
 dependencies = [
-    "seaborn",
+    "seaborn", "requests",
 ]
 requires-python = ">=3.9"
 
@@ -33,3 +33,4 @@ Homepage = "https://github.com/marcperuz/tilupy"
 
 [project.scripts]
 tilupy_plot = "tilupy.cmd:_tilupy_plot"
+tilupy_to_raster = "tilupy.cmd:_tilupy_to_raster"

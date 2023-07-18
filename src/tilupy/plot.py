@@ -53,7 +53,6 @@ def centered_map(cmap, vmin, vmax, ncolors=256):
 
     return new_map
 
-
 def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
               step_contour_bold=0, contour_labels_properties=None,
               label_contour=True, contour_label_effect=None,
@@ -189,7 +188,9 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
 
 
 def plot_data_on_topo(x, y, z, data, axe=None, figsize=(15/2.54, 15/2.54),
-                      cmap=None, minval=None, maxval=None, minval_abs=None,
+                      cmap=None,
+                      minval=None, maxval=None, vmin=None, vmax=None,
+                      minval_abs=None,
                       cmap_intervals=None, extend_cc='max',
                       topo_kwargs=None, sup_plot=None, alpha=1,
                       plot_colorbar=True, axecc=None, colorbar_kwargs=None,
@@ -204,6 +205,14 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(15/2.54, 15/2.54),
 
     """
     f = copy.copy(data)
+    
+    #vmin and vmax are similar to minval and maxval
+    #and supplent minval and maxval if used
+    if vmin is not None:
+        minval = vmin
+        
+    if vmax is not None:
+        maxval = vmax
        
     # Remove values below and above minval and maxval, depending on whether
     # cmap_intervals are given with or without extend_cc
