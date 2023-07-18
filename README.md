@@ -160,9 +160,76 @@ for delta in deltas:
 
 You must then run the simulations (see Shaltop documentation)
 
-### Process simulations
+### Get simulation results
 
-Once simulations are over, `tilupy`can be used to plot the results as images, where the flow state (thickness, velocity, ...)
+Simulation results are read from a `Results` class. Main functions are defined in the parent class `tilupy.read.Results`, and each model has its own inheretied class `tilupy.models.[model_name].read.Results`. A class instance for a given model can be initiated with
+
+```python
+res = tilupy.read.get_results([model_name], **kwargs)
+```
+
+where `kwargs must be adapted to the considered model. For instance with Shaltop and the example above, the results of the simulation with a friction angle of 25 must be initiated as :
+
+```python
+res = tilupy.read.get_results('shaltop', folder_base=folder_simus, file_params='delta_25p00.txt)
+```
+
+The topography and axes can then directly be read from `res` :
+
+```python
+x, y, z = res.x, res.y, res.z
+import matplotlib.pyplot as plt
+plt.imshow(z)
+```
+
+`z[i, j]` is the altitude at `flip(y[i])` and `x[j]`. Thus `z[0, 0]` corresponds to the North-West corner of the topography. 
+
+Specific simulation outputs can be extracted with 
+
+```python
+h_res = res.get_output(res_name)
+```
+
+where `res_name` must chosen among
+
+- `h` : Flow thickness in the direction perpendicular to the topography
+- `hvert` : Flow thickness in the vertical direction
+- `ux`and `uy` : Flow velocity in the X and Y direction (check whether it is in the cartesian reference frame or not)
+- `u` : Norm of the flow velocity
+- `hu` : Momentum (thickness * flow velocity)
+- `hu2` : Kinetic energy (thickness * square flow velocity)
+
+It is also possible to extract 2D spatial static characteritics of the flow by using any of the previous states with `_[operation]`, where
+`[operation]` is chosen among, `max`, `mean`, `std`, `sum`, `min`, `final`, `initial`. For instance `h_max` is a 2D array with the
+maximum simulated thickness at each point of the grid. `h_final` is the simulated thickness at the end of the simulation.
+`tilupy` will load these characteristics directly from the simulation output when possible (e.g. Shaltop records a maximum thickness array),
+or compute then from the available data. For instance, if the simulation results contains a file whith the maximum thickness, `h_max` will be
+read from this file. Otherwise, `h_max` is computed from the simulation recorded temporal snapshots (which is supposedly less precise).
+
+For instance, to load the recorded thicknesses in the current example :
+
+```python
+import matplot
+res_name = 'h' 
+h_res = res.get_output(res_name) # Thicknesses recorded at different times
+# h_res.d is a 3D numpy array of dimension (len(x) x len(y) x len(h_res.t))
+plt.imshow(h_res.d[:, :, -1]) # Plot final thickness.
+t = h_res.t # Get times of simulation outputs.
+```
+
+And to load the maximum thickness array :
+
+```python
+res_name = 'h_max'
+h_max_res = res.get_output(res_name) #h_max_res is read directly from simulation
+# results when possible, and is deduced from res.get_output('h') otherwise
+# h_max_res.d is a 2D numpy array of dimension (len(x) x len(y))
+plt.imshow(h_max_res.d)
+```
+
+### Process simulation results in python script
+
+`tilupy`can be used to plot the results as images, where the flow state (thickness, velocity, ...)
 is shown with a colorscale on the underlying topography. Plots can be thouroughly customized (documentation not available yet).
 
 For instance, the following code plots the flow thickness at each recorded time step, with a constant colorscale vraying from 0.1 to
@@ -170,7 +237,7 @@ For instance, the following code plots the flow thickness at each recorded time 
 in a folder created in `folder_out`, but not displayed in the terminal (if you work in a developping environnement such as `spyder`).
 
 ```python
-topo_kwargs = dict(contour_step=10, step_contour_bold=100)
+topo_kwargs = dict(contour_step=10, step_contour_bold=100) # give interval between thin and bold contour lines
 params_files = 'delta_*.txt'
 tilupy.cmd.plot_results('shaltop', 'h', params_files, folder_simus,
                         save=True, display_plot=False, figsize=(15/2.54, 15/2.54),
@@ -195,18 +262,23 @@ tilupy.cmd.to_raster('shaltop', 'h_max', params_files,
                      folder_simus, fmt='tif')
 ```
 
-In the previous examples, the outputs that are plotted or saved can be chosen among
+### Process simulation results in command line
 
-- `h` : Flow thickness in the direction perpendicular to the topography
-- `hvert` : Flow thickness in the vertical direction
-- `ux`and `uy` : Flow velocity in the X and Y direction (check whether it is in the cartesian reference frame or not)
-- `u` : Norm of the flow velocity
-- `hu` : Momentum (thickness * flow velocity)
-- `hu2` : Kinetic energy (thickness * square flow velocity)
+`tilupy` comes with command line scripts to allow for quick processing of results. They work similarly as the functions `tilupy.cmd.plot_results` and `tilupy.cmd.to_raster`, 
+although there are less options. 
 
-It is also possible to extract 2D spatial static characteritics of the flow by using any of the previous states with `_[operation]`, where
-`[operation]` is chosen among, `max`, `mean`, `std`, `sum`, `min`, `final`, `initial`. For instance `h_max` is a 2D array with the
-maximum simulated thickness at each point of the grid. `h_final` is the simulated thickness at the end of the simulation.
-`tilupy` will load these characteristics directly from the simulation output when possible (e.g. Shaltop records a maximum thickness array),
-or compute then from the available data. For instance, if the simulation results contains a file whith the maximum thickness, `h_max` will be
-read from this file. Otherwise, `h_max` is computed from the simulation recorded temporal snapshots (which is supposedly less precise).
+`tilupy_plot` will automatically plot and save results in a new folder `plot` located in the simulation output folder specified in the parameter file :
+
+```
+tilupy_plot [-h] [-n RES_NAME] [-p PARAM_FILES] [-f FOLDER] [--fmt FMT] [--vmin VMIN] [--vmax VMAX]
+                   [--minval_abs MINVAL_ABS]
+                   model
+```
+
+`RES_NAME` can be any of the strings listed in the previous section. For instance, to plot all thicknesses snaphsots from shaltop simulations in the current folder, type `tilupy_plot shaltop -n h`. If parameters files are located in `another/folder`, type, `tilupy shaltop -n h -f another/folder`. Similarly, to save  thicknesses snapshots as ascii rasters, use `tilupy_to_raster shaltop -n h --fmt asc`.
+
+```
+tilupy_to_raster [-h] [-n RES_NAME] [-p PARAM_FILES] [-f FOLDER] [--fmt {tif,tiff,txt,asc,ascii}] model
+```
+
+With both commands you can use the `-h` option do print help.
