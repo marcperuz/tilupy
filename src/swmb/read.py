@@ -14,7 +14,7 @@ import importlib
 
 import swmb.notations as notations
 import swmb.plot as plt_fn
-import swmb.dem
+import swmb.raster
 
 RAW_STATES = ['hvert', 'h', 'ux', 'uy']
 
@@ -75,7 +75,7 @@ class TemporalResults:
             dnew = np.sum(self.d*cellsize, axis=axis)
         self.d = dnew
         
-    def plot(self, axe=None, figsize=None, folder_out=None, fmt='png', dpi=150,
+    def plot(self, axe=None, figsize=None, folder_out=None, file_fmt='png', dpi=150,
              x=None, y=None, z=None, sup_plt_fn=None, sup_plt_fn_args=None,
              **kwargs):
         """ Plot results as time dependent"""
@@ -96,7 +96,7 @@ class TemporalResults:
                 raise TypeError('x, y or z data missing')
             plt_fn.plot_maps(x, y, z, self.d, self.t,
                              self.name, folder_out=folder_out, 
-                             figsize=figsize, fmt=fmt, dpi=dpi,
+                             figsize=figsize, fmt=file_fmt, dpi=dpi,
                              sup_plt_fn=sup_plt_fn,
                              sup_plt_fn_args=sup_plt_fn_args,
                              **kwargs)
@@ -109,7 +109,7 @@ class TemporalResults:
             
         return axe, fig
     
-    def save(self, folder=None, file_name=None, file_fmt='txt', time=None,
+    def save(self, folder=None, file_name=None, file_fmt='asc', time=None,
              x=None, y=None, **kwargs):
         
         if self.d.ndim == 1:
@@ -143,7 +143,7 @@ class TemporalResults:
             
             for i in range(inds):
                 file_out = file_name + '_{:04d}.'.format(i) + file_fmt
-                swmb.dem.write_raster(x, y, self.d[:, :, i], file_out,
+                swmb.raster.write_raster(x, y, self.d[:, :, i], file_out,
                                       file_fmt=file_fmt, **kwargs)
                 
 
@@ -222,7 +222,7 @@ class StaticResults:
         if folder is not None:
             file_name = os.path.join(folder, file_name)
             
-        swmb.dem.write_raster(x, y, self.d, file_name,
+        swmb.raster.write_raster(x, y, self.d, file_name,
                               file_fmt=file_fmt, **kwargs)
             
         
@@ -368,7 +368,7 @@ class Results:
             if file_name is None:
                 file_name = name
             file_out = os.path.join(folder, file_name)
-            swmb.dem.write_raster(self.x, self.y, getattr(self, name),
+            swmb.raster.write_raster(self.x, self.y, getattr(self, name),
                                   file_out, file_fmt=file_fmt, **kwargs)
             
     

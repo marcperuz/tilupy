@@ -24,7 +24,7 @@ def read_tiff(file):
         x = np.linspace(src.bounds.left, src.bounds.right, nx)
         y = np.linspace(src.bounds.bottom, src.bounds.top, ny)
         dx = x[1] - x[0]
-    return x, y, dem, dx
+    return x, y, dem
     
 def read_ascii(file):
     """
@@ -58,7 +58,7 @@ def read_ascii(file):
     x = np.linspace(x0, x0+(nx-1)*dx, nx)
     y = np.linspace(y0, y0+(ny-1)*dy, ny)
 
-    return x, y, dem, dx
+    return x, y, dem
 
 def write_tiff(x, y, z, file_out, **kwargs):
     """

@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "swmb"
 version = "1.0.0"
-description = "Read the latest Real Python tutorials"
+description = "Prepare and process thin-layer simulations"
 readme = "README.md"
 authors = [{ name = "Marc Peruzzetto", email = "m.peruzzetto@brgm.fr" }]
 license = { file = "LICENSE" }
@@ -18,13 +18,18 @@ classifiers = [
 ]
 keywords = ["thin-layer", "shallow-water", "display", "benchmark"]
 dependencies = [
-    "numpy",
-    "matplotlib",
+    "seaborn",
 ]
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
 dev = ["rasterio"]
 
+[tools.setuptools]
+packages = ["src"]
+
 [project.urls]
 Homepage = "https://github.com/marcperuz/swmb"
+
+[project.scripts]
+swmb_plot = "swmb.cmd:_swmb_plot"

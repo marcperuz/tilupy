@@ -10,6 +10,7 @@ import os
 import numpy as np
 
 import swmb.notations
+import swmb.raster
 
 README_PARAM_MATCH = dict(tmax='tmax',
                           CFL='cflhyp',
@@ -20,42 +21,6 @@ SHALTOP_LAW_ID = dict(coulomb=1,
                       voellmy=8,
                       bingham=6,
                       muI=7)
-
-
-def read_ascii(file):
-    """
-    Read ascii grid file to numpy ndarray.
-
-    Parameters
-    ----------
-    file : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    None.
-
-    """
-    dem = np.loadtxt(file, skiprows=6)
-    dem = np.flip(dem, axis=0).T
-    grid = {}
-    with open(file, 'r') as fid:
-        for i in range(6):
-            tmp = fid.readline().split()
-            grid[tmp[0]] = float(tmp[1])
-    try:
-        x0 = grid['xllcenter']
-        y0 = grid['yllcenter']
-    except KeyError:
-        x0 = grid['xllcorner']
-        y0 = grid['yllcorner']
-    nx = int(grid['ncols'])
-    ny = int(grid['nrows'])
-    dx = dy = grid['cellsize']
-    x = np.linspace(x0, x0+(nx-1)*dx, nx)
-    y = np.linspace(y0, y0+(ny-1)*dy, ny)
-
-    return x, y, dem, dx
 
 
 def write_params_file(params, directory=None,
@@ -92,6 +57,21 @@ def write_params_file(params, directory=None,
             if type(val) == str:
                 file_params.write('{:s} {:s}\n'.format(name, val))
 
+def raster_to_shaltop_txtfile(file_in, file_out, folder_out=None):
+    
+    if folder_out is not None:
+        file_out = os.path.join(folder_out, file_out)
+        
+    x, y, rast = swmb.raster.read_raster(file_in)
+    np.savetxt(file_out,
+               np.reshape(np.flip(rast, axis=0), (rast.size, 1)),
+               fmt='%.12G')
+    
+    res = dict(x0=x[0], y0=y[0], dx=x[1]-x[0], dy=y[1]-y[0],
+               nx=len(x), ny=len(y))
+    
+    return res
+
 
 def make_simus(law, rheol_params, folder_data, folder_out, readme_file):
     """
@@ -114,8 +94,8 @@ def make_simus(law, rheol_params, folder_data, folder_out, readme_file):
     # Get topography and initial mass, and write them in Shaltop format
     zfile = os.path.join(folder_data, 'topo.asc')
     mfile = os.path.join(folder_data, 'mass.asc')
-    x, y, z, dx = read_ascii(zfile)
-    _, _, m, _ = read_ascii(mfile)
+    x, y, z, dx = swmb.raster.read_ascii(zfile)
+    _, _, m, _ = swmb.raster.read_ascii(mfile)
     np.savetxt(os.path.join(folder_out, 'z.d'), z.T.flatten())
     np.savetxt(os.path.join(folder_out, 'm.d'), m.T.flatten())
 
