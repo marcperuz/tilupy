@@ -9,7 +9,7 @@ Created on Wed May 26 11:03:56 2021
 import os
 import numpy as np
 
-import swmb.notations
+import tilupy.notations
 
 readme_param_match = dict(tmax='tmax',
                           CFL='cflhyp',
@@ -80,7 +80,7 @@ def make_simus(law, rheol_params, folder_files, folder_out, readme_file):
 
     """
     # Parameters from README.txt file
-    params_readme = swmb.notations.readme_to_params(readme_file)
+    params_readme = tilupy.notations.readme_to_params(readme_file)
     # Parameters for simulation
     params = dict()
     # Directory where run script will be created
@@ -144,7 +144,7 @@ def make_simus(law, rheol_params, folder_files, folder_out, readme_file):
     file_txt += 'r.in.gdal --overwrite input={:s} output=minit\n'.format(mfile)
 
     # prefix for output folder
-    prefixs = swmb.notations.make_rheol_string(rheol_params, law)
+    prefixs = tilupy.notations.make_rheol_string(rheol_params, law)
 
     param_names = [param for param in rheol_params]
 

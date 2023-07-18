@@ -18,7 +18,7 @@ def import_frankslide_dem(folder_out=None, file_out=None):
     
     file_save = os.path.join(folder_out, file_out)
     
-    url = ('https://raw.githubusercontent.com/marcperuz/swmb/main/data/'+
+    url = ('https://raw.githubusercontent.com/marcperuz/tilupy/main/data/'+
            'frankslide/rasters/Frankslide_topography.asc')
     r = requests.get(url)
     open(file_save, 'w').write(r.text)
@@ -34,7 +34,7 @@ def import_frankslide_pile(folder_out=None, file_out=None):
     
     file_save = os.path.join(folder_out, file_out)
     
-    url = ('https://raw.githubusercontent.com/marcperuz/swmb/main/data/'+
+    url = ('https://raw.githubusercontent.com/marcperuz/tilupy/main/data/'+
            'frankslide/rasters/Frankslide_pile.asc')
     r = requests.get(url)
     open(file_save, 'w').write(r.text)

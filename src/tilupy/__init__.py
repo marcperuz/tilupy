@@ -16,8 +16,8 @@ def set_config(**kwargs):
     config.update(**kwargs)
     
     if 'language' in kwargs:
-        import swmb.notations
-        swmb.notations.set_labels()
+        import tilupy.notations
+        tilupy.notations.set_labels()
     
-import swmb.notations
+import tilupy.notations
     

@@ -9,8 +9,8 @@ Created on Tue May 25 15:18:31 2021
 import os
 import numpy as np
 
-import swmb.notations
-import swmb.raster
+import tilupy.notations
+import tilupy.raster
 
 README_PARAM_MATCH = dict(tmax='tmax',
                           CFL='cflhyp',
@@ -62,7 +62,7 @@ def raster_to_shaltop_txtfile(file_in, file_out, folder_out=None):
     if folder_out is not None:
         file_out = os.path.join(folder_out, file_out)
         
-    x, y, rast = swmb.raster.read_raster(file_in)
+    x, y, rast = tilupy.raster.read_raster(file_in)
     np.savetxt(file_out,
                np.reshape(np.flip(rast, axis=0), (rast.size, 1)),
                fmt='%.12G')
@@ -94,13 +94,13 @@ def make_simus(law, rheol_params, folder_data, folder_out, readme_file):
     # Get topography and initial mass, and write them in Shaltop format
     zfile = os.path.join(folder_data, 'topo.asc')
     mfile = os.path.join(folder_data, 'mass.asc')
-    x, y, z, dx = swmb.raster.read_ascii(zfile)
-    _, _, m, _ = swmb.raster.read_ascii(mfile)
+    x, y, z, dx = tilupy.raster.read_ascii(zfile)
+    _, _, m, _ = tilupy.raster.read_ascii(mfile)
     np.savetxt(os.path.join(folder_out, 'z.d'), z.T.flatten())
     np.savetxt(os.path.join(folder_out, 'm.d'), m.T.flatten())
 
     # Get simulation parameters from README.txt and raster .asc files
-    params = swmb.notations.readme_to_params(readme_file, README_PARAM_MATCH)
+    params = tilupy.notations.readme_to_params(readme_file, README_PARAM_MATCH)
     params['nx'] = len(x)
     params['ny'] = len(y)
     params['per'] = dx*len(x)
@@ -114,7 +114,7 @@ def make_simus(law, rheol_params, folder_data, folder_out, readme_file):
 
     param_names = [param for param in rheol_params]
 
-    texts = swmb.notations.make_rheol_string(rheol_params, law)
+    texts = tilupy.notations.make_rheol_string(rheol_params, law)
 
     # Run shaltop file
     run_shaltop_file = os.path.join(folder_law, 'run_shaltop.sh')

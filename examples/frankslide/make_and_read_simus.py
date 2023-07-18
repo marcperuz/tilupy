@@ -8,10 +8,10 @@ Created on Tue Jul 11 18:37:05 2023
 import os
 import numpy as np
 
-import swmb.raster
-import swmb.cmd
-import swmb.download_data
-import swmb.models.shaltop.initsimus as shinit
+import tilupy.raster
+import tilupy.cmd
+import tilupy.download_data
+import tilupy.models.shaltop.initsimus as shinit
 
 # !!! You may want to change folder_base !!!
 FOLDER_BASE = os.path.dirname(os.path.abspath(__file__))
@@ -23,8 +23,8 @@ folder_data = os.path.join(FOLDER_BASE, 'rasters')
 os.makedirs(folder_data, exist_ok=True)
 #raster_topo and raster_mass are the paths to the topography and initial mass
 #rasters
-raster_topo = swmb.download_data.import_frankslide_dem(folder_out=folder_data)
-raster_mass = swmb.download_data.import_frankslide_pile(folder_out=folder_data)
+raster_topo = tilupy.download_data.import_frankslide_dem(folder_out=folder_data)
+raster_mass = tilupy.download_data.import_frankslide_pile(folder_out=folder_data)
 
 # %% Create folder for shaltop simulations
 folder_simus = os.path.join(FOLDER_BASE, 'shaltop')
@@ -73,11 +73,11 @@ for delta in deltas:
 
 # %% Plot results
 # topo_kwargs = dict(contour_step=10, step_contour_bold=100)
-# swmb.cmd.plot_results('shaltop', 'h', 'delta_*.txt', folder_simus,
+# tilupy.cmd.plot_results('shaltop', 'h', 'delta_*.txt', folder_simus,
 #                       save=True, display_plot=False, figsize=(15/2.54, 15/2.54),
 #                       minval=0.1, maxval=100,
 #                       topo_kwargs=topo_kwargs)
-# swmb.cmd.plot_results('shaltop', 'h_max', 'delta_*.txt', folder_simus,
+# tilupy.cmd.plot_results('shaltop', 'h_max', 'delta_*.txt', folder_simus,
 #                       save=True, display_plot=False, figsize=(15/2.54, 15/2.54),
 #                       cmap_intervals=[0.1, 5, 10, 25, 50, 100],
 #                       topo_kwargs=topo_kwargs)

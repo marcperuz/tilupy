@@ -8,7 +8,7 @@ Created on Tue Jun  1 15:27:36 2021
 import os
 
 import numpy as np
-import swmb.read
+import tilupy.read
 
 # Dictionnary with results names lookup table, to match code output names
 LOOKUP_NAMES = dict(h='rho', hvert='rho',
@@ -114,7 +114,7 @@ def read_file_init(file, nx, ny):
     return data
 
 
-class Results(swmb.read.Results):
+class Results(tilupy.read.Results):
     """Results of shaltop simulations."""
 
     def __init__(self, file_params=None, folder_base=None, **varargs):
@@ -234,10 +234,10 @@ class Results(swmb.read.Results):
             t = self.tim
             
         if 'h_thresh' in varargs and varargs['h_thresh'] is not None and d.ndim==3:
-            d = swmb.read.use_thickness_threshold(self, d,
+            d = tilupy.read.use_thickness_threshold(self, d,
                                                   varargs['h_thresh'])
 
-        return swmb.read.TemporalResults(name, d, t)
+        return tilupy.read.TemporalResults(name, d, t)
 
     def get_static_output(self, name,
                           d=None, from_file=True, **varargs):
@@ -256,7 +256,7 @@ class Results(swmb.read.Results):
             DESCRIPTION.
 
         """
-        if name in swmb.read.COMPUTED_STATIC_DATA_2D:
+        if name in tilupy.read.COMPUTED_STATIC_DATA_2D:
             state, stat = name.split('_')
             if stat in ['final', 'initial']:
                 hh = self.get_temporal_output(state)
@@ -280,7 +280,7 @@ class Results(swmb.read.Results):
         else:
              raise(NotImplementedError())   
 
-        return swmb.read.StaticResults(name, d)
+        return tilupy.read.StaticResults(name, d)
 
     def get_u(self):
         """ Compute velocity norm from results """

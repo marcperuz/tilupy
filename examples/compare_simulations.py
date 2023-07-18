@@ -10,7 +10,7 @@ import platform
 import itertools
 import os
 
-import swmb.compare
+import tilupy.compare
 
 tmp = os.path.abspath(__file__)
 folder_benchmark = os.path.join(tmp.split('bin')[0], 'data')
@@ -43,7 +43,7 @@ subfolders = ['h_min_1em3', 'h_min_1em15']
 for delta, stat in itertools.product(deltas, stats):
     intervals = cmap_intervals[topo][law][delta][state_name+stat[0]]
     for subfolder in subfolders:
-        swmb.compare.compare_simus(['shaltop', 'ravaflow'],
+        tilupy.compare.compare_simus(['shaltop', 'ravaflow'],
                                    'slope_10deg', 'coulomb', {'delta1': delta},
                                    'h', stat[0],
                                    folder_benchmark=folder_benchmark,

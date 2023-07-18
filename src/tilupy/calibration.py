@@ -9,9 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from swmb import read
-from swmb import utils
-from swmb import dem
+from tilupy import read
+from tilupy import utils
+from tilupy import dem
 
 def CSI(simu, observation=None, h_threshs=[1], state='h_final'):
     

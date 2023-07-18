@@ -8,7 +8,7 @@ Created on Tue Jun  1 15:27:36 2021
 import os
 
 import numpy as np
-import swmb.read
+import tilupy.read
 
 # Dictionnary with results names lookup table, to match code output names
 LOOKUP_NAMES = dict(h='hflow',
@@ -155,7 +155,7 @@ def read_asciis(file_prefix, folder=None, ind=None, nodigit=False):
     return dem
 
 
-class Results(swmb.read.Results):
+class Results(tilupy.read.Results):
     """Results of shaltop simulations."""
 
     def __init__(self, text_rheol=None, folder_base=None, **varargs):
@@ -238,7 +238,7 @@ class Results(swmb.read.Results):
         file_prefix = self.prefix + '_' + LOOKUP_NAMES[name]
         d = read_asciis(file_prefix, folder=self.folder_ascii)
 
-        return swmb.read.TemporalResults(name, d, self.tim)
+        return tilupy.read.TemporalResults(name, d, self.tim)
 
     def get_static_output(self, name, stat,
                           d=None, from_file=False, **varargs):
@@ -270,4 +270,4 @@ class Results(swmb.read.Results):
             data = self.get_temporal_output(name)
             d = data.get_temporal_stat(stat).d
 
-        return swmb.read.StaticResults(name+stat, d)
+        return tilupy.read.StaticResults(name+stat, d)

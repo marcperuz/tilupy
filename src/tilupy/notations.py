@@ -5,7 +5,7 @@ Created on Thu Jun  3 12:20:34 2021
 
 @author: peruzzetto
 """
-import swmb
+import tilupy
 LABELS = dict(h='Thickness (m)',
               h_max='Maximum thickness (m)',
               u_max='Maximum velocity (m)',
@@ -17,7 +17,7 @@ LABELS = dict(h='Thickness (m)',
 def get_labels(language=None):
     # LANGUAGE = language
     if language is None:
-        language = swmb.config['language']
+        language = tilupy.config['language']
     if language == 'english':
         labels = dict(h='Thickness (m)',
                       h_max='Maximum thickness (m)',

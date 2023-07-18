@@ -12,9 +12,9 @@ import numpy as np
 import os
 import importlib
 
-import swmb.notations as notations
-import swmb.plot as plt_fn
-import swmb.raster
+import tilupy.notations as notations
+import tilupy.plot as plt_fn
+import tilupy.raster
 
 RAW_STATES = ['hvert', 'h', 'ux', 'uy']
 
@@ -143,7 +143,7 @@ class TemporalResults:
             
             for i in range(inds):
                 file_out = file_name + '_{:04d}.'.format(i) + file_fmt
-                swmb.raster.write_raster(x, y, self.d[:, :, i], file_out,
+                tilupy.raster.write_raster(x, y, self.d[:, :, i], file_out,
                                       file_fmt=file_fmt, **kwargs)
                 
 
@@ -222,7 +222,7 @@ class StaticResults:
         if folder is not None:
             file_name = os.path.join(folder, file_name)
             
-        swmb.raster.write_raster(x, y, self.d, file_name,
+        tilupy.raster.write_raster(x, y, self.d, file_name,
                               file_fmt=file_fmt, **kwargs)
             
         
@@ -368,7 +368,7 @@ class Results:
             if file_name is None:
                 file_name = name
             file_out = os.path.join(folder, file_name)
-            swmb.raster.write_raster(self.x, self.y, getattr(self, name),
+            tilupy.raster.write_raster(self.x, self.y, getattr(self, name),
                                   file_out, file_fmt=file_fmt, **kwargs)
             
     
@@ -389,7 +389,7 @@ def get_results(code, **kwargs):
     None.
 
     """
-    module = importlib.import_module('swmb.models.'+code+'.read')
+    module = importlib.import_module('tilupy.models.'+code+'.read')
     return module.Results(**kwargs)
 
 def use_thickness_threshold(simu, array, h_thresh):

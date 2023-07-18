@@ -5,10 +5,10 @@ Created on Wed Jun 14 18:16:45 2023
 @author: peruzzetto
 """
 
-import swmb.notations as notations
-import swmb.plot as plt_fn
-import swmb.raster
-import swmb.read
+import tilupy.notations as notations
+import tilupy.plot as plt_fn
+import tilupy.raster
+import tilupy.read
 
 import os
 import sys
@@ -42,7 +42,7 @@ def process_results(fn_name, model, res_name, folder=None, param_files=None,
     for param_file in param_files:
         print('Processing simulation {:s} .....'.format(param_file))
         kw_read['file_params'] = param_file
-        res = swmb.read.get_results(model, **kw_read)
+        res = tilupy.read.get_results(model, **kw_read)
         getattr(res, fn_name)(res_name, **kwargs_fn)
         
 def to_raster(model=None, res_name='h', param_files=None, folder=None, 
@@ -73,23 +73,23 @@ def _get_parser(prog, description):
                         type=str)
     parser.add_argument('-n', '--res_name', help="Name of output, only for maps",
                         default='h', type=str,
-                        choices = swmb.read.TEMPORAL_DATA_2D + swmb.read.STATIC_DATA_2D)
+                        choices = tilupy.read.TEMPORAL_DATA_2D + tilupy.read.STATIC_DATA_2D)
     parser.add_argument('-p', '--param_files', help="Parameter file (globbing)",
                         default='.txt', type=str)
     parser.add_argument('-f', '--folder', help="Root folder, default is current folder",
                         default=None, type=str)
     return parser
 
-def _swmb_plot():
-    parser = _get_parser('swmb_plot', 'Plot thin-layer simulation results')
+def _tilupy_plot():
+    parser = _get_parser('tilupy_plot', 'Plot thin-layer simulation results')
     parser.add_argument('--file_fmt', help="Plot output format (any accepted by matplotlib.savefig)",
                         default='png', type=str,
                         )
     args = parser.parse_args()
     plot_results(**vars(args))
     
-def _swmb_to_raster():
-    parser = _get_parser('swmb_to_raster', 'Convert simulation results to rasters')
+def _tilupy_to_raster():
+    parser = _get_parser('tilupy_to_raster', 'Convert simulation results to rasters')
     parser.add_argument('--file_fmt', help="File output format",
                         default='tif', type=str,
                         choices=['tif', 'tiff', 'txt', 'asc', 'ascii'])
@@ -102,5 +102,5 @@ if __name__ == '__main__':
     
     # folder = 'd:/Documents/peruzzetto/tmp/test_shaltop/7p30e04_m3/coulomb'
     # plot_results('shaltop', 'h_max', '*18p00.txt', folder=folder)
-    _swmb_plot()
+    _tilupy_plot()
     

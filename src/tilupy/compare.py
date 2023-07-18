@@ -13,13 +13,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.axes_grid1 as mplt
 
-import swmb.dem
-import swmb.plot as plt_fn
-import swmb.notations
-import swmb
+import tilupy.dem
+import tilupy.plot as plt_fn
+import tilupy.notations
+import tilupy
 
-from swmb.notations import LABELS
-from swmb.read import STATIC_DATA_2D
+from tilupy.notations import LABELS
+from tilupy.read import STATIC_DATA_2D
 
 
 def compare_spatial_results(results, name, stat, import_kwargs=None,
@@ -166,14 +166,14 @@ def compare_simus(codes, topo_name, law,
 
     modules = dict()
     for c in codes:
-        modules[c] = importlib.import_module('swmb.models.'+c+'.read')
+        modules[c] = importlib.import_module('tilupy.models.'+c+'.read')
 
     if folder_benchmark is None:
         folder_benchmark = os.getcwd()
 
     folder_topo = os.path.join(folder_benchmark, topo_name)
 
-    txt_params = swmb.notations.make_rheol_string(rheol_params, law)
+    txt_params = tilupy.notations.make_rheol_string(rheol_params, law)
 
     if folder_out is None:
         folder_out = os.path.join(folder_topo, subfolder_topo,
@@ -181,7 +181,7 @@ def compare_simus(codes, topo_name, law,
         os.makedirs(folder_out, exist_ok=True)
 
     file = np.os.path.join(folder_topo, 'topo.asc')
-    x, y, zinit, dx = swmb.dem.read_ascii(file)
+    x, y, zinit, dx = tilupy.dem.read_ascii(file)
 
     simus = []
     for code in codes:
