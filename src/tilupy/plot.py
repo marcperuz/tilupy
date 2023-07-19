@@ -17,6 +17,7 @@ import seaborn as sns
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+
 def centered_map(cmap, vmin, vmax, ncolors=256):
     """
     Create centered colormap
@@ -52,6 +53,7 @@ def centered_map(cmap, vmin, vmax, ncolors=256):
         'my_colormap', colors)
 
     return new_map
+
 
 def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
               step_contour_bold=0, contour_labels_properties=None,
@@ -205,15 +207,15 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(15/2.54, 15/2.54),
 
     """
     f = copy.copy(data)
-    
-    #vmin and vmax are similar to minval and maxval
-    #and supplent minval and maxval if used
+
+    # vmin and vmax are similar to minval and maxval
+    # and supplent minval and maxval if used
     if vmin is not None:
         minval = vmin
-        
+
     if vmax is not None:
         maxval = vmax
-       
+
     # Remove values below and above minval and maxval, depending on whether
     # cmap_intervals are given with or without extend_cc
     if cmap_intervals is not None:
@@ -231,7 +233,7 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(15/2.54, 15/2.54),
         #     f[f > maxval] = np.nan
         if minval is not None:
             f[f < minval] = np.nan
-    
+
     # Get min and max values
     if maxval is None:
         maxval = np.nanmax(f)
@@ -300,18 +302,18 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(15/2.54, 15/2.54),
         if cmap_intervals is not None and extend_cc is not None:
             colorbar_kwargs['extend'] = extend_cc
         colorbar(fim, cax=axecc, **colorbar_kwargs)
-        
+
     # Adjust axes limits
     if xlims is not None:
         axe.set_xlim(xlims[0], xlims[1])
-        
+
     if ylims is not None:
         axe.set_ylim(ylims[0], ylims[1])
-        
-    return axe
-        
 
-def plot_maps(x, y, z, data, t, file_name, folder_out=None, 
+    return axe
+
+
+def plot_maps(x, y, z, data, t, file_name, folder_out=None,
               figsize=None, dpi=None, fmt='png',
               sup_plt_fn=None,
               sup_plt_fn_args=None,
@@ -343,14 +345,15 @@ def plot_maps(x, y, z, data, t, file_name, folder_out=None,
     None.
 
     """
-    
+
     nfigs = len(t)
     if nfigs != data.shape[2]:
-        raise ValueError('length of t must be similar to the last dimension of data')
+        raise ValueError(
+            'length of t must be similar to the last dimension of data')
     if folder_out is not None:
         file_path = os.path.join(folder_out, file_name + '_{:04d}.' + fmt)
     title_fmt = 't = {:.2f} s'
-    
+
     for i in range(nfigs):
         axe = plot_data_on_topo(x, y, z, data[:, :, i], axe=None,
                                 figsize=figsize,
@@ -364,7 +367,7 @@ def plot_maps(x, y, z, data, t, file_name, folder_out=None,
         if folder_out is not None:
             axe.figure.savefig(file_path.format(i), dpi=dpi,
                                bbox_inches='tight', pad_inches=0.05)
-        
+
 
 def colorbar(mappable, ax=None,
              cax=None, size="5%", pad=0.1, position='right',
@@ -418,18 +421,17 @@ def colorbar(mappable, ax=None,
     return cc
 
 
-
 def plot_heatmaps(df, values, index, columns, aggfunc='mean',
                   figsize=None, ncols=3,
                   heatmap_kws=None, notations=None, best_values=None,
-                  plot_best_value = 'point', text_kwargs=None):
-    
+                  plot_best_value='point', text_kwargs=None):
+
     nplots = len(values)
     ncols = min(nplots, ncols)
     nrows = int(np.ceil(nplots/ncols))
     fig = plt.figure(figsize=figsize)
     axes = []
-    
+
     for i in range(nplots):
         axe = fig.add_subplot(nrows, ncols, i+1)
         axes.append(axe)
@@ -443,19 +445,19 @@ def plot_heatmaps(df, values, index, columns, aggfunc='mean',
                 kws = heatmap_kws[values[i]]
             else:
                 kws = heatmap_kws
-            
+
         if 'cmap' not in kws:
             minval = data.min().min()
             maxval = data.max().max()
-            if minval*maxval<0:
+            if minval*maxval < 0:
                 val = max(np.abs(minval), maxval)
                 kws['cmap'] = 'seismic'
                 kws['vmin'] = -val
                 kws['vmax'] = val
-                
+
         if 'cbar_kws' not in kws:
             kws['cbar_kws'] = dict(pad=0.03)
-        
+
         if notations is None:
             kws['cbar_kws']['label'] = values[i]
         else:
@@ -463,14 +465,14 @@ def plot_heatmaps(df, values, index, columns, aggfunc='mean',
                 kws['cbar_kws']['label'] = notations[values[i]]
             else:
                 kws['cbar_kws']['label'] = values[i]
-            
-        sns.heatmap(data, ax = axe, **kws)
-        
+
+        sns.heatmap(data, ax=axe, **kws)
+
         if best_values is not None:
             best_value = best_values[values[i]]
             array = np.array(data)
             irow = np.arange(data.shape[0])
-            
+
             if best_value == 'min':
                 ind = np.nanargmin(array, axis=1)
                 i2 = np.nanargmin(array[irow, ind])
@@ -480,7 +482,7 @@ def plot_heatmaps(df, values, index, columns, aggfunc='mean',
             elif best_value == 'max':
                 ind = np.nanargmax(array, axis=1)
                 i2 = np.nanargmax(array[irow, ind])
-                
+
             if plot_best_value == 'point':
                 axe.plot(ind + 0.5, irow+0.5, ls='',
                          marker='o', mfc='w', mec='k', mew=0.5, ms=5)
@@ -496,36 +498,33 @@ def plot_heatmaps(df, values, index, columns, aggfunc='mean',
                 if text_kwargs is None:
                     text_kwargs = default_kwargs
                 else:
-                    text_kwargs = dict(default_kwargs, **text_kwargs)                       
+                    text_kwargs = dict(default_kwargs, **text_kwargs)
                 for i, j in zip(indx, indy):
                     axe.text(i + 0.5, j+0.5,
                              '{:.2g}'.format(array[j, i]),
                              **text_kwargs)
-                text_kwargs2 = dict(text_kwargs, fontweight = 'bold')
+                text_kwargs2 = dict(text_kwargs, fontweight='bold')
                 axe.text(ind[i2] + 0.5, i2+0.5,
-                          '{:.2g}'.format(array[i2, ind[i2]]),
-                          **text_kwargs2)
-                
-        
+                         '{:.2g}'.format(array[i2, ind[i2]]),
+                         **text_kwargs2)
+
     axes = np.array(axes).reshape((nrows, ncols))
     for i in range(nrows):
         for j in range(1, ncols):
             axes[i, j].set_ylabel('')
             # axes[i, j].set_yticklabels([])
-    
+
     for i in range(nrows-1):
         for j in range(ncols):
             axes[i, j].set_xlabel('')
             # axes[i, j].set_xticklabels([])
-            
+
     if notations is not None:
         for i in range(nrows):
             axes[i, 0].set_ylabel(notations[index])
         for j in range(ncols):
             axes[-1, j].set_xlabel(notations[columns])
-        
+
     fig.tight_layout()
-        
+
     return fig
-    
-    
