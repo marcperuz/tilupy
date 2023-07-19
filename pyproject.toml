@@ -23,7 +23,8 @@ dependencies = [
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-dev = ["rasterio"]
+test = ["pytest"]
+gis = ["rasterio"]
 
 [tools.setuptools]
 packages = ["src"]
