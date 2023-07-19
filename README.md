@@ -1,6 +1,18 @@
 # tilupy
 
-## Description
+- [Description](#description)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+  - [Prepare simulations](#prepare-simus)
+  - [Get simulation results](#simu-results)
+  - [Process simulation results in python script](#process-simus-python)
+  - [Process simulation results in command line](#process-simus-cmd)
+- [Models references](#models-refs)
+  - [Shaltop](#ref-shaltop)
+  - [r.avaflow](#ref-ravaflow) 
+ 
+
+## Description <a name="description"></a>
 
 `tilupy` (ThIn-Layer Unified Processing in pYthon) package is meant as a top-level tool for processing inputs and outputs of thin-layer geophysical
 flow simulations on general topographies.
@@ -12,7 +24,7 @@ Note that `tilupy` is still under development, thus only minimal documentation i
 Contributions are feedback are most welcome. Reading and writing is available for the `SHALTOP` model (most commonly used by the author) and `r.avaflow`
 (only partly maintained).
 
-## Installation
+## Installation <a name="installation"></a>
 
 To install `tilupy` from GitHub or PyPi, you'll need to have `pip` installed on your computer. `tilupy`is not yet available on `conda-forge`. 
 
@@ -56,13 +68,13 @@ Before installing with `pip`, make sure `pip`, `steuptools` and `wheel` are up t
 python -m pip install --upgrade pip setuptools wheel
 ```
 
-### Latest stable realease from PyPi
+### Latest stable realease from PyPi <a name="pypi-install"></a>
 
 ```
 python -m pip install tilupy
 ```
 
-### Development version on from GitHub
+### Development version on from GitHub <a name="source-install"></a>
 
 Download the GithHub repository [here](https://github.com/marcperuz/tilupy), or clone it with
 
@@ -76,11 +88,11 @@ Open a terminal in the created folder and type:
 python -m pip install .
 ```
 
-## Quick start
+## Quick start <a name="quick-start"></a>
 
 We give here a simple example to prepare simulations for SHALTOP, and process the results. The corresponding scripts can be found in `examples/frankslide`
 
-### Prepare simulations
+### Prepare simulations <a name="prepare-simus"></a>
 
 Import the different required modules :
 
@@ -160,7 +172,7 @@ for delta in deltas:
 
 You must then run the simulations (see Shaltop documentation)
 
-### Get simulation results
+### Get simulation results <a name="simu-results"></a>
 
 Simulation results are read from a `Results` class. Main functions are defined in the parent class `tilupy.read.Results`, and each model has its own inheretied class `tilupy.models.[model_name].read.Results`. A class instance for a given model can be initiated with
 
@@ -194,7 +206,7 @@ where `res_name` must chosen among
 
 - `h` : Flow thickness in the direction perpendicular to the topography
 - `hvert` : Flow thickness in the vertical direction
-- `ux`and `uy` : Flow velocity in the X and Y direction (check whether it is in the cartesian reference frame or not)
+- `ux` and `uy` : Flow velocity in the X and Y direction (check whether it is in the cartesian reference frame or not)
 - `u` : Norm of the flow velocity
 - `hu` : Momentum (thickness * flow velocity)
 - `hu2` : Kinetic energy (thickness * square flow velocity)
@@ -226,7 +238,7 @@ h_max_res = res.get_output(res_name) #h_max_res is read directly from simulation
 plt.imshow(h_max_res.d)
 ```
 
-### Process simulation results in python script
+### Process simulation results in python script <a name="process-simus-python"></a>
 
 `tilupy`can be used to plot the results as images, where the flow state (thickness, velocity, ...)
 is shown with a colorscale on the underlying topography. Plots can be thouroughly customized (documentation not available yet).
@@ -261,7 +273,7 @@ tilupy.cmd.to_raster('shaltop', 'h_max', params_files,
                      folder_simus, fmt='tif')
 ```
 
-### Process simulation results in command line
+### Process simulation results in command line <a name="process-simus-cmd"></a>
 
 `tilupy` comes with command line scripts to allow for quick processing of results. They work similarly as the functions `tilupy.cmd.plot_results` and `tilupy.cmd.to_raster`, 
 although there are less options. 
@@ -281,3 +293,26 @@ tilupy_to_raster [-h] [-n RES_NAME] [-p PARAM_FILES] [-f FOLDER] [--fmt {tif,tif
 ```
 
 With both commands you can use the `-h` option do print help.
+
+## Models references <a name="models-refs"></a>
+
+We provide here a basic descriptions of models compatible with `tilupy`. The list of references is not exhaustive. 
+
+### Shaltop <a name="ref-shaltop"></a>
+
+`shaltop` models gravitational flow models over general topographies with small slope variation (small curvature) and friction. The equations are expressed in a horizontal/vertical reference frame and the shallow approximation is imposed in the direction normal to the slope. `shaltop` is not yet freely available. If you are interested, contact [m.peruzzetto@brgm.fr](mailto:m.peruzzetto@brgm.fr) or [mangeney@ipgp.fr](mailto:mangeney@ipgp.fr). 
+
+- Bouchut, F., Mangeney-Castelnau, A., Perthame, B., Vilotte, J.-P., 2003. A new model of Saint Venant and Savage–Hutter type for gravity driven shallow water flows. Comptes Rendus Mathématique 336, 531–536. [https://doi.org/10.1016/S1631-073X(03)00117-1](https://doi.org/10.1016/S1631-073X(03)00117-1)
+- Bouchut, F., Westdickenberg, M., 2004. Gravity driven shallow water models for arbitrary topography. Communications in Mathematical Sciences 2, 359–389. [https://doi.org/10.4310/CMS.2004.v2.n3.a2](https://doi.org/10.4310/CMS.2004.v2.n3.a2)
+- Mangeney-Castelnau, A., Bouchut, F., Vilotte, J.P., Lajeunesse, E., Aubertin, A., Pirulli, M., 2005. On the use of Saint Venant equations to simulate the spreading of a granular mass: numerical simulation of granular spreading. Journal of Geophysical Research: Solid Earth 110, B09103. [https://doi.org/10.1029/2004JB003161](https://doi.org/10.1029/2004JB003161)
+- Mangeney, A., Bouchut, F., Thomas, N., Vilotte, J.P., Bristeau, M.O., 2007. Numerical modeling of self-channeling granular flows and of their levee-channel deposits. Journal of Geophysical Research 112, F02017. [https://doi.org/10.1029/2006JF000469](https://doi.org/10.1029/2006JF000469)
+
+
+### r.avaflow <a name="ref-ravaflow"></a>
+
+`r.avaflow represents` a GIS-supported open source software tool for the simulation of complex, cascading mass flows over arbitrary topography. It can be downloaded, along with the associated documentation, on the officiel [website](https://www.landslidemodels.org/r.avaflow/). Note that the integration of `r.avaflow` in `tilupy` is partial and potentially not adapted to new releases of `r.avaflow`. 
+
+- Mergili, M., Fischer, J.-T., Krenn, J., Pudasaini, S.P., 2017. r.avaflow v1, an advanced open source computational framework for the propagation and interaction of two-phase mass flows. Geoscientific Model Development Discussions 10, 553–569. [https://doi.org/10.5194/gmd-10-553-2017](https://doi.org/10.5194/gmd-10-553-2017)
+- Pudasaini, S.P., Mergili, M., 2019. A Multi-Phase Mass Flow Model. Journal of Geophysical Research: Earth Surface 124, 2920–2942. [https://doi.org/10.1029/2019JF005204](https://doi.org/10.1029/2019JF005204)
+
+
