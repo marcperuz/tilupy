@@ -5,7 +5,6 @@ Created on Wed Jul 19 15:39:38 2023
 @author: peruzzetto
 """
 
-import pytest
 import os
 
 import tilupy.models.shaltop.initsimus as shinit

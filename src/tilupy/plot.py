@@ -299,7 +299,7 @@ def plot_data_on_topo(x, y, z, data, axe=None, figsize=(15/2.54, 15/2.54),
         colorbar_kwargs = {} if colorbar_kwargs is None else colorbar_kwargs
         if cmap_intervals is not None and extend_cc is not None:
             colorbar_kwargs['extend'] = extend_cc
-        cc = colorbar(fim, cax=axecc, **colorbar_kwargs)
+        colorbar(fim, cax=axecc, **colorbar_kwargs)
         
     # Adjust axes limits
     if xlims is not None:
@@ -419,7 +419,8 @@ def colorbar(mappable, ax=None,
 
 
 
-def plot_heatmaps(df, values, index, columns, aggfunc='mean', figsize=None, ncols=3,
+def plot_heatmaps(df, values, index, columns, aggfunc='mean',
+                  figsize=None, ncols=3,
                   heatmap_kws=None, notations=None, best_values=None,
                   plot_best_value = 'point', text_kwargs=None):
     
@@ -427,14 +428,14 @@ def plot_heatmaps(df, values, index, columns, aggfunc='mean', figsize=None, ncol
     ncols = min(nplots, ncols)
     nrows = int(np.ceil(nplots/ncols))
     fig = plt.figure(figsize=figsize)
-    positions = range(1,nplots + 1)
     axes = []
     
     for i in range(nplots):
         axe = fig.add_subplot(nrows, ncols, i+1)
         axes.append(axe)
         data = df.pivot_table(index=index, columns=columns,
-                              values=values[i], aggfunc=aggfunc).astype(float)
+                              values=values[i],
+                              aggfunc=aggfunc).astype(float)
         if heatmap_kws is None:
             kws = dict()
         elif isinstance(heatmap_kws, dict):

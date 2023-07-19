@@ -6,7 +6,6 @@ Created on Thu Jun  3 13:04:31 2021
 @author: peruzzetto
 """
 
-import platform
 import itertools
 import os
 

@@ -6,8 +6,8 @@ Created on Thu Jun  3 12:29:52 2021
 @author: peruzzetto
 """
 
-import os
 import numpy as np
+import importlib
 
 def read_raster(file):
     if file.endswith('.asc') or file.endswith('.txt'):
@@ -23,7 +23,6 @@ def read_tiff(file):
         ny, nx = dem.shape
         x = np.linspace(src.bounds.left, src.bounds.right, nx)
         y = np.linspace(src.bounds.bottom, src.bounds.top, ny)
-        dx = x[1] - x[0]
     return x, y, dem
     
 def read_ascii(file):
@@ -138,10 +137,9 @@ def write_raster(x, y, z, file_out, fmt=None, **kwargs):
         raise ValueError('File format not implemented in write_raster')
         
     if fmt.startswith('tif'):
-        try:
-            import rasterio
-        except ImportError:
-            print('rasterio is required to write tif files. Switching to asc format')
+        if importlib.util.find_spec('rasterio') is None:
+            print(('rasterio is required to write tif files.',
+                   ' Switching to asc format'))
             fmt = 'asc'
         
     if fmt in ['asc', 'ascii', 'txt']:

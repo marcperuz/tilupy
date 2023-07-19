@@ -17,7 +17,6 @@ def CSI(pred, obs):
     iobs = obs>0
     
     TP = np.sum(ipred*iobs)
-    TN = np.sum(~ipred*~iobs)
     FP = np.sum(ipred*~iobs)
     FN = np.sum(~ipred*iobs)
     

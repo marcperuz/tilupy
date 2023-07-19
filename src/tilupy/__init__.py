@@ -19,5 +19,5 @@ def set_config(**kwargs):
         import tilupy.notations
         tilupy.notations.set_labels()
     
-import tilupy.notations
+#import tilupy.notations
     

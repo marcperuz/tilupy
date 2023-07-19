@@ -134,7 +134,7 @@ class Results(tilupy.read.Results):
         if file_params is None:
             file_params = 'params.txt'
             
-        if not '.' in file_params:
+        if '.' not in file_params:
             file_params = file_params + '.txt'
             
         file_params = os.path.join(folder_base, file_params)

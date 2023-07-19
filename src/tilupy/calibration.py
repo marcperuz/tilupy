@@ -6,7 +6,6 @@ Created on Mon Oct 10 17:31:10 2022
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 
 from tilupy import read
@@ -78,7 +77,7 @@ def eval_simus(simus, methods, calib_parameters, methods_kws,
     if not isinstance(methods, list):
         methods = [methods]
     if not isinstance(methods_kws, list):
-        methods_args = [methods]
+        methods_kws = [methods_kws]
 
     if isinstance(simus, dict):
         simus=pd.DataFrame(simus)

@@ -5,13 +5,10 @@ Created on Wed Jun 14 18:16:45 2023
 @author: peruzzetto
 """
 
-import tilupy.notations as notations
-import tilupy.plot as plt_fn
 import tilupy.raster
 import tilupy.read
 
 import os
-import sys
 import argparse
 import glob
     
