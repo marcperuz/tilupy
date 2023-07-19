@@ -35,3 +35,6 @@ Homepage = "https://github.com/marcperuz/tilupy"
 [project.scripts]
 tilupy_plot = "tilupy.cmd:_tilupy_plot"
 tilupy_to_raster = "tilupy.cmd:_tilupy_to_raster"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
