@@ -209,7 +209,6 @@ read from this file. Otherwise, `h_max` is computed from the simulation recorded
 For instance, to load the recorded thicknesses in the current example :
 
 ```python
-import matplot
 res_name = 'h' 
 h_res = res.get_output(res_name) # Thicknesses recorded at different times
 # h_res.d is a 3D numpy array of dimension (len(x) x len(y) x len(h_res.t))
