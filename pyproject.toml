@@ -24,7 +24,8 @@ requires-python = ">=3.9"
 
 [project.optional-dependencies]
 test = ["pytest"]
-gis = ["rasterio"]
+dev = ["pipreqs"]
+gis = ["rasterio", "shapely"]
 
 [tools.setuptools]
 packages = ["src"]
