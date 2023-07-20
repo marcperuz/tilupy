@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tilupy"
-version = "0.1.1"
+version = "0.1.2"
 description = "Thin-layer models unified processing tool"
 readme = "README.md"
 authors = [{ name = "Marc Peruzzetto", email = "m.peruzzetto@brgm.fr" }]
