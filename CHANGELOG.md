@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## [v0.1.4](https://github.com/marcperuz/tilupy/releases/tag/v0.1.4) - 2023-07-20 14:17:06
+
+Compatibility with python 3.8 to 3.11 is ensured and tested.
+
+### Bug Fixes
+
+- test_shaltop:
+  - replace os.rmdir by shutil.rmtree ([2c8c7e6](https://github.com/marcperuz/tilupy/commit/2c8c7e6e7b86247d1016b48597da354592c66ba6))
+
+- tilupy.cmd:
+  - Use old behaviour of glob.glob, without root_dir parameter ([223dedb](https://github.com/marcperuz/tilupy/commit/223dedb4dd0996e8eee42a61c6ad6f50b6171b47))
+
+### Documentation
+
+- version:
+  - increase version to 0.1.4 ([55ed352](https://github.com/marcperuz/tilupy/commit/55ed3522ac8b1d080114630e02faf2f341d89866))
+
 ## [v0.1.3](https://github.com/marcperuz/tilupy/releases/tag/v0.1.3) - 2023-07-20 12:52:45
 
 Minimum python required is >=3.10, needed for glob module
