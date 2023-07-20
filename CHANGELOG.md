@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## [v0.1.3](https://github.com/marcperuz/tilupy/releases/tag/v0.1.3) - 2023-07-20 12:52:45
+
+Minimum python required is >=3.10, needed for glob module
+
 ## [v0.1.2](https://github.com/marcperuz/tilupy/releases/tag/v0.1.2) - 2023-07-20 12:33:17
 
 Realease first version to PyPi
