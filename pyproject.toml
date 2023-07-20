@@ -12,7 +12,7 @@ readme = "README.md"
 authors = [{ name = "Marc Peruzzetto", email = "m.peruzzetto@brgm.fr" }]
 license = { file = "LICENSE" }
 classifiers = [
-    "License :: CeCILL-C",
+    "License :: CeCILL-C Free Software License Agreement (CECILL-C)",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]
