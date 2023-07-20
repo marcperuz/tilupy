@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [v0.1.2](https://github.com/marcperuz/tilupy/releases/tag/v0.1.2) - 2023-07-20 12:33:17
+
+Realease first version to PyPi
+
+### Documentation
+
+- version:
+  - change version for testing pip install in test-pypi ([8e8398c](https://github.com/marcperuz/tilupy/commit/8e8398c755cfb946470cc36d5e3f94ef777d5802))
+  - Change version to test download to test-pypi ([97c9013](https://github.com/marcperuz/tilupy/commit/97c9013581fb6788efdf9272538ae89a5de3bd73))
+
 ## [v0.1.0](https://github.com/marcperuz/tilupy/releases/tag/v0.1.0) - 2023-07-20 09:01:35
 
 *No description*
