@@ -20,7 +20,7 @@ keywords = ["thin-layer", "shallow-water", "display", "simulation", "model", "pr
 dependencies = [
     "seaborn", "requests",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 
 [project.optional-dependencies]
 test = ["pytest"]

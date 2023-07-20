@@ -6,6 +6,7 @@ Created on Wed Jul 19 15:39:38 2023
 """
 
 import os
+import shutil
 
 import tilupy.models.shaltop.initsimus as shinit
 import tilupy.cmd
@@ -90,7 +91,7 @@ def test_shaltop_plot_results(folder_data):
                    for delta in [15, 20, 25]]
     for folder in folder_ress:
         if os.path.isdir(folder):
-            os.rmdir(folder)
+            shutil.rmtree(folder)
     tilupy.cmd.plot_results('shaltop', 'h', params_files, folder_simus,
                             save=True, display_plot=False,
                             figsize=(10/2.54, 10/2.54))
