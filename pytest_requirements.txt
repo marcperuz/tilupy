@@ -1,5 +1,4 @@
 matplotlib
-scipy
 numpy
 pandas
 pytest
@@ -7,3 +6,4 @@ rasterio
 sequests
 seaborn
 shapely
+scipy
