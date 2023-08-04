@@ -89,7 +89,7 @@ def plot_topo(z, x, y, contour_step=None, nlevels=None, level_min=None,
               step_contour_bold='auto', contour_labels_properties=None,
               label_contour=True, contour_label_effect=None,
               axe=None,
-              vert_exag=1, fraction=1, ndv=0, uniform_grey=None,
+              vert_exag=1, fraction=1, ndv=-9999, uniform_grey=None,
               contours_prop=None, contours_bold_prop=None,
               figsize=None,
               interpolation=None,
@@ -141,7 +141,7 @@ def plot_topo(z, x, y, contour_step=None, nlevels=None, level_min=None,
     fraction : TYPE, optional
         DESCRIPTION. The default is 1.
     ndv : TYPE, optional
-        DESCRIPTION. The default is 0.
+        DESCRIPTION. The default is -9999.
 
     Returns
     -------
@@ -156,6 +156,12 @@ def plot_topo(z, x, y, contour_step=None, nlevels=None, level_min=None,
                  y[-1]+dy/2]
     ls = mcolors.LightSource(azdeg=azdeg, altdeg=altdeg)
 
+    auto_bold_intv = None
+
+    if nlevels is None and contour_step is None:
+        auto_bold_intv, contour_step = get_contour_intervals(np.nanmin(z),
+                                                             np.nanmax(z))
+
     if level_min is None:
         if contour_step is not None:
             level_min = np.ceil(np.nanmin(z)/contour_step)*contour_step
@@ -164,12 +170,7 @@ def plot_topo(z, x, y, contour_step=None, nlevels=None, level_min=None,
     if contour_step is not None:
         levels = np.arange(level_min, np.nanmax(z), contour_step)
     else:
-        if nlevels is not None:
-            levels = np.linspace(level_min, np.nanmax(z), nlevels)
-        else:
-            bold_intv, thin_intv = get_contour_intervals(np.nanmin(z),
-                                                         np.nanmax(z))
-            levels = np.arange(level_min, np.nanmax(z), thin_intv)
+        levels = np.linspace(level_min, np.nanmax(z), nlevels)
 
     if axe is None:
         fig = plt.figure(figsize=figsize)
@@ -202,10 +203,15 @@ def plot_topo(z, x, y, contour_step=None, nlevels=None, level_min=None,
                                   linewidths=0.8)
 
     if step_contour_bold == 'auto':
-        step_contour_bold = bold_intv
+        if auto_bold_intv is None:
+            auto_bold_intv, _ = get_contour_intervals(np.nanmin(z),
+                                                      np.nanmax(z))
+        step_contour_bold = auto_bold_intv
 
     if step_contour_bold > 0:
         lmin = np.ceil(np.nanmin(z)/step_contour_bold)*step_contour_bold
+        if lmin < level_min:
+            lmin = lmin + step_contour_bold
         levels = np.arange(lmin, np.nanmax(z), step_contour_bold)
         cs = axe.contour(x, y, np.flip(z, axis=0),
                          extent=im_extent,
