@@ -1,8 +1,9 @@
 matplotlib
+scipy
 numpy
 pandas
 pytest
 rasterio
-Requests
+sequests
 seaborn
-Shapely
+shapely
