@@ -17,6 +17,10 @@ import seaborn as sns
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+BOLD_CONTOURS_INTV = [0.1, 0.2, 0.5, 1, 2., 5, 10, 20, 50, 100, 200, 500, 1000]
+NB_THIN_CONTOURS = 10
+NB_BOLD_CONTOURS = 3
+
 
 def centered_map(cmap, vmin, vmax, ncolors=256):
     """
@@ -55,8 +59,34 @@ def centered_map(cmap, vmin, vmax, ncolors=256):
     return new_map
 
 
-def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
-              step_contour_bold=0, contour_labels_properties=None,
+def get_contour_intervals(zmin, zmax, nb_bold_contours=None,
+                          nb_thin_contours=None):
+
+    if nb_thin_contours is None:
+        nb_thin_contours = NB_THIN_CONTOURS
+    if nb_bold_contours is None:
+        nb_bold_contours = NB_BOLD_CONTOURS
+
+    intv = (zmax - zmin) / nb_bold_contours
+    i = np.argmin(np.abs(np.array(BOLD_CONTOURS_INTV) - intv))
+
+    bold_intv = BOLD_CONTOURS_INTV[i]
+    if BOLD_CONTOURS_INTV[i] != BOLD_CONTOURS_INTV[0]:
+        if bold_intv - intv > 0:
+            bold_intv = BOLD_CONTOURS_INTV[i-1]
+
+    if nb_thin_contours is None:
+        thin_intv = bold_intv / NB_THIN_CONTOURS
+        if (zmax - zmin)/bold_intv > 5:
+            thin_intv = thin_intv*2
+    else:
+        thin_intv = bold_intv / nb_thin_contours
+
+    return bold_intv, thin_intv
+
+
+def plot_topo(z, x, y, contour_step=None, nlevels=None, level_min=None,
+              step_contour_bold='auto', contour_labels_properties=None,
               label_contour=True, contour_label_effect=None,
               axe=None,
               vert_exag=1, fraction=1, ndv=0, uniform_grey=None,
@@ -134,7 +164,12 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
     if contour_step is not None:
         levels = np.arange(level_min, np.nanmax(z), contour_step)
     else:
-        levels = np.linspace(level_min, np.nanmax(z), nlevels)
+        if nlevels is not None:
+            levels = np.linspace(level_min, np.nanmax(z), nlevels)
+        else:
+            bold_intv, thin_intv = get_contour_intervals(np.nanmin(z),
+                                                         np.nanmax(z))
+            levels = np.arange(level_min, np.nanmax(z), thin_intv)
 
     if axe is None:
         fig = plt.figure(figsize=figsize)
@@ -165,6 +200,9 @@ def plot_topo(z, x, y, contour_step=None, nlevels=25, level_min=None,
     if contours_bold_prop is None:
         contours_bold_prop = dict(alpha=0.8, colors='k',
                                   linewidths=0.8)
+
+    if step_contour_bold == 'auto':
+        step_contour_bold = bold_intv
 
     if step_contour_bold > 0:
         lmin = np.ceil(np.nanmin(z)/step_contour_bold)*step_contour_bold
