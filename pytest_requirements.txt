@@ -6,4 +6,3 @@ rasterio
 sequests
 seaborn
 shapely
-scipy
