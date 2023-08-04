@@ -20,7 +20,7 @@ It contains one submodule per thin-layer model for writing and reading raw input
 Outputs are then easily compared between different simulations / models. The models themselves are not part of this package and must
 be installed separately.
 
-Note that `tilupy` is still under development, thus only minimal documentation is available at the moment and testing is underway.
+Note that `tilupy` is still under development, thus only minimal documentation is available at the moment, and testing is underway.
 Contributions are feedback are most welcome. Reading and writing is available for the `SHALTOP` model (most commonly used by the author) and `r.avaflow`
 (only partly maintained).
 
