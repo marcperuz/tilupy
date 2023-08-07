@@ -8,6 +8,10 @@ Created on Fri May 21 12:10:46 2021
 import os
 import numpy as np
 
+import tilupy.make_topo
+import tilupy.make_mass
+import tilupy.plot
+
 
 def make_constant_slope(folder_out, theta=10, m_radius=50, m_height=50,
                         m_x=None, m_y=None,
@@ -43,3 +47,35 @@ def make_constant_slope(folder_out, theta=10, m_radius=50, m_height=50,
         np.savetxt(os.path.join(folder_out, name+'.asc'), a,
                    header=header_txt,
                    comments='')
+
+
+def gray99_topo_mass(dx=0.1, dy=0.1, save=False, folder_out=None):
+
+    # Initiate topography
+    X, Y, Z = tilupy.make_topo.gray99(dx=dx, dy=dy)
+
+    # Initiate initial mass. It is a spherical calotte above the topography,
+    # in Gray et al 99 (p. 1859) the resulting mass has a height of 0.22 m and a radius
+    # of 0.32 m (more precisely it is the length in the downslope direction)
+    # The correspondig radius of the sphere, and the offset from the topography
+    # in the topography normal direction (norm_offset) are deduced from these
+    # parameters
+
+    x0 = 0.06*np.cos(np.deg2rad(40))
+    hmass = 0.22
+    wmass = 0.32
+    radius = (wmass**2+hmass**2)/(2*hmass)
+    norm_offset = (hmass**2-wmass**2)/(2*hmass)
+    # Z = -np.tile(X, [len(Y), 1])*np.tan(np.deg2rad(20))
+    M = tilupy.make_mass.calotte(X, Y, Z, x0, 0,
+                                 radius, norm_offset=norm_offset,
+                                 res_type='true_normal')
+
+    return X, Y, Z, M
+
+
+if __name__ == '__main__':
+
+    x, y, z, m = gray99_topo_mass(dx=0.01, dy=0.01)
+    tilupy.plot.plot_data_on_topo(x, y, z, m,
+                                  topo_kwargs=dict(level_min=0.1))
