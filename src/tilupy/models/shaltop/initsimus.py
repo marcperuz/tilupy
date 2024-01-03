@@ -50,26 +50,27 @@ def write_params_file(params, directory=None,
     with open(os.path.join(directory, file_name), 'w') as file_params:
         for name in params:
             val = params[name]
-            if type(val) == int or type(val) == np.int64:
+            if isinstance(val, int) or isinstance(val, np.int64):
                 file_params.write('{:s} {:d}\n'.format(name, val))
-            if type(val) == float or type(val) == np.float64:
+            if isinstance(val, float) or isinstance(val, np.float64):
                 file_params.write('{:s} {:.8G}\n'.format(name, val))
-            if type(val) == str:
+            if isinstance(val, str):
                 file_params.write('{:s} {:s}\n'.format(name, val))
 
+
 def raster_to_shaltop_txtfile(file_in, file_out, folder_out=None):
-    
+
     if folder_out is not None:
         file_out = os.path.join(folder_out, file_out)
-        
+
     x, y, rast = tilupy.raster.read_raster(file_in)
     np.savetxt(file_out,
                np.reshape(np.flip(rast, axis=0), (rast.size, 1)),
                fmt='%.12G')
-    
+
     res = dict(x0=x[0], y0=y[0], dx=x[1]-x[0], dy=y[1]-y[0],
                nx=len(x), ny=len(y))
-    
+
     return res
 
 
