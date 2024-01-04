@@ -79,7 +79,7 @@ def test_shaltop_make_read_param_file(folder_data):
         if not files_created:
             break
 
-        assert files_created
+    assert files_created
 
 
 def test_shaltop_plot_results(folder_data):
