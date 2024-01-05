@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## [v0.1.5b](https://github.com/marcperuz/tilupy/releases/tag/v0.1.5b) - 2024-01-05 15:19:42
+
+New release with correct release name in toml file
+
 ## [v0.1.5](https://github.com/marcperuz/tilupy/releases/tag/v0.1.5) - 2024-01-04 12:54:39
 
 New release with minor bugs/style corrections
