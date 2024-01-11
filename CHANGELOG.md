@@ -1,5 +1,44 @@
 # CHANGELOG
 
+## [v0.1.5b](https://github.com/marcperuz/tilupy/releases/tag/v0.1.5b) - 2024-01-05 15:19:42
+
+New release with correct release name in toml file
+
+## [v0.1.5](https://github.com/marcperuz/tilupy/releases/tag/v0.1.5) - 2024-01-04 12:54:39
+
+New release with minor bugs/style corrections
+
+### Feature
+
+- data:
+  - add Gray99 topography and mass as data ([b02e092](https://github.com/marcperuz/tilupy/commit/b02e09276e15ffcdefc486b497b8f64d64021da5))
+
+- make_mass:
+  - add module for initial synthetic mass generation ([ca39f1b](https://github.com/marcperuz/tilupy/commit/ca39f1b26d6c69624eb568180f67fe89acf0cb22))
+
+- plot:
+  - add automatic calculation of contour line intervals ([934b1ce](https://github.com/marcperuz/tilupy/commit/934b1ce5f47f30956d2572993ec4e587f1bc519b))
+
+- make_topo:
+  - add function to generate synthetic channels. ([e8d5de0](https://github.com/marcperuz/tilupy/commit/e8d5de0b05cdcde1c30f54e0dff852329395e64c))
+  - generate topography from the experiment of Gray99 ([6005075](https://github.com/marcperuz/tilupy/commit/6005075c17ae72ff53833a60ca2e5ed11918e76d))
+
+### Bug Fixes
+
+- tests:
+  - fix indentation error in shaltop test function ([53c9249](https://github.com/marcperuz/tilupy/commit/53c92493e2efa67d379675565ce53e4aee9d1971))
+
+- calibration:
+  - fix old version of module import not corrected ([1af2a4a](https://github.com/marcperuz/tilupy/commit/1af2a4aec3c63e0663c45fb349d8b423d2cee2b6))
+
+- test:
+  - change test assertion in test_generated_data.py ([b132750](https://github.com/marcperuz/tilupy/commit/b13275075b6908fb5820879fc4daca857f6e2ad8))
+
+### Documentation
+
+- README:
+  - correct typo ([9985c8f](https://github.com/marcperuz/tilupy/commit/9985c8f9559b67b6da7b86231601753e9f7755cc))
+
 ## [v0.1.4](https://github.com/marcperuz/tilupy/releases/tag/v0.1.4) - 2023-07-20 14:17:06
 
 Compatibility with python 3.8 to 3.11 is ensured and tested.
