@@ -31,3 +31,11 @@ def test_get_temporal_stat(data_temporal_results):
     assert res.name == "h_int"
     assert res.d.ndim == 2
     assert res.d[0, 0] == 2.5
+
+
+def test_get_spatial_stat_npfn(data_temporal_results):
+    res = data_temporal_results.get_spatial_stat("int", "y")
+    assert res.name == "h_int_y"
+    assert res.d.ndim == 2
+    assert res.d[0, 0] == 0
+    assert res.d[0, 1] == 15.0
