@@ -81,13 +81,57 @@ class TemporalResults:
             dnew = np.trapz(self.d, x=self.t)
         return StaticResults(self.name + "_" + stat, dnew, x=self.x, y=self.y)
 
-    def spatial_integration(self, axis=(0, 1), cellsize=None):
-        """Spatial integration along one or two axes"""
-        if cellsize is None:
-            dnew = np.sum(self.d, axis=axis)
+    def get_spatial_stat(self, stat, axis):
+        """
+        Process temporal result using numpy basic functions, or integrate along
+        a given axis. The input must be at least 2 dimensionnal, the last
+        dimension corresponding to time.
+
+        Parameters
+        ----------
+        stat : string
+            numpy function used to process data, or "int" for integration
+        axis : string, int or tuple
+            Axis along which to compute stat? Can be 'x', 'y', 'xy', or
+            equivalently 0, 1 or (0, 1).
+
+        Returns
+        -------
+        TemporalResults
+            New Temporalresults instance with data reduced by 1 or 2 dimension.
+            The field name is [self.name]_[stat]_[axis], with axis converted to
+            string if given as int or tupe (see description of "axis" input)
+
+        """
+        if isinstance(axis, str):
+            axis_str = axis
+            if axis == "x":
+                axis = 0
+            elif axis == "y":
+                axis = 1
+            elif axis == "xy":
+                axis = (0, 1)
         else:
-            dnew = np.sum(self.d * cellsize, axis=axis)
-        self.d = dnew
+            if axis == 0:
+                axis_str = "x"
+            elif axis == 1:
+                axis_str = "y"
+            elif axis == (0, 1):
+                axis_str = "xy"
+        if stat in NP_OPERATORS:
+            dnew = getattr(np, stat)(self.d, axis=axis)
+        elif stat == "int":
+            dnew = np.sum(self.d, axis=axis)
+            if axis == 0:
+                dd = self.x[1] - self.x[0]
+            elif axis == 1:
+                dd = self.y[1] - self.y[0]
+            elif axis == (0, 1):
+                dd = (self.x[1] - self.x[0]) * (self.y[1] - self.y[0])
+            dnew = dnew * dd
+        new_name = self.name + "_" + stat + "_" + axis_str
+
+        return StaticResults(new_name, dnew, x=self.x, y=self.y)
 
     def plot(
         self,
