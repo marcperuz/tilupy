@@ -28,7 +28,7 @@ STATIC_DATA_2D = []
 TOPO_DATA_2D = ["z", "zinit", "costh"]
 
 NP_OPERATORS = ["max", "mean", "std", "sum", "min"]
-OTHER_OPERATORS = ["final", "initial", "intsum"]
+OTHER_OPERATORS = ["final", "initial", "int"]
 
 COMPUTED_STATIC_DATA_2D = []
 for stat in NP_OPERATORS + OTHER_OPERATORS:
@@ -77,7 +77,7 @@ class TemporalResults:
             dnew = self.d[..., -1]
         elif stat == "initial":
             dnew = self.d[..., 0]
-        elif stat == "intsum":
+        elif stat == "int":
             dnew = np.trapz(self.d, x=self.t)
         return StaticResults(self.name + "_" + stat, dnew, x=self.x, y=self.y)
 
