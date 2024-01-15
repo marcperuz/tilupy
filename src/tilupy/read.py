@@ -28,7 +28,7 @@ STATIC_DATA_2D = []
 TOPO_DATA_2D = ["z", "zinit", "costh"]
 
 NP_OPERATORS = ["max", "mean", "std", "sum", "min"]
-OTHER_OPERATORS = ["final", "initial", "int"]
+OTHER_OPERATORS = ["final", "initial", "intsum"]
 
 COMPUTED_STATIC_DATA_2D = []
 for stat in NP_OPERATORS + OTHER_OPERATORS:
@@ -77,7 +77,16 @@ class TemporalResults:
             dnew = self.d[..., -1]
         elif stat == "initial":
             dnew = self.d[..., 0]
-        return StaticResults(self.name + "_" + stat, dnew)
+        elif stat == "intsum":
+            if self.d.ndim == 3:
+                dnew = np.sum(
+                    self.d * self.t[np.newaxis, np.newaxis, :], axis=2
+                )
+            elif self.d.ndim == 2:
+                dnew = np.sum(self.d * self.t[np.newaxis, :], axis=1)
+            else:
+                dnew = np.sum(self.d * self.t)
+        return StaticResults(self.name + "_" + stat, dnew, x=self.x, y=self.y)
 
     def spatial_integration(self, axis=(0, 1), cellsize=None):
         """Spatial integration along one or two axes"""
