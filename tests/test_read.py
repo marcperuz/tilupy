@@ -39,3 +39,16 @@ def test_get_spatial_stat_npfn(data_temporal_results):
     assert res.d.ndim == 2
     assert res.d[0, 0] == 0
     assert res.d[0, 1] == 15.0
+
+
+@pytest.mark.parametrize(
+    "args, expected",
+    [
+        (("int", "y"), ("h_int_y", 2, 0, 15)),
+        (("int", "x"), ("h_int_x", 2, 0, 12)),
+    ],
+)
+def test_get_spatial_stat(args, expected, data_temporal_results):
+    res = data_temporal_results.get_spatial_stat(*args)
+    res_out = (res.name, res.d.ndim, res.d[0, 0], res.d[0, 1])
+    assert res_out == expected
