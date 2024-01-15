@@ -78,14 +78,7 @@ class TemporalResults:
         elif stat == "initial":
             dnew = self.d[..., 0]
         elif stat == "intsum":
-            if self.d.ndim == 3:
-                dnew = np.sum(
-                    self.d * self.t[np.newaxis, np.newaxis, :], axis=2
-                )
-            elif self.d.ndim == 2:
-                dnew = np.sum(self.d * self.t[np.newaxis, :], axis=1)
-            else:
-                dnew = np.sum(self.d * self.t)
+            dnew = np.trapz(self.d, x=self.t)
         return StaticResults(self.name + "_" + stat, dnew, x=self.x, y=self.y)
 
     def spatial_integration(self, axis=(0, 1), cellsize=None):
