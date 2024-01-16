@@ -7,12 +7,13 @@ Created on Mon Jan 15 14:06:54 2024
 
 import pytest
 import numpy as np
+import scipy
 
 import tilupy.read as tiread
 
 
 @pytest.fixture
-def data_temporal_results():
+def simple_temporal_results():
     d = np.ones((10, 15, 5))
     d[..., 0] = 0
     d[..., -1] = -1
@@ -33,8 +34,8 @@ def data_temporal_results():
         ("mean", ("h_mean", 2, 0.4)),
     ],
 )
-def test_get_temporal_stat(arg, expected, data_temporal_results):
-    res = data_temporal_results.get_temporal_stat(arg)
+def test_get_temporal_stat(arg, expected, simple_temporal_results):
+    res = simple_temporal_results.get_temporal_stat(arg)
     res_out = (res.name, res.d.ndim, res.d[0, 0])
     assert res_out == expected
 
@@ -42,12 +43,12 @@ def test_get_temporal_stat(arg, expected, data_temporal_results):
 @pytest.mark.parametrize(
     "args, expected",
     [
-        (("int", "y"), ("h_int_y", 2, 0, 15)),
-        (("int", "x"), ("h_int_x", 2, 0, 10)),
+        (("int", "y"), ("h_int_y", 2, 0, 10)),
+        (("int", "x"), ("h_int_x", 2, 0, 15)),
         (("mean", "x"), ("h_mean_x", 2, 0, 1)),
     ],
 )
-def test_get_spatial_stat(args, expected, data_temporal_results):
-    res = data_temporal_results.get_spatial_stat(*args)
+def test_get_spatial_stat(args, expected, simple_temporal_results):
+    res = simple_temporal_results.get_spatial_stat(*args)
     res_out = (res.name, res.d.ndim, res.d[0, 0], res.d[0, 1])
     assert res_out == expected

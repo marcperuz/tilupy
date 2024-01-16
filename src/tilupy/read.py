@@ -106,15 +106,15 @@ class TemporalResults:
         if isinstance(axis, str):
             axis_str = axis
             if axis == "x":
-                axis = 0
-            elif axis == "y":
                 axis = 1
+            elif axis == "y":
+                axis = 0
             elif axis == "xy":
                 axis = (0, 1)
         else:
-            if axis == 0:
+            if axis == 1:
                 axis_str = "x"
-            elif axis == 1:
+            elif axis == 0:
                 axis_str = "y"
             elif axis == (0, 1):
                 axis_str = "xy"
@@ -122,9 +122,9 @@ class TemporalResults:
             dnew = getattr(np, stat)(self.d, axis=axis)
         elif stat == "int":
             dnew = np.sum(self.d, axis=axis)
-            if axis == 0:
+            if axis == 1:
                 dd = self.x[1] - self.x[0]
-            elif axis == 1:
+            elif axis == 0:
                 dd = self.y[1] - self.y[0]
             elif axis == (0, 1):
                 dd = (self.x[1] - self.x[0]) * (self.y[1] - self.y[0])
