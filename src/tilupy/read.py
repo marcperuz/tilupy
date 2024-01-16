@@ -158,9 +158,7 @@ class TemporalResults:
             axe.set_ylabel(notations.LABELS[self.name])
 
         elif self.d.ndim == 2:
-            raise NotImplementedError(
-                ("Plot of 1D data as time", " functions not implemented yet")
-            )
+            axe.imshow(self.d)
 
         elif self.d.ndim == 3:
             if x is None or y is None or z is None:
