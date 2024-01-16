@@ -31,29 +31,25 @@ def simple_temporal_results():
 def gaussian_temporal_results():
     xmin, xmax = -1, 1
     ymin, ymax = -1, 1
-    dx = dy = 0.1
+    dx = dy = 0.05
     x = np.arange(xmin, xmax + dx / 2, dx)
     y = np.arange(ymin, ymax + dy / 2, dy)
 
+    Dx = xmax - xmin
+    Dy = ymax - ymin
     nx = len(x)
     ny = len(y)
-    nt = 3
+    nt = 10
 
-    step_x = (xmax - xmin) / 5
-    step_y = (ymax - ymin) / 8
     xv, yv = np.meshgrid(x, y, indexing="xy")
     yv = np.flip(yv, axis=0)
     pos = np.dstack((xv, yv))
     h = np.zeros((ny, nx, nt))
-    meanx = [xmin + step_x, xmin + 1.5 * step_x, xmin + 2.5 * step_x]
-    meany = [
-        (ymax + ymin) / 2 - step_y,
-        (ymax + ymin) / 2,
-        (ymax + ymin) / 2 + step_y,
-    ]
-    stdx = [step_x / 4, step_x / 3, step_x / 2]
-    stdy = [step_y / 3, step_y / 3, step_y / 3]
-    cov_r = [0, 0.3, 0]
+    meanx = np.linspace(xmin + 0.2 * Dx, xmax - 0.4 * Dx, nt)
+    meany = np.linspace(ymin + 0.3 * Dy, ymax - 0.3 * Dy, nt)
+    stdx = np.linspace(0.02 * Dx, 0.08 * Dx, nt)
+    stdy = [0.05 * Dy for i in range(nt)]
+    cov_r = np.linspace(0, 0.5, nt)
     for i in range(nt):
         mean = [meanx[i], meany[i]]
         cov = cov_r[i] * np.sqrt(stdx[i] * stdy[i])
