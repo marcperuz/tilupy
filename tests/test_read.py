@@ -26,26 +26,25 @@ def data_temporal_results():
     return test_data
 
 
-def test_get_temporal_stat(data_temporal_results):
-    res = data_temporal_results.get_temporal_stat("int")
-    assert res.name == "h_int"
-    assert res.d.ndim == 2
-    assert res.d[0, 0] == 2.5
-
-
-def test_get_spatial_stat_npfn(data_temporal_results):
-    res = data_temporal_results.get_spatial_stat("int", "y")
-    assert res.name == "h_int_y"
-    assert res.d.ndim == 2
-    assert res.d[0, 0] == 0
-    assert res.d[0, 1] == 15.0
+@pytest.mark.parametrize(
+    "arg, expected",
+    [
+        ("int", ("h_int", 2, 2.5)),
+        ("mean", ("h_mean", 2, 0.4)),
+    ],
+)
+def test_get_temporal_stat(arg, expected, data_temporal_results):
+    res = data_temporal_results.get_temporal_stat(arg)
+    res_out = (res.name, res.d.ndim, res.d[0, 0])
+    assert res_out == expected
 
 
 @pytest.mark.parametrize(
     "args, expected",
     [
         (("int", "y"), ("h_int_y", 2, 0, 15)),
-        (("int", "x"), ("h_int_x", 2, 0, 12)),
+        (("int", "x"), ("h_int_x", 2, 0, 10)),
+        (("mean", "x"), ("h_mean_x", 2, 0, 1)),
     ],
 )
 def test_get_spatial_stat(args, expected, data_temporal_results):
