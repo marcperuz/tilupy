@@ -17,7 +17,7 @@ def simple_temporal_results():
     d = np.ones((10, 15, 5))
     d[..., 0] = 0
     d[..., -1] = -1
-    test_data = tiread.TemporalResults(
+    test_data = tiread.TemporalResults2D(
         "h",
         d,
         np.arange(5),

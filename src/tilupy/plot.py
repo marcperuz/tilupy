@@ -426,7 +426,7 @@ def plot_imshow(
             colorbar_kwargs["extend"] = extend_cc
         colorbar(fim, cax=axecc, **colorbar_kwargs)
 
-    return axe, fim
+    return axe
 
 
 def plot_data_on_topo(
@@ -527,25 +527,36 @@ def plot_data_on_topo(
     return axe
 
 
-def plot_shotgather(
-    x,
-    t,
-    data,
-    axe=None,
-    figsize=None,
-    cmap=None,
-    minval=None,
-    maxval=None,
-    vmin=None,
-    vmax=None,
-    minval_abs=None,
-    cmap_intervals=None,
-    extend_cc="max",
-):
-    if axe is None:
-        fig, axe = plt.subplots(1, 1, figsize=figsize)
-    else:
-        fig = axe.figure
+def plot_shotgather(x, t, data, ylabel="X (m)", **kwargs):
+    """
+    Plot shotgather like image, with vertical axis as time and horizontal axis
+    and spatial dimension. This is a simple call to plot_shotgather, but
+    input data is transposed because in tilupy the last axis is time by
+    convention.
+
+    Parameters
+    ----------
+    x : NX-array
+        spatial coordinates
+    t : NT-array
+        time array (assumed in seconds)
+    data : TYPE
+        NX*NT array of data to be plotted
+    spatial_label : string, optional
+        label for y-axis. The default is "X (m)"
+    **kwargs : dict, optional
+        parameters passed on to plot_imshow
+
+    Returns
+    -------
+    axe : Axes
+        Axes instance where data is plotted
+
+    """
+    axe = plot_imshow(x, t, data.T, **kwargs)
+    axe.set_ylabel("Time (s)")
+
+    return axe
 
 
 def plot_maps(
@@ -554,7 +565,7 @@ def plot_maps(
     z,
     data,
     t,
-    file_name,
+    file_name=None,
     folder_out=None,
     figsize=None,
     dpi=None,

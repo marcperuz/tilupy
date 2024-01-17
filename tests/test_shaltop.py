@@ -110,6 +110,7 @@ def test_shaltop_plot_results(folder_data):
         save=True,
         display_plot=False,
         figsize=(10 / 2.54, 10 / 2.54),
+        minval=0.1,
     )
     files_plots = ["h_0000.png", "h_0001.png", "h_0002.png"]
 

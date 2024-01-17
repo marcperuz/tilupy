@@ -56,18 +56,18 @@ DATA_NAMES += STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
 class TemporalResults:
     """Time dependent result of simulation"""
 
-    def __init__(self, name, d, t, x=None, y=None, z=None):
-        # 0d, 1d or 2d result, plus one dimension for time.
+    def __init__(
+        self,
+        name,
+        d,
+        t,
+    ):
+        # array of data, with last dimension corresponding to time.
         self.d = d
         # 1d array with times, matching last dimension of self.d
         self.t = t
         # Name of data (e.g. h, u, hu, ...)
         self.name = name
-        # x and y arrays
-        self.x = x
-        self.y = y
-        # topography
-        self.z = z
 
     def get_temporal_stat(self, stat):
         """Statistical analysis along temporal dimension"""
@@ -82,27 +82,295 @@ class TemporalResults:
         return StaticResults(self.name + "_" + stat, dnew, x=self.x, y=self.y)
 
     def get_spatial_stat(self, stat, axis):
+        raise NotImplementedError()
+
+    def plot(*arg, **kwargs):
+        """Plot results as time dependent"""
+        raise NotImplementedError()
+
+    def save(*arg, **kwargs):
+        raise NotImplementedError()
+
+
+class TemporalResults0D(TemporalResults):
+    """
+    Class inheretied from TemporalResults where the data is one or multiple
+    scalar functions of time
+    of time.
+    """
+
+    def __init__(
+        self,
+        name,
+        d,
+        t,
+        scalar_names=None,
+    ):
         """
-        Process temporal result using numpy basic functions, or integrate along
-        a given axis. The input must be at least 2 dimensionnal, the last
-        dimension corresponding to time.
+        initiates TemporalResults0D instance
 
         Parameters
         ----------
-        stat : string
-            numpy function used to process data, or "int" for integration
-        axis : string, int or tuple
-            Axis along which to compute stat? Can be 'x', 'y', 'xy', or
-            equivalently 0, 1 or (0, 1).
+        name : string
+            Name of the data type.
+        d : array
+            array like data, with last dimension corresponding to time. It can
+            be a one dimensionnal Nt array, or a two dimensionnal NdxNt array,
+            where Nt is the legnth of t, and Nd correspond to the number of
+            scalar values of interest (e.g. X and Y coordinates of the center
+            of mass / front)
+        t : array
+            Array of time of length Nt.
+        scalar_names : list of strings, optional
+            List of length Nd containing the names of the scalar fields (one
+            name per row of d)
 
         Returns
         -------
-        TemporalResults
-            New Temporalresults instance with data reduced by 1 or 2 dimension.
-            The field name is [self.name]_[stat]_[axis], with axis converted to
-            string if given as int or tupe (see description of "axis" input)
+        None.
 
         """
+        super().__init__(name, d, t)
+        self.scalar_names = scalar_names
+
+    def plot(self, axe=None, figsize=None, **kwargs):
+        """Plot results.
+
+        :param axe: DESCRIPTION, defaults to None
+        :type axe: TYPE, optional
+        :param figsize: DESCRIPTION, defaults to None
+        :type figsize: TYPE, optional
+        :param **kwargs: DESCRIPTION
+        :type **kwargs: TYPE
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+
+        if axe is None:
+            fig, axe = plt.subplots(1, 1, figsize=figsize)
+
+        if isinstance(self.d, np.ndarray):
+            data = self.d.T
+        else:
+            data = self.d
+        axe.plot(self.t, data, labels=self.scalar_names)
+
+        return axe
+
+    def save(self):
+        raise NotImplementedError(
+            "Saving method for TemporalResults0D not implemented yet"
+        )
+
+    def get_spatial_stat(self, *arg, **kwargs):
+        raise NotImplementedError(
+            (
+                "Spatial integration of Spatialresults0D"
+                + " is not implemented because non relevant"
+            )
+        )
+
+
+class TemporalResults1D(TemporalResults):
+    """Class for simulation results described by one dimension for space
+    and one dimension for time.
+
+    :param name: Name of the data
+    :type name: str
+    :param d: data
+    :type d: numpy.ndarray
+    :param t: time array
+    :type t: array like
+    :param coords: 1D coordinate for spatial dimension
+    :type coords: array like
+    :param coords_name: name of the 1D coordinate (typically "X" or "Y")
+    :type coords_name: str
+
+    """
+
+    def __init__(self, name, d, t, coords, coords_name=None):
+        """Constructor method."""
+        super().__init__(name, d, t)
+        # x and y arrays
+        self.coords = coords
+        self.coords_name = coords_name
+
+    def plot(self, **kwargs):
+        """Plot results.
+
+        :param axe: DESCRIPTION, defaults to None
+        :type axe: TYPE, optional
+        :param figsize: DESCRIPTION, defaults to None
+        :type figsize: TYPE, optional
+        :param **kwargs: DESCRIPTION
+        :type **kwargs: TYPE
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+        axe = plt_fn.plot_shotgather(
+            self.coords, self.t, self.d, ylabel=self.coords_name, **kwargs
+        )
+
+        return axe
+
+    def save(self):
+        raise NotImplementedError(
+            "Saving method for TemporalResults1D not implemented yet"
+        )
+
+    def get_spatial_stat(self, stat):
+        """
+
+        :param stat: DESCRIPTION
+        :type stat: TYPE
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+
+        if stat in NP_OPERATORS:
+            dnew = getattr(np, stat)(self.d, axis=0)
+        elif stat == "int":
+            dd = self.coords[1] - self.coords[0]
+            dnew = np.sum(self.d, axis=0) * dd
+        return TemporalResults0D(self.name + "_" + stat, dnew, self.t)
+
+
+class TemporalResults2D(TemporalResults):
+    def __init__(self, name, d, t, x=None, y=None, z=None):
+        """Initiate instance of TemporalResults2D.
+
+        :param name: DESCRIPTION
+        :type name: TYPE
+        :param d: DESCRIPTION
+        :type d: TYPE
+        :param t: DESCRIPTION
+        :type t: TYPE
+        :param x: DESCRIPTION, defaults to None
+        :type x: TYPE, optional
+        :param y: DESCRIPTION, defaults to None
+        :type y: TYPE, optional
+        :param z: DESCRIPTION, defaults to None
+        :type z: TYPE, optional
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+
+        super().__init__(name, d, t)
+        # x and y arrays
+        self.x = x
+        self.y = y
+        # topography
+        self.z = z
+
+    def plot(
+        self,
+        x=None,
+        y=None,
+        z=None,
+        file_name=None,
+        folder_out=None,
+        figsize=None,
+        dpi=None,
+        fmt="png",
+        sup_plt_fn=None,
+        sup_plt_fn_args=None,
+        **kwargs
+    ):
+        """Plot results.
+
+        :param **kwargs: DESCRIPTION
+        :type **kwargs: TYPE
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+        if file_name is None:
+            file_name = self.name
+
+        if x is None:
+            x = self.x
+        if y is None:
+            y = self.y
+        if z is None:
+            z = self.z
+
+        if x is None or y is None or z is None:
+            raise TypeError("x, y or z data missing")
+
+        plt_fn.plot_maps(
+            x,
+            y,
+            z,
+            self.d,
+            self.t,
+            file_name=file_name,
+            folder_out=folder_out,
+            figsize=figsize,
+            dpi=dpi,
+            fmt=fmt,
+            sup_plt_fn=sup_plt_fn,
+            sup_plt_fn_args=sup_plt_fn_args,
+            **kwargs
+        )
+
+        return None
+
+    def save(
+        self,
+        folder=None,
+        file_name=None,
+        fmt="asc",
+        time=None,
+        x=None,
+        y=None,
+        **kwargs
+    ):
+        if x is None:
+            x = self.x
+        if y is None:
+            y = self.y
+        if x is None or y is None:
+            raise ValueError("x et y arrays must not be None")
+
+        if file_name is None:
+            file_name = self.name
+
+        if folder is not None:
+            file_name = os.path.join(folder, file_name)
+
+        if time is not None:
+            if isinstance(time, str):
+                if time == "final":
+                    inds = [self.d.shape[2] - 1]
+                elif time == "initial":
+                    inds = [0]
+            else:
+                inds = [np.argmin(time - np.abs(np.array(self.t) - time))]
+
+        for i in range(inds):
+            file_out = file_name + "_{:04d}.".format(i) + fmt
+            tilupy.raster.write_raster(
+                x, y, self.d[:, :, i], file_out, fmt=fmt, **kwargs
+            )
+
+    def get_spatial_stat(self, stat, axis=None):
+        """
+
+        :param stat: DESCRIPTION
+        :type stat: TYPE
+        :param axis: DESCRIPTION, defaults to None
+        :type axis: TYPE, optional
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+        if axis is None:
+            axis = (0, 1)
+
         if isinstance(axis, str):
             axis_str = axis
             if axis == "x":
@@ -118,6 +386,7 @@ class TemporalResults:
                 axis_str = "y"
             elif axis == (0, 1):
                 axis_str = "xy"
+
         if stat in NP_OPERATORS:
             dnew = getattr(np, stat)(self.d, axis=axis)
         elif stat == "int":
@@ -129,108 +398,19 @@ class TemporalResults:
             elif axis == (0, 1):
                 dd = (self.x[1] - self.x[0]) * (self.y[1] - self.y[0])
             dnew = dnew * dd
+
         new_name = self.name + "_" + stat + "_" + axis_str
 
-        return StaticResults(new_name, dnew, x=self.x, y=self.y)
-
-    def plot(
-        self,
-        axe=None,
-        figsize=None,
-        folder_out=None,
-        fmt="png",
-        dpi=150,
-        x=None,
-        y=None,
-        z=None,
-        sup_plt_fn=None,
-        sup_plt_fn_args=None,
-        **kwargs
-    ):
-        """Plot results as time dependent"""
-
-        if axe is None:
-            fig, axe = plt.subplots(1, 1, figsize=figsize)
-
-        if self.d.ndim == 1:
-            axe.plot(self.t, self.d, **kwargs)
-            axe.set_xlabel("Time (s)")
-            axe.set_ylabel(notations.LABELS[self.name])
-
-        elif self.d.ndim == 2:
-            axe.imshow(self.d)
-
-        elif self.d.ndim == 3:
-            if x is None or y is None or z is None:
-                raise TypeError("x, y or z data missing")
-            plt_fn.plot_maps(
-                x,
-                y,
-                z,
-                self.d,
-                self.t,
-                self.name,
-                folder_out=folder_out,
-                figsize=figsize,
-                fmt=fmt,
-                dpi=dpi,
-                sup_plt_fn=sup_plt_fn,
-                sup_plt_fn_args=sup_plt_fn_args,
-                **kwargs
+        if axis == (0, 1):
+            return TemporalResults0D(new_name, dnew, self.t)
+        else:
+            if axis == 0:
+                coords = self.y
+            else:
+                coords = self.x
+            return TemporalResults1D(
+                new_name, dnew, self.t, coords, coords_name=axis_str
             )
-            axe, fig = None, None
-
-        if self.d.ndim != 3 and sup_plt_fn is not None:
-            if sup_plt_fn_args is None:
-                sup_plt_fn_args = dict()
-            sup_plt_fn(axe, **sup_plt_fn_args)
-
-        return axe, fig
-
-    def save(
-        self,
-        folder=None,
-        file_name=None,
-        fmt="asc",
-        time=None,
-        x=None,
-        y=None,
-        **kwargs
-    ):
-        if self.d.ndim == 1:
-            raise NotImplementedError()
-
-        elif self.d.ndim == 2:
-            raise NotImplementedError()
-
-        elif self.d.ndim == 3:
-            if x is None:
-                x = self.x
-            if y is None:
-                y = self.y
-            if x is None or y is None:
-                raise ValueError("x et y arrays must not be None")
-
-            if file_name is None:
-                file_name = self.name
-
-            if folder is not None:
-                file_name = os.path.join(folder, file_name)
-
-            if time is not None:
-                if isinstance(time, str):
-                    if time == "final":
-                        inds = [self.d.shape[2] - 1]
-                    elif time == "initial":
-                        inds = [0]
-                else:
-                    inds = [np.argmin(time - np.abs(np.array(self.t) - time))]
-
-            for i in range(inds):
-                file_out = file_name + "_{:04d}.".format(i) + fmt
-                tilupy.raster.write_raster(
-                    x, y, self.d[:, :, i], file_out, fmt=fmt, **kwargs
-                )
 
 
 class StaticResults:
@@ -417,6 +597,38 @@ class Results:
         display_plot=True,
         **kwargs
     ):
+        """
+
+
+        Parameters
+        ----------
+        name : TYPE
+            DESCRIPTION.
+        save : TYPE, optional
+            DESCRIPTION. The default is True.
+        folder_out : TYPE, optional
+            DESCRIPTION. The default is None.
+        dpi : TYPE, optional
+            DESCRIPTION. The default is 150.
+        fmt : TYPE, optional
+            DESCRIPTION. The default is "png".
+        h_thresh : TYPE, optional
+            DESCRIPTION. The default is None.
+        from_file : TYPE, optional
+            DESCRIPTION. The default is False.
+        display_plot : TYPE, optional
+            DESCRIPTION. The default is True.
+        **kwargs : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        axe : TYPE
+            DESCRIPTION.
+        fig : TYPE
+            DESCRIPTION.
+
+        """
         assert name in DATA_NAMES
 
         if save:
@@ -447,12 +659,12 @@ class Results:
         if "z" not in kwargs:
             kwargs["z"] = self.zinit
 
-        axe, fig = data.plot(**kwargs)
+        axe = data.plot(**kwargs)
 
         if not display_plot:
             plt.switch_backend(backend)
 
-        return axe, fig
+        return axe
 
     def save(
         self,
