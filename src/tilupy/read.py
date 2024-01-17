@@ -189,14 +189,14 @@ class TemporalResults1D(TemporalResults):
 
     """
 
-    def __init__(self, name, d, t, coords, coords_name=None):
+    def __init__(self, name, d, t, coords=None, coords_name=None):
         """Constructor method."""
         super().__init__(name, d, t)
         # x and y arrays
         self.coords = coords
         self.coords_name = coords_name
 
-    def plot(self, **kwargs):
+    def plot(self, coords=None, **kwargs):
         """Plot results.
 
         :param axe: DESCRIPTION, defaults to None
@@ -209,6 +209,13 @@ class TemporalResults1D(TemporalResults):
         :rtype: TYPE
 
         """
+
+        if coords is None:
+            coords = self.coords
+
+        if coords is None:
+            raise TypeError("coords data missing")
+
         axe = plt_fn.plot_shotgather(
             self.coords, self.t, self.d, ylabel=self.coords_name, **kwargs
         )
