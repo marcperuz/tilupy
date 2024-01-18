@@ -11,6 +11,7 @@ import numpy as np
 
 import os
 import importlib
+import warnings
 
 import tilupy.notations as notations
 import tilupy.plot as plt_fn
@@ -305,8 +306,11 @@ class TemporalResults2D(TemporalResults):
         if z is None:
             z = self.z
 
-        if x is None or y is None or z is None:
+        if x is None or y is None:
             raise TypeError("x, y or z data missing")
+
+        if z is None:
+            warnings.warn("No topography given.")
 
         plt_fn.plot_maps(
             x,
@@ -406,17 +410,24 @@ class TemporalResults2D(TemporalResults):
                 dd = (self.x[1] - self.x[0]) * (self.y[1] - self.y[0])
             dnew = dnew * dd
 
+        if axis == 1:
+            # Needed to get correct orinetation as d[0, 0] is the upper corner
+            # of the data, with coordinates x[0], y[-1]
+            dnew = np.flip(dnew, axis=0)
+
         new_name = self.name + "_" + stat + "_" + axis_str
 
         if axis == (0, 1):
             return TemporalResults0D(new_name, dnew, self.t)
         else:
             if axis == 0:
-                coords = self.y
+                coords = self.x
+                coords_name = "x"
             else:
                 coords = self.x
+                coords_name = "y"
             return TemporalResults1D(
-                new_name, dnew, self.t, coords, coords_name=axis_str
+                new_name, dnew, self.t, coords, coords_name=coords_name
             )
 
 

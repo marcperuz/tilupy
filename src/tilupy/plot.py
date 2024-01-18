@@ -484,7 +484,8 @@ def plot_data_on_topo(
     # Plot topo
     topo_kwargs = {} if topo_kwargs is None else topo_kwargs
 
-    plot_topo(z, x, y, axe=axe, **topo_kwargs)
+    if z is not None:
+        plot_topo(z, x, y, axe=axe, **topo_kwargs)
 
     # Plot mask
     if mask is not None:
