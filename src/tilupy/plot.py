@@ -340,6 +340,9 @@ def plot_imshow(
     None.
 
     """
+    if axe is None:
+        fig, axe = plt.subplots(1, 1, figsize=figsize)
+
     f = copy.copy(data)
 
     # vmin and vmax are similar to minval and maxval
@@ -527,7 +530,7 @@ def plot_data_on_topo(
     return axe
 
 
-def plot_shotgather(x, t, data, ylabel="X (m)", **kwargs):
+def plot_shotgather(x, t, data, xlabel="X (m)", **kwargs):
     """
     Plot shotgather like image, with vertical axis as time and horizontal axis
     and spatial dimension. This is a simple call to plot_shotgather, but
@@ -553,8 +556,9 @@ def plot_shotgather(x, t, data, ylabel="X (m)", **kwargs):
         Axes instance where data is plotted
 
     """
-    axe = plot_imshow(x, t, data.T, **kwargs)
+    axe = plot_imshow(x, t[::-1], data.T, **kwargs)
     axe.set_ylabel("Time (s)")
+    axe.set_xlabel(xlabel)
 
     return axe
 

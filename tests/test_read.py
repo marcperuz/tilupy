@@ -9,6 +9,8 @@ import pytest
 import numpy as np
 import scipy
 
+import matplotlib.pyplot as plt
+
 import tilupy.read as tiread
 
 
@@ -57,10 +59,10 @@ def gaussian_temporal_results():
         rm = scipy.stats.multivariate_normal(mean, cov_m)
         h[:, :, i] = rm.pdf(pos)
 
-    test_data = tiread.TemporalResults(
+    test_data = tiread.TemporalResults2D(
         "h",
         h,
-        [0, 1, 2],
+        list(range(nt)),
         x=x,
         y=y,
     )
@@ -93,3 +95,28 @@ def test_get_spatial_stat(args, expected, simple_temporal_results):
     res = simple_temporal_results.get_spatial_stat(*args)
     res_out = (res.name, res.d.ndim, res.d[0, 0], res.d[0, 1])
     assert res_out == expected
+
+
+@pytest.fixture(scope="function")
+def plot_res():
+    def _plot(res):
+        res.plot()
+        yield plt.show()
+        plt.close("all")
+
+    return _plot
+
+
+@pytest.mark.parametrize(
+    "args, expected",
+    [
+        (("int", "y"), None),
+        (("int", "x"), None),
+    ],
+)
+def test_plot_spatial_stat(
+    args, expected, gaussian_temporal_results, plot_res
+):
+    res = gaussian_temporal_results.get_spatial_stat(*args)
+    plot_res(res)
+    assert True

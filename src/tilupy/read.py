@@ -217,7 +217,7 @@ class TemporalResults1D(TemporalResults):
             raise TypeError("coords data missing")
 
         axe = plt_fn.plot_shotgather(
-            self.coords, self.t, self.d, ylabel=self.coords_name, **kwargs
+            self.coords, self.t, self.d, xlabel=self.coords_name, **kwargs
         )
 
         return axe
