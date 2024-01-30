@@ -236,8 +236,15 @@ class TemporalResults1D(TemporalResults):
         if coords is None:
             raise TypeError("coords data missing")
 
+        xlabel = notations.get_label(self.coords_name, with_unit=True)
+        if "colorbar_kwargs" not in kwargs:
+            kwargs["colorbar_kwargs"] = dict()
+        if "label" not in kwargs["colorbar_kwargs"]:
+            clabel = notations.get_label(self.name)
+            kwargs["colorbar_kwargs"]["label"] = clabel
+
         axe = plt_fn.plot_shotgather(
-            self.coords, self.t, self.d, xlabel=self.coords_name, **kwargs
+            self.coords, self.t, self.d, xlabel=xlabel, **kwargs
         )
 
         return axe
