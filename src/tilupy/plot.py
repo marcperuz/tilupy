@@ -302,6 +302,7 @@ def plot_imshow(
     plot_colorbar=True,
     axecc=None,
     colorbar_kwargs=None,
+    aspect=None,
 ):
     """
     plt.imshow data with some pre-processing
@@ -420,6 +421,7 @@ def plot_imshow(
         interpolation="none",
         norm=norm,
         zorder=4,
+        aspect=aspect,
     )
 
     # Plot colorbar
@@ -557,6 +559,8 @@ def plot_shotgather(x, t, data, xlabel="X (m)", **kwargs):
         Axes instance where data is plotted
 
     """
+    if "aspect" not in kwargs:
+        kwargs["aspect"] = "auto"
     axe = plot_imshow(x, t[::-1], data.T, **kwargs)
     axe.set_ylabel("Time (s)")
     axe.set_xlabel(xlabel)
