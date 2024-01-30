@@ -114,6 +114,7 @@ def plot_res():
     [
         (("int", "y"), None),
         (("int", "x"), None),
+        (("int", "xy"), None),
     ],
 )
 def test_plot_spatial_stat(

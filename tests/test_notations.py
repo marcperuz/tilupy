@@ -26,7 +26,7 @@ def test_notations_with_unit(arg, expected):
     "arg, expected",
     [
         (("h", "max", None), "$h_{max}$ (m)"),
-        (("u", "int", "x"), "$u_{int(x)}$ (m$^2$ s$^{-1}$)"),
+        (("u", "int", "x"), "$\\int_{x} u$ (m$^2$ s$^{-1}$)"),
     ],
 )
 def test_add_operator_unit(arg, expected):

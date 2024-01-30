@@ -121,8 +121,7 @@ class TemporalResults0D(TemporalResults):
         d,
         t,
         scalar_names=None,
-        symbol=None,
-        unit=None,
+        notation=None,
     ):
         """
         initiates TemporalResults0D instance
@@ -148,7 +147,7 @@ class TemporalResults0D(TemporalResults):
         None.
 
         """
-        super().__init__(name, d, t, symbol=symbol, unit=unit)
+        super().__init__(name, d, t, notation=notation)
         self.scalar_names = scalar_names
 
     def plot(self, axe=None, figsize=None, **kwargs):
@@ -166,13 +165,17 @@ class TemporalResults0D(TemporalResults):
         """
 
         if axe is None:
-            fig, axe = plt.subplots(1, 1, figsize=figsize)
+            fig, axe = plt.subplots(
+                1, 1, figsize=figsize, layout="constrained"
+            )
 
         if isinstance(self.d, np.ndarray):
             data = self.d.T
         else:
             data = self.d
-        axe.plot(self.t, data, labels=self.scalar_names)
+        axe.plot(self.t, data, label=self.scalar_names)
+        axe.set_xlabel(notations.get_label("t"))
+        axe.set_ylabel(notations.get_label(self.name))
 
         return axe
 
