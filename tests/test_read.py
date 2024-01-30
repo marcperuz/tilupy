@@ -8,6 +8,8 @@ Created on Mon Jan 15 14:06:54 2024
 import pytest
 import numpy as np
 import scipy
+import os
+import shutil
 
 import matplotlib.pyplot as plt
 
@@ -115,8 +117,14 @@ def plot_res():
     ],
 )
 def test_plot_spatial_stat(
-    args, expected, gaussian_temporal_results, plot_res
+    args, expected, gaussian_temporal_results, folder_plots
 ):
+    os.makedirs(folder_plots, exist_ok=True)
+    file_out = "gaussian_{}_{}.png".format(args[0], args[1])
+    file_out = os.path.join(folder_plots, file_out)
+    if os.path.isfile(file_out):
+        os.remove(file_out)
     res = gaussian_temporal_results.get_spatial_stat(*args)
-    plot_res(res)
-    assert True
+    axe = res.plot()
+    axe.figure.savefig(file_out)
+    assert os.path.isfile(file_out)

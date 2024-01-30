@@ -5,46 +5,283 @@ Created on Thu Jun  3 12:20:34 2021
 
 @author: peruzzetto
 """
+import warnings
+import pandas as pd
+
 import tilupy
 
-LABELS = dict(
-    h="Thickness (m)",
-    h_max="Maximum thickness (m)",
-    u_max="Maximum velocity (m)",
-    h_final="Final thickness (m)",
-    h_initial="Initial thickness (m)",
-    u="Velocity (m s$^{-1}$)",
+LABEL_OPTIONS = dict(language="english", label_type="symbol")
+
+
+class Notation:
+    def __init__(
+        self, name, long_name=None, gender=None, symbol=None, unit=None
+    ):
+        self.name = name
+        self.long_name = long_name
+        self.gender = gender
+        self.symbol = symbol
+        self.unit = unit
+
+    @property
+    def unit(self):
+        return self._unit
+
+    @unit.setter
+    def unit(self, value):
+        if value is None:
+            self._unit = Unit()
+        else:
+            self._unit = value
+
+    @property
+    def gender(self):
+        return self._gender
+
+    @gender.setter
+    def gender(self, value):
+        if value is None:
+            self._gender = Gender()
+        else:
+            self._gender = value
+
+    def get_long_name(self, language=None, gender=None):
+        if isinstance(self.long_name, str):
+            return self.long_name
+
+        if language is None:
+            language = LABEL_OPTIONS["language"]
+
+        res = getattr(self.long_name, language)
+        if gender is not None:
+            res = res[gender]
+
+        return res
+
+
+class Unit(pd.Series):
+    UNITS = ["kg", "m", "s", "N", "Pa"]
+
+    def __init__(self, series=None, **kwargs):
+        if series is not None:
+            super().__init__(series)
+        else:
+            super().__init__()
+            for key in kwargs:
+                if key not in Unit.UNITS:
+                    raise ValueError("unrecognized unit")
+                self[key] = kwargs[key]
+
+    def __mul__(self, other):
+        tmp = self.add(other, fill_value=0)
+        return Unit(tmp[tmp != 0])
+
+    def get_label(self):
+        if self.empty:
+            return ""
+
+        positives = self[self >= 1].reindex(Unit.UNITS).dropna()
+        negatives = self[self < 0].reindex(Unit.UNITS).dropna()
+        text_label = [
+            index + "$^{:.0f}$".format(positives[index])
+            for index in positives.index
+        ]
+        text_label += [
+            index + "$^{{{:.0f}}}$".format(negatives[index])
+            for index in negatives.index
+        ]
+        text_label = " ".join(text_label)
+        text_label = text_label.replace("$^1$", "")
+
+        return text_label
+
+
+class LongName(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+class Gender(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+NOTATIONS = dict()
+OPERATORS = dict()
+
+NOTATIONS["x"] = Notation(
+    "x",
+    symbol="X",
+    unit=Unit(m=1),
+    long_name=LongName(english="X", french="X"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["y"] = Notation(
+    "y",
+    symbol="Y",
+    unit=Unit(m=1),
+    long_name=LongName(english="Y", french="Y"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["t"] = Notation(
+    "t",
+    symbol="t",
+    unit=Unit(s=1),
+    long_name=LongName(english="Time", french="Temps"),
+    gender=Gender(english=None, french="m"),
+)
+NOTATIONS["xy"] = Notation(
+    "xy",
+    symbol="XY",
+    unit=Unit(m=2),
+    long_name=LongName(english="Time", french="Temps"),
+    gender=Gender(english=None, french="m"),
+)
+NOTATIONS["h"] = Notation(
+    "h",
+    symbol="h",
+    unit=Unit(m=1),
+    long_name=LongName(english="thickness", french="épaisseur"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["u"] = Notation(
+    "u",
+    symbol="u",
+    unit=Unit(m=1, s=-1),
+    long_name=LongName(english="velocity", french="vitesse"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["hu"] = Notation(
+    "hu",
+    symbol="hu",
+    unit=Unit(m=2, s=-1),
+    long_name=None,
+    gender=None,
+)
+
+OPERATORS["max"] = Notation(
+    "max",
+    symbol="max",
+    unit=None,
+    long_name=LongName(
+        english="maximum", french=dict(m="maximum", f="maximale")
+    ),
+    gender=None,
+)
+OPERATORS["int"] = Notation(
+    "int",
+    symbol="int",
+    unit=None,
+    long_name=LongName(
+        english="maximum", french=dict(m="maximum", f="maximale")
+    ),
+    gender=None,
 )
 
 
-def get_labels(language=None):
-    # LANGUAGE = language
+def get_notation(name, language=None):
+    try:
+        notation = NOTATIONS[name]
+    except KeyError:
+        strings = name.split("_")
+        if len(strings) == 1:
+            notation = Notation(
+                name, symbol=name, unit=None, long_name=name, gender=None
+            )
+        else:
+            state = get_notation(strings[0])
+            operator = get_notation(strings[1])
+            if len(strings) == 3:
+                axis = strings[2]
+            else:
+                axis = None
+            notation = add_operator(
+                state, operator, axis=axis, language=language
+            )
+
+    return notation
+
+
+def get_operator_unit(name, axis):
+    if name == "int":
+        if axis == "t":
+            unit = Unit(s=1)
+        if axis in ["x", "y"]:
+            unit = Unit(m=1)
+        if axis == "xy":
+            unit = Unit(m=2)
+    else:
+        unit = Unit()
+    return unit
+
+
+def make_long_name(notation, operator, language=None):
     if language is None:
-        language = tilupy.config["language"]
+        language = LABEL_OPTIONS["language"]
+
+    str_notation = notation.get_long_name(language=language)
+    try:
+        gender = gender = getattr(notation.gender, language)
+    except AttributeError:
+        gender = None
+    str_operator = operator.get_long_name(language=language, gender=gender)
+
     if language == "english":
-        labels = dict(
-            h="Thickness (m)",
-            h_max="Maximum thickness (m)",
-            u_max="Maximum velocity (m s$^{-1}$)",
-            h_final="Final thickness (m)",
-            h_initial="Initial thickness (m)",
-            u="Velocity (m s$^{-1}$)",
-        )
+        res = str_operator + " " + str_notation
     elif language == "french":
-        labels = dict(
-            h="Epaisseur (m)",
-            h_max="Epaisseur maximale (m)",
-            u_max="Vitesse maximale (m s$^{-1}$)",
-            h_final="Epaisseur finale (m)",
-            h_initial="Epaisseur initiale (m)",
-            u="Vitesse (m s$^{-1}$)",
-        )
-    return labels
+        res = str_notation + " " + str_operator
+
+    return res
 
 
-def set_labels(language=None):
-    global LABELS
-    LABELS = get_labels(language=language)
+def add_operator(notation, operator, axis=None, language=None):
+    if isinstance(operator, str):
+        operator = get_notation(operator)
+
+    if isinstance(notation, str):
+        notation = get_notation(notation)
+
+    operator_symbol = operator.symbol
+    if axis is not None:
+        operator_symbol += "({})".format(axis)
+
+    unit_operator = get_operator_unit(operator.name, axis)
+
+    res = Notation(
+        name=notation.name + "_" + operator.name,
+        symbol="$" + notation.symbol + "_{{{}}}$".format(operator_symbol),
+        unit=notation.unit * unit_operator,
+        long_name=make_long_name(notation, operator, language=language),
+    )
+    return res
+
+
+def get_label(notation, with_unit=True, label_type=None, language=None):
+    if isinstance(notation, str):
+        notation = get_notation(notation)
+
+    if label_type is None:
+        label_type = LABEL_OPTIONS["label_type"]
+    if language is None:
+        language = LABEL_OPTIONS["language"]
+
+    if label_type == "litteral":
+        label = notation.get_long_name(language=language, gender=None)
+    elif label_type == "symbol":
+        label = notation.symbol
+
+    if with_unit:
+        unit_string = notation.unit.get_label()
+        # Add unit only if string is not empty
+        if unit_string:
+            label = label + " ({})".format(unit_string)
+
+    return label
+
+
+def set_label_options(**kwargs):
+    global LABEL_OPTIONS
+    LABEL_OPTIONS.update(**kwargs)
 
 
 def readme_to_params(file, readme_param_match=None):

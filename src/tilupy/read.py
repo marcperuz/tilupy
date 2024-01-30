@@ -50,11 +50,28 @@ for stat in NP_OPERATORS + OTHER_OPERATORS:
         COMPUTED_SPAT_0D_DATA.append(name + "_" + stat + "_xy")
 TEMPORAL_DATA_0D += COMPUTED_SPAT_0D_DATA
 
+TEMPORAL_DATA = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
+STATIC_DATA = (
+    STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D + COMPUTED_STATIC_DATA_2D
+)
+
 DATA_NAMES = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
 DATA_NAMES += STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
 
 
-class TemporalResults:
+class AbstractResults:
+    """Abstract class for TemporalResults and StaticResults"""
+
+    def __init__(self, name, d, notation=None):
+        self.name = name
+        self.d = d
+        if isinstance(notation, dict):
+            self.notation = notations.Notation(**notation)
+        else:
+            self.notation = notation
+
+
+class TemporalResults(AbstractResults):
     """Time dependent result of simulation"""
 
     def __init__(
@@ -62,13 +79,11 @@ class TemporalResults:
         name,
         d,
         t,
+        notation=None,
     ):
-        # array of data, with last dimension corresponding to time.
-        self.d = d
+        super().__init__(name, d, notation=notation)
         # 1d array with times, matching last dimension of self.d
         self.t = t
-        # Name of data (e.g. h, u, hu, ...)
-        self.name = name
 
     def get_temporal_stat(self, stat):
         """Statistical analysis along temporal dimension"""
@@ -106,6 +121,8 @@ class TemporalResults0D(TemporalResults):
         d,
         t,
         scalar_names=None,
+        symbol=None,
+        unit=None,
     ):
         """
         initiates TemporalResults0D instance
@@ -131,7 +148,7 @@ class TemporalResults0D(TemporalResults):
         None.
 
         """
-        super().__init__(name, d, t)
+        super().__init__(name, d, t, symbol=symbol, unit=unit)
         self.scalar_names = scalar_names
 
     def plot(self, axe=None, figsize=None, **kwargs):
@@ -190,9 +207,11 @@ class TemporalResults1D(TemporalResults):
 
     """
 
-    def __init__(self, name, d, t, coords=None, coords_name=None):
+    def __init__(
+        self, name, d, t, coords=None, coords_name=None, notation=None
+    ):
         """Constructor method."""
-        super().__init__(name, d, t)
+        super().__init__(name, d, t, notation=notation)
         # x and y arrays
         self.coords = coords
         self.coords_name = coords_name
@@ -247,7 +266,7 @@ class TemporalResults1D(TemporalResults):
 
 
 class TemporalResults2D(TemporalResults):
-    def __init__(self, name, d, t, x=None, y=None, z=None):
+    def __init__(self, name, d, t, x=None, y=None, z=None, notation=None):
         """Initiate instance of TemporalResults2D.
 
         :param name: DESCRIPTION
@@ -267,7 +286,7 @@ class TemporalResults2D(TemporalResults):
 
         """
 
-        super().__init__(name, d, t)
+        super().__init__(name, d, t, notation=notation)
         # x and y arrays
         self.x = x
         self.y = y
@@ -431,14 +450,11 @@ class TemporalResults2D(TemporalResults):
             )
 
 
-class StaticResults:
+class StaticResults(AbstractResults):
     """Result of simulation without time dependence"""
 
-    def __init__(self, name, d, x=None, y=None, z=None):
-        # 1d or 2d array
-        self.d = d
-        # Name of data
-        self.name = name
+    def __init__(self, name, d, x=None, y=None, z=None, notation=None):
+        super().__init__(name, d, notation=notation)
         # x and y arrays
         self.x = x
         self.y = y
@@ -589,16 +605,20 @@ class Results:
             self._costh = self.get_costh()
         return self._costh
 
-    def get_temporal_output(self, name, h_thresh=None):
-        return TemporalResults(name, None, None, h_thresh=h_thresh)
+    def get_temporal_output(self, name, notation=None):
+        if notation is None:
+            notation = notations.get_notation(name)
+        return TemporalResults(name, None, None, notation=notation)
 
     def get_static_output(self, name, **kwargs):
+        if "notation" not in kwargs or kwargs["notation"] is None:
+            kwargs["notation"] = notations.get_notation(name)
         return StaticResults(name, None, **kwargs)
 
     def get_output(self, name, **kwargs):
-        if name in TEMPORAL_DATA_2D:
+        if name in TEMPORAL_DATA:
             data = self.get_temporal_output(name, **kwargs)
-        elif name in STATIC_DATA_2D:
+        elif name in STATIC_DATA:
             state, stat = name.split("_")
             data = self.get_static_output(name, **kwargs)
         return data
@@ -667,8 +687,7 @@ class Results:
             if "colorbar_kwargs" not in kwargs:
                 kwargs["colorbar_kwargs"] = dict()
             if "label" not in kwargs["colorbar_kwargs"]:
-                labels = notations.LABELS
-                kwargs["colorbar_kwargs"]["label"] = labels[name]
+                kwargs["colorbar_kwargs"]["label"] = notations.get_label(name)
 
         if "x" not in kwargs:
             kwargs["x"] = self.x
