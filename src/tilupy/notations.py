@@ -247,9 +247,17 @@ def add_operator(notation, operator, axis=None, language=None):
 
     unit_operator = get_operator_unit(operator.name, axis)
 
+    if operator.name == "int":
+        symbol = "\\int_{{{}}} {}".format(axis, notation.symbol)
+    else:
+        operator_symbol = operator.symbol
+        if axis is not None:
+            operator_symbol += "({})".format(axis)
+        symbol = notation.symbol + "_{{{}}}".format(operator_symbol)
+
     res = Notation(
         name=notation.name + "_" + operator.name,
-        symbol="$" + notation.symbol + "_{{{}}}$".format(operator_symbol),
+        symbol=symbol,
         unit=notation.unit * unit_operator,
         long_name=make_long_name(notation, operator, language=language),
     )
@@ -268,7 +276,7 @@ def get_label(notation, with_unit=True, label_type=None, language=None):
     if label_type == "litteral":
         label = notation.get_long_name(language=language, gender=None)
     elif label_type == "symbol":
-        label = notation.symbol
+        label = "$" + notation.symbol + "$"
 
     if with_unit:
         unit_string = notation.unit.get_label()
