@@ -2,8 +2,9 @@ nx 201
 ny 201
 per 4020
 pery 4020
-tmax 20
+tmax 30
 dt_im 10
+dt_force 15
 file_z_init topography.d
 file_m_init init_mass.d
 initz 0

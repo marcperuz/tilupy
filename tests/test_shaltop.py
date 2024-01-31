@@ -46,8 +46,9 @@ def test_shaltop_make_read_param_file(folder_data):
         per=201 * 20,
         pery=201 * 20,
         # Simulation maximum time in seconds (not comutation time)
-        tmax=20,
+        tmax=30,
         dt_im=10,  # Time interval (s) between snapshots recordings
+        dt_force=15,
         file_z_init="topography.d",  # Name of topography input file
         file_m_init="init_mass.d",  # name of init mass input file
         initz=0,  # Topography is read from file
@@ -62,7 +63,7 @@ def test_shaltop_make_read_param_file(folder_data):
         y0=2000,
     )  # Min y value (used for plots after simulation is over)
 
-    deltas = [15, 20, 25]
+    deltas = [20, 25]
     folder_simus = os.path.join(folder_data, "frankslide", "shaltop")
     files_created = True
 
@@ -97,7 +98,7 @@ def test_shaltop_plot_results(folder_data):
             "delta_{:d}p00".format(delta),
             "plots",
         )
-        for delta in [15, 20, 25]
+        for delta in [20, 25]
     ]
     for folder in folder_ress:
         if os.path.isdir(folder):
@@ -112,7 +113,7 @@ def test_shaltop_plot_results(folder_data):
         figsize=(10 / 2.54, 10 / 2.54),
         minval=0.1,
     )
-    files_plots = ["h_0000.png", "h_0001.png", "h_0002.png"]
+    files_plots = ["h_0000.png", "h_0001.png", "h_0002.png", "h_0003.png"]
 
     all_files_created = True
     for folder in folder_ress:

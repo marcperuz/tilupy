@@ -19,7 +19,7 @@ import tilupy.raster
 
 RAW_STATES = ["hvert", "h", "ux", "uy"]
 
-TEMPORAL_DATA_0D = ["hu2int", "vol"]
+TEMPORAL_DATA_0D = ["ek", "vol"]
 TEMPORAL_DATA_1D = [""]
 TEMPORAL_DATA_2D = ["hvert", "h", "u", "ux", "uy", "hu", "hu2"]
 STATIC_DATA_0D = []
@@ -29,7 +29,8 @@ STATIC_DATA_2D = []
 TOPO_DATA_2D = ["z", "zinit", "costh"]
 
 NP_OPERATORS = ["max", "mean", "std", "sum", "min"]
-OTHER_OPERATORS = ["final", "initial", "int"]
+OTHER_OPERATORS = ["final", "init", "int"]
+TIME_OPERATORS = ["final", "init", "int"]
 
 COMPUTED_STATIC_DATA_2D = []
 for stat in NP_OPERATORS + OTHER_OPERATORS:
@@ -62,13 +63,16 @@ DATA_NAMES += STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
 class AbstractResults:
     """Abstract class for TemporalResults and StaticResults"""
 
-    def __init__(self, name, d, notation=None):
+    def __init__(self, name, d, notation=None, **kwargs):
         self.name = name
         self.d = d
         if isinstance(notation, dict):
             self.notation = notations.Notation(**notation)
+        elif notation is None:
+            notation = notations.get_notation(name)
         else:
             self.notation = notation
+        self.__dict__.update(kwargs)
 
 
 class TemporalResults(AbstractResults):
@@ -91,11 +95,25 @@ class TemporalResults(AbstractResults):
             dnew = getattr(np, stat)(self.d, axis=-1)
         elif stat == "final":
             dnew = self.d[..., -1]
-        elif stat == "initial":
+        elif stat == "init":
             dnew = self.d[..., 0]
         elif stat == "int":
             dnew = np.trapz(self.d, x=self.t)
-        return StaticResults(self.name + "_" + stat, dnew, x=self.x, y=self.y)
+        if dnew.ndim == 2:
+            return StaticResults2D(
+                self.name + "_" + stat,
+                dnew,
+                x=self.x,
+                y=self.y,
+                z=self.z,
+            )
+        elif dnew.ndim == 1:
+            return StaticResults1D(
+                self.name + "_" + stat,
+                dnew,
+                coords=self.coords,
+                coords_name=self.coords_name,
+            )
 
     def get_spatial_stat(self, stat, axis):
         raise NotImplementedError()
@@ -257,7 +275,7 @@ class TemporalResults1D(TemporalResults):
             "Saving method for TemporalResults1D not implemented yet"
         )
 
-    def get_spatial_stat(self, stat):
+    def get_spatial_stat(self, stat, **kwargs):
         """
 
         :param stat: DESCRIPTION
@@ -463,6 +481,18 @@ class TemporalResults2D(TemporalResults):
 class StaticResults(AbstractResults):
     """Result of simulation without time dependence"""
 
+    def __init__(self, name, d, notation=None):
+        super().__init__(name, d, notation=notation)
+        # x and y arrays
+
+    def plot(self):
+        raise NotImplementedError()
+
+    def save(self):
+        raise NotImplementedError()
+
+
+class StaticResults2D(StaticResults):
     def __init__(self, name, d, x=None, y=None, z=None, notation=None):
         super().__init__(name, d, notation=notation)
         # x and y arrays
@@ -490,9 +520,9 @@ class StaticResults(AbstractResults):
         """Plot results as map"""
 
         if axe is None:
-            fig, axe = plt.subplots(1, 1, figsize=figsize)
-        else:
-            fig = axe.figure
+            fig, axe = plt.subplots(
+                1, 1, figsize=figsize, layout="constrained"
+            )
 
         if x is None:
             x = self.x
@@ -503,6 +533,14 @@ class StaticResults(AbstractResults):
 
         if x is None or y is None or z is None:
             raise TypeError("x, y or z data missing")
+
+        if "colorbar_kwargs" not in kwargs:
+            kwargs["colorbar_kwargs"] = dict()
+        if "label" not in kwargs["colorbar_kwargs"]:
+            clabel = notations.get_label(self.name)
+            kwargs["colorbar_kwargs"]["label"] = clabel
+
+        print(self.name)
 
         axe = plt_fn.plot_data_on_topo(
             x, y, z, self.d, axe=axe, figsize=figsize, **kwargs
@@ -524,7 +562,7 @@ class StaticResults(AbstractResults):
                 file_out, dpi=dpi, bbox_inches="tight", pad_inches=0.05
             )
 
-        return axe, fig
+        return axe
 
     def save(
         self,
@@ -551,6 +589,111 @@ class StaticResults(AbstractResults):
             file_name = os.path.join(folder, file_name)
 
         tilupy.raster.write_raster(x, y, self.d, file_name, fmt=fmt, **kwargs)
+
+    def get_spatial_stat(self, stat, axis=None):
+        """
+
+        :param stat: DESCRIPTION
+        :type stat: TYPE
+        :param axis: DESCRIPTION, defaults to None
+        :type axis: TYPE, optional
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+        if axis is None:
+            axis = (0, 1)
+
+        if isinstance(axis, str):
+            axis_str = axis
+            if axis == "x":
+                axis = 1
+            elif axis == "y":
+                axis = 0
+            elif axis == "xy":
+                axis = (0, 1)
+        else:
+            if axis == 1:
+                axis_str = "x"
+            elif axis == 0:
+                axis_str = "y"
+            elif axis == (0, 1):
+                axis_str = "xy"
+
+        if stat in NP_OPERATORS:
+            dnew = getattr(np, stat)(self.d, axis=axis)
+        elif stat == "int":
+            dnew = np.sum(self.d, axis=axis)
+            if axis == 1:
+                dd = self.x[1] - self.x[0]
+            elif axis == 0:
+                dd = self.y[1] - self.y[0]
+            elif axis == (0, 1):
+                dd = (self.x[1] - self.x[0]) * (self.y[1] - self.y[0])
+            dnew = dnew * dd
+
+        if axis == 1:
+            # Needed to get correct orinetation as d[0, 0] is the upper corner
+            # of the data, with coordinates x[0], y[-1]
+            dnew = np.flip(dnew, axis=0)
+
+        new_name = self.name + "_" + stat + "_" + axis_str
+
+        if axis == (0, 1):
+            return StaticResults0D(new_name, dnew)
+        else:
+            if axis == 0:
+                coords = self.x
+                coords_name = "x"
+            else:
+                coords = self.y
+                coords_name = "y"
+            return StaticResults1D(
+                new_name, dnew, coords, coords_name=coords_name
+            )
+
+
+class StaticResults1D(StaticResults):
+    def __init__(self, name, d, coords=None, coords_name=None, notation=None):
+        """Constructor method."""
+        super().__init__(name, d, notation=notation)
+        # x and y arrays
+        self.coords = coords
+        self.coords_name = coords_name
+
+    def plot(self, axe=None, figsize=None, **kwargs):
+        """Plot results.
+
+        :param axe: DESCRIPTION, defaults to None
+        :type axe: TYPE, optional
+        :param figsize: DESCRIPTION, defaults to None
+        :type figsize: TYPE, optional
+        :param **kwargs: DESCRIPTION
+        :type **kwargs: TYPE
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+
+        if axe is None:
+            fig, axe = plt.subplots(
+                1, 1, figsize=figsize, layout="constrained"
+            )
+
+        if isinstance(self.d, np.ndarray):
+            data = self.d.T
+        else:
+            data = self.d
+        axe.plot(self.coords, data, label=self.scalar_names)
+        axe.set_xlabel(notations.get_label(self.coords_name))
+        axe.set_ylabel(notations.get_label(self.name))
+
+        return axe
+
+
+class StaticResults0D(StaticResults):
+    def __init__(self, d, name, notation=None):
+        super().__init__(name, d, notation=notation)
 
 
 class Results:
@@ -592,14 +735,14 @@ class Results:
     def h(self):
         """Get thickness"""
         if self._h is None:
-            self._h = self.get_temporal_output("h").d
+            self._h = self.get_output("h").d
         return self._h
 
     @property
     def h_max(self):
         """Get maximum thickness"""
         if self._h_max is None:
-            self._h_max = self.get_static_output("h", "max").d
+            self._h_max = self.get_output("h_max").d
         return self._h_max
 
     def get_costh(self):
@@ -615,23 +758,51 @@ class Results:
             self._costh = self.get_costh()
         return self._costh
 
-    def get_temporal_output(self, name, notation=None):
-        if notation is None:
-            notation = notations.get_notation(name)
-        return TemporalResults(name, None, None, notation=notation)
+    def get_output(self, output_name, from_file=True, **kwargs):
+        strs = output_name.split("_")
+        n_strs = len(strs)
+        # If no operator is called, call directly _get_output
+        if n_strs == 1:
+            res = self._get_output(output_name, **kwargs)
+            return res
 
-    def get_static_output(self, name, **kwargs):
-        if "notation" not in kwargs or kwargs["notation"] is None:
-            kwargs["notation"] = notations.get_notation(name)
-        return StaticResults(name, None, **kwargs)
+        # Otherwise, get name, operator and axis (optional)
+        name = strs[0]
+        operator = strs[1]
+        if n_strs == 3:
+            axis = strs[2]
+        else:
+            axis = None
 
-    def get_output(self, name, **kwargs):
-        if name in TEMPORAL_DATA:
-            data = self.get_temporal_output(name, **kwargs)
-        elif name in STATIC_DATA:
-            state, stat = name.split("_")
-            data = self.get_static_output(name, **kwargs)
-        return data
+        res = None
+        # If processed output is read directly from file, call the child method
+        # _read_from_file.
+        if from_file:
+            res = self._read_from_file(name, operator, axis=axis, **kwargs)
+            # res is None in case of function failure
+
+        # If no results could be read from file, output must be
+        # processed by tilupy
+        if res is None:
+            # Get output from name
+            res = self._get_output(name, x=self.x, y=self.y, **kwargs)
+            if axis is None:
+                # If no axis is given, the operator operates over time by
+                # default
+                res = res.get_temporal_stat(operator)
+            else:
+                if axis == "t":
+                    res = res.get_temporal_stat(operator)
+                else:
+                    res = res.get_spatial_stat(operator, axis=axis)
+
+        return res
+
+    def _get_output(self):
+        raise NotImplementedError
+
+    def _read_from_file(self):
+        raise NotImplementedError
 
     def plot(
         self,
@@ -772,6 +943,6 @@ def get_results(code, **kwargs):
 
 
 def use_thickness_threshold(simu, array, h_thresh):
-    thickness = simu.get_temporal_output("h")
+    thickness = simu.get_output("h")
     array[thickness.d < h_thresh] = 0
     return array

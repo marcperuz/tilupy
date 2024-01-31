@@ -30,7 +30,7 @@ class Notation:
     @unit.setter
     def unit(self, value):
         if value is None:
-            self._unit = Unit()
+            self._unit = None
         else:
             self._unit = value
 
@@ -144,6 +144,15 @@ NOTATIONS["h"] = Notation(
     long_name=LongName(english="thickness", french="épaisseur"),
     gender=Gender(english=None, french="f"),
 )
+NOTATIONS["hvert"] = Notation(
+    "hvert",
+    symbol="h^v",
+    unit=Unit(m=1),
+    long_name=LongName(
+        english="vertical thickness", french="épaisseur verticale"
+    ),
+    gender=Gender(english=None, french="f"),
+)
 NOTATIONS["u"] = Notation(
     "u",
     symbol="u",
@@ -204,14 +213,14 @@ def get_notation(name, language=None):
 
 def get_operator_unit(name, axis):
     if name == "int":
-        if axis == "t":
+        if axis == "t" or axis is None:
             unit = Unit(s=1)
         if axis in ["x", "y"]:
             unit = Unit(m=1)
         if axis == "xy":
             unit = Unit(m=2)
     else:
-        unit = Unit()
+        unit = Unit(pd.Series())
     return unit
 
 
@@ -248,17 +257,26 @@ def add_operator(notation, operator, axis=None, language=None):
     unit_operator = get_operator_unit(operator.name, axis)
 
     if operator.name == "int":
-        symbol = "\\int_{{{}}} {}".format(axis, notation.symbol)
+        if axis is None:
+            ll = "t"  # If axis is not specified by default integration is over time
+        else:
+            ll = axis
+        symbol = "\\int_{{{}}} {}".format(ll, notation.symbol)
     else:
         operator_symbol = operator.symbol
         if axis is not None:
             operator_symbol += "({})".format(axis)
         symbol = notation.symbol + "_{{{}}}".format(operator_symbol)
 
+    if notation.unit is None:
+        unit = None
+    else:
+        unit = notation.unit * unit_operator
+
     res = Notation(
         name=notation.name + "_" + operator.name,
         symbol=symbol,
-        unit=notation.unit * unit_operator,
+        unit=unit,
         long_name=make_long_name(notation, operator, language=language),
     )
     return res
@@ -278,7 +296,7 @@ def get_label(notation, with_unit=True, label_type=None, language=None):
     elif label_type == "symbol":
         label = "$" + notation.symbol + "$"
 
-    if with_unit:
+    if with_unit and notation.unit is not None:
         unit_string = notation.unit.get_label()
         # Add unit only if string is not empty
         if unit_string:

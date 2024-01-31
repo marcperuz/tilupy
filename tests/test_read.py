@@ -9,7 +9,6 @@ import pytest
 import numpy as np
 import scipy
 import os
-import shutil
 
 import matplotlib.pyplot as plt
 

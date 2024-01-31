@@ -203,10 +203,8 @@ def plot_topo(
         levels = np.linspace(level_min, np.nanmax(z), nlevels)
 
     if axe is None:
-        fig = plt.figure(figsize=figsize)
-        axe = fig.gca()
-    else:
-        fig = axe.figure
+        fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
+
     axe.set_ylabel("Y (m)")
     axe.set_xlabel("X (m)")
     axe.set_aspect("equal")
@@ -342,7 +340,7 @@ def plot_imshow(
 
     """
     if axe is None:
-        fig, axe = plt.subplots(1, 1, figsize=figsize)
+        fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
 
     f = copy.copy(data)
 
@@ -475,10 +473,8 @@ def plot_data_on_topo(
     dy = y[1] - y[0]
     im_extent = [x[0] - dx / 2, x[-1] + dx / 2, y[0] - dy / 2, y[-1] + dy / 2]
     if axe is None:
-        fig = plt.figure(figsize=figsize)
-        axe = fig.gca()
-    else:
-        fig = axe.figure
+        fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
+
     axe.set_ylabel("Y (m)")
     axe.set_xlabel("X (m)")
     axe.set_aspect("equal", adjustable="box")
@@ -629,7 +625,7 @@ def plot_maps(
             if sup_plt_fn_args is None:
                 sup_plt_fn_args = dict()
             sup_plt_fn(axe, **sup_plt_fn_args)
-        axe.figure.tight_layout(pad=0.1)
+        # axe.figure.tight_layout(pad=0.1)
         if folder_out is not None:
             axe.figure.savefig(
                 file_path.format(i),
@@ -824,6 +820,6 @@ def plot_heatmaps(
         for j in range(ncols):
             axes[-1, j].set_xlabel(notations[columns])
 
-    fig.tight_layout()
+    # fig.tight_layout()
 
     return fig

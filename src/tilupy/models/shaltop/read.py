@@ -14,21 +14,37 @@ import tilupy.read
 LOOKUP_NAMES = dict(
     h="rho",
     hvert="rho",
-    u="unorm",
     ux="u",
     uy="ut",
+    u="unorm",
     hu="momentum",
-    hu2int="ek",
+    ek="ek",
     vol="vol",
+    ep="ep",
+    etot="etot",
 )
 
 # Classify results
 STATES_OUTPUT = ["h", "ux", "uy", "hvert"]
-forces = ["facc", "fcurv", "ffric", "fgrav", "fpression"]
+
+tmp = ["facc", "fcurv", "ffric", "fgrav", "finert", "fpression"]
+
 FORCES_OUTPUT = []
-for axis in ["x", "y"]:
-    for f in forces:
-        FORCES_OUTPUT.append(f + axis)
+for force in tmp:
+    FORCES_OUTPUT.append(force + "x")
+    FORCES_OUTPUT.append(force + "y")
+
+FORCES_OUTPUT += [
+    "shearx",
+    "sheary",
+    "shearz",
+    "normalx",
+    "normaly",
+    "normalz",
+    "pbottom",
+    "pcorrdt",
+    "pcorrdiv",
+]
 
 INTEGRATED_OUTPUT = ["ek", "ep", "etot"]
 
@@ -176,6 +192,9 @@ class Results(tilupy.read.Results):
 
         # Get time of outputs
         self.tim = np.loadtxt(os.path.join(self.folder_output, "time_im.d"))
+        self.tforces = np.loadtxt(
+            os.path.join(self.folder_output, "time_forces.d")
+        )
 
     @property
     def zinit(self):
@@ -199,25 +218,32 @@ class Results(tilupy.read.Results):
                 read_file_bin(path_zinit, self.nx, self.ny)
             )
 
-    def get_temporal_output(self, name, d=None, t=None, **varargs):
-        """
-        Read 2D time dependent simulation results.
+    def _read_from_file(self, name, operator, axis=None, **kwargs):
+        res = None
 
-        Parameters
-        ----------
-        name : str
-            Name of output.
-        d : ndarray, optional
-            Data to be read. If None, will be computed.
-            The default is None.
-        t : ndarray, optional
-            Time of results snapshots (1D array), matching last dimension of d.
-            If None, will be computed. The default is None.
-        **varargs : TYPE
-            DESCRIPTION.
+        if name in ["u", "momentum", "h"]:
+            if operator in ["max"]:
+                file = os.path.join(
+                    self.folder_output, LOOKUP_NAMES[name] + operator + ".bin"
+                )
+                d = np.squeeze(read_file_bin(file, self.nx, self.ny))
+                res = tilupy.read.StaticResults2D(
+                    "_".join([name, operator]), d, x=self.x, y=self.y, z=self.z
+                )
 
-        """
+        if (name, operator) == ("hu2", "int"):
+            array = np.loadtxt(os.path.join(self.folder_output, "ek.d"))
+            d = array[:, 1]
+            t = array[:, 0]
+            res = tilupy.read.TemporalResults0D(name, d, t)
+
+        return res
+
+    def _get_output(self, name, **kwargs):
         # Read thicknesses or velocity components
+        d = None
+        t = None
+
         if name in STATES_OUTPUT:
             file = os.path.join(
                 self.folder_output, LOOKUP_NAMES[name] + ".bin"
@@ -227,15 +253,6 @@ class Results(tilupy.read.Results):
                 d = d / self.costh[:, :, np.newaxis]
             t = self.tim
 
-        # Raed integrated kinetic energy
-        if name in ["hu2int"]:
-            array = np.loadtxt(
-                os.path.join(self.folder_output, LOOKUP_NAMES[name] + ".d")
-            )
-            d = array[:, 1]
-            t = array[:, 0]
-
-        # Compute the velocity
         if name == "u":
             d = self.get_u()
             t = self.tim
@@ -250,65 +267,163 @@ class Results(tilupy.read.Results):
                 d = h * u**2
             t = self.tim
 
+        if name in INTEGRATED_OUTPUT:
+            array = np.loadtxt(
+                os.path.join(self.folder_output, LOOKUP_NAMES[name] + ".d")
+            )
+            d = array[:, 1]
+            if "density" in self.params:
+                density = self.params["density"]
+            else:
+                density = 1
+            d = d * density
+            t = array[:, 0]
+
+        if name in FORCES_OUTPUT:
+            file = os.path.join(self.folder_output, name + ".bin")
+            d = read_file_bin(file, self.nx, self.ny)
+            t = self.tforces
+
+        if d is None:
+            file = os.path.join(self.folder_output, name)
+            if os.path.isfile(file + ".bin"):
+                d = read_file_bin(file + ".bin", self.nx, self.ny)
+                t = self.tim
+            elif os.path.isfile(file + ".d"):
+                d = np.loadtxt(file + ".d")
+
         if (
-            "h_thresh" in varargs
-            and varargs["h_thresh"] is not None
+            "h_thresh" in kwargs
+            and kwargs["h_thresh"] is not None
             and d.ndim == 3
         ):
             d = tilupy.read.use_thickness_threshold(
-                self, d, varargs["h_thresh"]
+                self, d, kwargs["h_thresh"]
             )
 
-        return tilupy.read.TemporalResults2D(name, d, t)
+        if t is None:
+            return tilupy.read.AbstractResults(name, d)
 
-    def get_static_output(self, name, d=None, from_file=True, **varargs):
-        """
-        Read 2D time dependent simulation results.
-
-        Parameters
-        ----------
-        name : str
-            Name of output.
-        d : ndarray, optional
-            Data to be read. Last dimension is for time.
-            If None, will be computed.
-            The default is None.
-        **varargs : TYPE
-            DESCRIPTION.
-
-        """
-        if name in tilupy.read.COMPUTED_STATIC_DATA_2D:
-            state, stat = name.split("_")
-            if stat in ["final", "initial"]:
-                hh = self.get_temporal_output(state)
-                if state == "hvert":
-                    hh.d = hh.d / self.costh[:, :, np.newaxis]
-                return hh.get_temporal_stat(stat)
-            if from_file:
-                file = os.path.join(
-                    self.folder_output, LOOKUP_NAMES[state] + stat + ".bin"
-                )
-                if os.path.isfile(file):
-                    d = np.squeeze(read_file_bin(file, self.nx, self.ny))
-                else:
-                    print(
-                        file
-                        + " was not found, "
-                        + name
-                        + "_"
-                        + stat
-                        + " computed from temporal output."
-                    )
-                    from_file = False
-            if not from_file:
-                data = self.get_temporal_output(state)
-                if state == "hvert":
-                    hh.d = hh.d / self.costh
-                d = data.get_temporal_stat(stat).d
         else:
-            raise (NotImplementedError())
+            if d.ndim == 3:
+                return tilupy.read.TemporalResults2D(
+                    name, d, t, x=self.x, y=self.y, z=self.z
+                )
+            if d.ndim == 1:
+                return tilupy.read.TemporalResults0D(name, d, t)
 
-        return tilupy.read.StaticResults(name, d)
+        return None
+
+    # def get_temporal_output(self, name, d=None, t=None, **varargs):
+    #     """
+    #     Read 2D time dependent simulation results.
+
+    #     Parameters
+    #     ----------
+    #     name : str
+    #         Name of output.
+    #     d : ndarray, optional
+    #         Data to be read. If None, will be computed.
+    #         The default is None.
+    #     t : ndarray, optional
+    #         Time of results snapshots (1D array), matching last dimension of d.
+    #         If None, will be computed. The default is None.
+    #     **varargs : TYPE
+    #         DESCRIPTION.
+
+    #     """
+    #     # Read thicknesses or velocity components
+    #     if name in STATES_OUTPUT:
+    #         file = os.path.join(
+    #             self.folder_output, LOOKUP_NAMES[name] + ".bin"
+    #         )
+    #         d = read_file_bin(file, self.nx, self.ny)
+    #         if name == "hvert":
+    #             d = d / self.costh[:, :, np.newaxis]
+    #         t = self.tim
+
+    #     # Raed integrated kinetic energy
+    #     if name in ["hu2_int"]:
+    #         array = np.loadtxt(
+    #             os.path.join(self.folder_output, LOOKUP_NAMES[name] + ".d")
+    #         )
+    #         d = array[:, 1]
+    #         t = array[:, 0]
+
+    #     # Compute the velocity
+    #     if name == "u":
+    #         d = self.get_u()
+    #         t = self.tim
+
+    #     if name in ["hu", "hu2"]:
+    #         fileh = os.path.join(self.folder_output, "rho.bin")
+    #         h = read_file_bin(fileh, self.nx, self.ny)
+    #         u = self.get_u()
+    #         if name == "hu":
+    #             d = h * u
+    #         elif name == "hu2":
+    #             d = h * u**2
+    #         t = self.tim
+
+    #     if (
+    #         "h_thresh" in varargs
+    #         and varargs["h_thresh"] is not None
+    #         and d.ndim == 3
+    #     ):
+    #         d = tilupy.read.use_thickness_threshold(
+    #             self, d, varargs["h_thresh"]
+    #         )
+
+    #     return tilupy.read.TemporalResults2D(name, d, t)
+
+    # def get_static_output(self, name, d=None, from_file=True, **varargs):
+    #     """
+    #     Read 2D time dependent simulation results.
+
+    #     Parameters
+    #     ----------
+    #     name : str
+    #         Name of output.
+    #     d : ndarray, optional
+    #         Data to be read. Last dimension is for time.
+    #         If None, will be computed.
+    #         The default is None.
+    #     **varargs : TYPE
+    #         DESCRIPTION.
+
+    #     """
+    #     if name in tilupy.read.COMPUTED_STATIC_DATA_2D:
+    #         state, stat = name.split("_")
+    #         if stat in ["final", "initial"]:
+    #             hh = self.get_temporal_output(state)
+    #             if state == "hvert":
+    #                 hh.d = hh.d / self.costh[:, :, np.newaxis]
+    #             return hh.get_temporal_stat(stat)
+    #         if from_file:
+    #             file = os.path.join(
+    #                 self.folder_output, LOOKUP_NAMES[state] + stat + ".bin"
+    #             )
+    #             if os.path.isfile(file):
+    #                 d = np.squeeze(read_file_bin(file, self.nx, self.ny))
+    #             else:
+    #                 print(
+    #                     file
+    #                     + " was not found, "
+    #                     + name
+    #                     + "_"
+    #                     + stat
+    #                     + " computed from temporal output."
+    #                 )
+    #                 from_file = False
+    #         if not from_file:
+    #             data = self.get_temporal_output(state)
+    #             if state == "hvert":
+    #                 hh.d = hh.d / self.costh
+    #             d = data.get_temporal_stat(stat).d
+    #     else:
+    #         raise (NotImplementedError())
+
+    #     return tilupy.read.StaticResults(name, d)
 
     def get_u(self):
         """Compute velocity norm from results"""
