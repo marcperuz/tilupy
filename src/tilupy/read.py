@@ -242,7 +242,16 @@ class TemporalResults1D(TemporalResults):
         self.coords = coords
         self.coords_name = coords_name
 
-    def plot(self, coords=None, **kwargs):
+    def plot(
+        self,
+        coords=None,
+        folder_out=None,
+        suffix=None,
+        prefix=None,
+        fmt="png",
+        dpi=150,
+        **kwargs
+    ):
         """Plot results.
 
         :param axe: DESCRIPTION, defaults to None
@@ -277,6 +286,18 @@ class TemporalResults1D(TemporalResults):
             ylabel=notations.get_label("t"),
             **kwargs
         )
+
+        if folder_out is not None:
+            file_name = self.name
+            if suffix is not None:
+                file_name = file_name + "_" + suffix
+            if prefix is not None:
+                file_name = prefix + "_" + file_name
+            file_out = os.path.join(folder_out, file_name + "." + fmt)
+            # axe.figure.tight_layout(pad=0.1)
+            axe.figure.savefig(
+                file_out, dpi=dpi, bbox_inches="tight", pad_inches=0.05
+            )
 
         return axe
 
@@ -584,7 +605,7 @@ class StaticResults2D(StaticResults):
             if prefix is not None:
                 file_name = prefix + "_" + file_name
             file_out = os.path.join(folder_out, file_name + "." + fmt)
-            axe.figure.tight_layout(pad=0.1)
+            # axe.figure.tight_layout(pad=0.1)
             axe.figure.savefig(
                 file_out, dpi=dpi, bbox_inches="tight", pad_inches=0.05
             )
@@ -880,7 +901,6 @@ class Results:
             DESCRIPTION.
 
         """
-        assert name in DATA_NAMES
 
         if save:
             if folder_out is None:
@@ -904,12 +924,12 @@ class Results:
         #             self.notation
         #         )
 
-        if "x" not in kwargs:
-            kwargs["x"] = self.x
-        if "y" not in kwargs:
-            kwargs["y"] = self.y
-        if "z" not in kwargs:
-            kwargs["z"] = self.zinit
+        # if "x" not in kwargs:
+        #     kwargs["x"] = self.x
+        # if "y" not in kwargs:
+        #     kwargs["y"] = self.y
+        # if "z" not in kwargs:
+        #     kwargs["z"] = self.zinit
 
         axe = data.plot(**kwargs)
 
