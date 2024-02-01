@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [v1.0.0](https://github.com/marcperuz/tilupy/releases/tag/v1.0.0) - 2024-02-01 13:40:53
+
+Management of spatial and temporal integration of simulation results. Major improvements include 
+ -  Automatic and intelligent management of notations (symbols, litteral names, units)
+ - Automatic generation of notations when results are processed (e.g. time or spatial integrals)
+ - Generic plot functions for various result types, in particular time dependent results (line plots and "shotgather" type plots)
+ - Simplified and intuitive recovery of simulations results from strings, including reading code-specific outputs
+
 ## [v1.0.0-rc1](https://github.com/marcperuz/tilupy/releases/tag/v1.0.0-rc1) - 2024-02-01 13:20:38
 
 pre-release for 1.0.0, checking that distribution to test-pypi is working
