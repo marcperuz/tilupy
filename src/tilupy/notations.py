@@ -5,10 +5,7 @@ Created on Thu Jun  3 12:20:34 2021
 
 @author: peruzzetto
 """
-import warnings
 import pandas as pd
-
-import tilupy
 
 LABEL_OPTIONS = dict(language="english", label_type="symbol")
 

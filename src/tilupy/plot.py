@@ -15,8 +15,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import seaborn as sns
 
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
 BOLD_CONTOURS_INTV = [
     0.1,
     0.2,
