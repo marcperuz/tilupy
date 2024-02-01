@@ -6,11 +6,7 @@ Created on Tue Jan 30 23:29:00 2024
 """
 
 import pytest
-import numpy as np
-import scipy
 import os
-
-import matplotlib.pyplot as plt
 
 import tilupy.read as tiread
 import tilupy.cmd
