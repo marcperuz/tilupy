@@ -844,7 +844,7 @@ class Results:
         dpi=150,
         fmt="png",
         h_thresh=None,
-        from_file=False,
+        from_file=True,
         display_plot=True,
         **kwargs
     ):
