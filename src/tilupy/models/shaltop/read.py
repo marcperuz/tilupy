@@ -224,7 +224,7 @@ class Results(tilupy.read.Results):
         res = None
 
         if name in ["u", "momentum", "h"]:
-            if operator in ["max"]:
+            if operator in ["max"] and axis in [None, "t"]:
                 file = os.path.join(
                     self.folder_output, LOOKUP_NAMES[name] + operator + ".bin"
                 )
