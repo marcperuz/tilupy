@@ -86,7 +86,12 @@ def test_plot(folder_data, folder_plots, simu_data, args, expected):
 )
 def test_plot_cmd(folder_data, folder_plots, simu_data, args, expected):
     folder_simus = os.path.join(folder_data, simu_data["simu_name"], args[0])
-    folder_res = os.path.join(folder_plots, simu_data["simu_name"], args[0])
+    folder_res = os.path.join(
+        folder_plots,
+        simu_data["simu_name"],
+        args[0],
+        "cmd",
+    )
     os.makedirs(folder_res, exist_ok=True)
     for state in args[1]:
         tilupy.cmd.plot_results(
