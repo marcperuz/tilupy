@@ -69,7 +69,7 @@ class AbstractResults:
         if isinstance(notation, dict):
             self.notation = notations.Notation(**notation)
         elif notation is None:
-            notation = notations.get_notation(name)
+            self.notation = notations.get_notation(name)
         else:
             self.notation = notation
         self.__dict__.update(kwargs)
@@ -99,10 +99,14 @@ class TemporalResults(AbstractResults):
             dnew = self.d[..., 0]
         elif stat == "int":
             dnew = np.trapz(self.d, x=self.t)
+
+        notation = notations.add_operator(self.notation, stat, axis="t")
+
         if dnew.ndim == 2:
             return StaticResults2D(
                 self.name + "_" + stat,
                 dnew,
+                notation=notation,
                 x=self.x,
                 y=self.y,
                 z=self.z,
@@ -111,6 +115,7 @@ class TemporalResults(AbstractResults):
             return StaticResults1D(
                 self.name + "_" + stat,
                 dnew,
+                notation=notation,
                 coords=self.coords,
                 coords_name=self.coords_name,
             )
@@ -193,7 +198,7 @@ class TemporalResults0D(TemporalResults):
             data = self.d
         axe.plot(self.t, data, label=self.scalar_names)
         axe.set_xlabel(notations.get_label("t"))
-        axe.set_ylabel(notations.get_label(self.name))
+        axe.set_ylabel(notations.get_label(self.notation))
 
         return axe
 
@@ -261,7 +266,7 @@ class TemporalResults1D(TemporalResults):
         if "colorbar_kwargs" not in kwargs:
             kwargs["colorbar_kwargs"] = dict()
         if "label" not in kwargs["colorbar_kwargs"]:
-            clabel = notations.get_label(self.name)
+            clabel = notations.get_label(self.notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
 
         axe = plt_fn.plot_shotgather(
@@ -290,7 +295,12 @@ class TemporalResults1D(TemporalResults):
         elif stat == "int":
             dd = self.coords[1] - self.coords[0]
             dnew = np.sum(self.d, axis=0) * dd
-        return TemporalResults0D(self.name + "_" + stat, dnew, self.t)
+        notation = notations.add_operator(
+            self.notation, stat, axis=self.coords_name
+        )
+        return TemporalResults0D(
+            self.name + "_" + stat, dnew, self.t, notation=notation
+        )
 
 
 class TemporalResults2D(TemporalResults):
@@ -463,9 +473,10 @@ class TemporalResults2D(TemporalResults):
             dnew = np.flip(dnew, axis=0)
 
         new_name = self.name + "_" + stat + "_" + axis_str
+        notation = notations.add_operator(self.notation, stat, axis=axis_str)
 
         if axis == (0, 1):
-            return TemporalResults0D(new_name, dnew, self.t)
+            return TemporalResults0D(new_name, dnew, self.t, notation=notation)
         else:
             if axis == 0:
                 coords = self.x
@@ -474,7 +485,12 @@ class TemporalResults2D(TemporalResults):
                 coords = self.x
                 coords_name = "y"
             return TemporalResults1D(
-                new_name, dnew, self.t, coords, coords_name=coords_name
+                new_name,
+                dnew,
+                self.t,
+                coords,
+                coords_name=coords_name,
+                notation=notation,
             )
 
 
@@ -537,7 +553,7 @@ class StaticResults2D(StaticResults):
         if "colorbar_kwargs" not in kwargs:
             kwargs["colorbar_kwargs"] = dict()
         if "label" not in kwargs["colorbar_kwargs"]:
-            clabel = notations.get_label(self.name)
+            clabel = notations.get_label(self.notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
 
         print(self.name)
@@ -638,9 +654,10 @@ class StaticResults2D(StaticResults):
             dnew = np.flip(dnew, axis=0)
 
         new_name = self.name + "_" + stat + "_" + axis_str
+        notation = notations.add_operator(self.notation, stat, axis=axis_str)
 
         if axis == (0, 1):
-            return StaticResults0D(new_name, dnew)
+            return StaticResults0D(new_name, dnew, notation=notation)
         else:
             if axis == 0:
                 coords = self.x
@@ -649,7 +666,11 @@ class StaticResults2D(StaticResults):
                 coords = self.y
                 coords_name = "y"
             return StaticResults1D(
-                new_name, dnew, coords, coords_name=coords_name
+                new_name,
+                dnew,
+                coords,
+                coords_name=coords_name,
+                notation=notation,
             )
 
 
@@ -686,7 +707,7 @@ class StaticResults1D(StaticResults):
             data = self.d
         axe.plot(self.coords, data, label=self.scalar_names)
         axe.set_xlabel(notations.get_label(self.coords_name))
-        axe.set_ylabel(notations.get_label(self.name))
+        axe.set_ylabel(notations.get_label(self.notation))
 
         return axe
 
@@ -864,11 +885,13 @@ class Results:
 
         data = self.get_output(name, from_file=from_file, h_thresh=h_thresh)
 
-        if name in TEMPORAL_DATA_2D + STATIC_DATA_2D:
-            if "colorbar_kwargs" not in kwargs:
-                kwargs["colorbar_kwargs"] = dict()
-            if "label" not in kwargs["colorbar_kwargs"]:
-                kwargs["colorbar_kwargs"]["label"] = notations.get_label(name)
+        # if name in TEMPORAL_DATA_2D + STATIC_DATA_2D:
+        #     if "colorbar_kwargs" not in kwargs:
+        #         kwargs["colorbar_kwargs"] = dict()
+        #     if "label" not in kwargs["colorbar_kwargs"]:
+        #         kwargs["colorbar_kwargs"]["label"] = notations.get_label(
+        #             self.notation
+        #         )
 
         if "x" not in kwargs:
             kwargs["x"] = self.x

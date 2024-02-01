@@ -10,6 +10,8 @@ import os
 import numpy as np
 import tilupy.read
 
+from tilupy import notations
+
 # Dictionnary with results names lookup table, to match code output names
 LOOKUP_NAMES = dict(
     h="rho",
@@ -243,6 +245,7 @@ class Results(tilupy.read.Results):
         # Read thicknesses or velocity components
         d = None
         t = None
+        notation = None
 
         if name in STATES_OUTPUT:
             file = os.path.join(
@@ -283,6 +286,12 @@ class Results(tilupy.read.Results):
             file = os.path.join(self.folder_output, name + ".bin")
             d = read_file_bin(file, self.nx, self.ny)
             t = self.tforces
+            notation = notations.Notation(
+                name,
+                long_name=name,
+                unit=notations.Unit(Pa=1, kg=-1, m=3),
+                symbol=name,
+            )
 
         if d is None:
             file = os.path.join(self.folder_output, name)
@@ -302,15 +311,17 @@ class Results(tilupy.read.Results):
             )
 
         if t is None:
-            return tilupy.read.AbstractResults(name, d)
+            return tilupy.read.AbstractResults(name, d, notation=notation)
 
         else:
             if d.ndim == 3:
                 return tilupy.read.TemporalResults2D(
-                    name, d, t, x=self.x, y=self.y, z=self.z
+                    name, d, t, notation=notation, x=self.x, y=self.y, z=self.z
                 )
             if d.ndim == 1:
-                return tilupy.read.TemporalResults0D(name, d, t)
+                return tilupy.read.TemporalResults0D(
+                    name, d, t, notation=notation
+                )
 
         return None
 

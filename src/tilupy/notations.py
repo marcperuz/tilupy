@@ -42,8 +42,23 @@ class Notation:
     def gender(self, value):
         if value is None:
             self._gender = Gender()
+        elif isinstance(value, dict):
+            self._gender = Gender(**value)
         else:
             self._gender = value
+
+    @property
+    def long_name(self):
+        return self._long_name
+
+    @long_name.setter
+    def long_name(self, value):
+        if value is None:
+            self._long_name = LongName()
+        elif isinstance(value, dict):
+            self._long_name = LongName(**value)
+        else:
+            self._long_name = value
 
     def get_long_name(self, language=None, gender=None):
         if isinstance(self.long_name, str):
@@ -60,7 +75,7 @@ class Notation:
 
 
 class Unit(pd.Series):
-    UNITS = ["kg", "m", "s", "N", "Pa"]
+    UNITS = ["Pa", "N", "kg", "m", "s"]
 
     def __init__(self, series=None, **kwargs):
         if series is not None:
@@ -107,7 +122,6 @@ class Gender(object):
 
 
 NOTATIONS = dict()
-OPERATORS = dict()
 
 NOTATIONS["x"] = Notation(
     "x",
@@ -168,7 +182,7 @@ NOTATIONS["hu"] = Notation(
     gender=None,
 )
 
-OPERATORS["max"] = Notation(
+NOTATIONS["max"] = Notation(
     "max",
     symbol="max",
     unit=None,
@@ -177,7 +191,7 @@ OPERATORS["max"] = Notation(
     ),
     gender=None,
 )
-OPERATORS["int"] = Notation(
+NOTATIONS["int"] = Notation(
     "int",
     symbol="int",
     unit=None,
