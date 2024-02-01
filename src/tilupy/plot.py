@@ -340,7 +340,7 @@ def plot_imshow(
 
     """
     if axe is None:
-        fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
+        _, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
 
     f = copy.copy(data)
 
@@ -427,7 +427,7 @@ def plot_imshow(
         colorbar_kwargs = {} if colorbar_kwargs is None else colorbar_kwargs
         if cmap_intervals is not None and extend_cc is not None:
             colorbar_kwargs["extend"] = extend_cc
-        colorbar(fim, cax=axecc, **colorbar_kwargs)
+        axe.figure.colorbar(fim, cax=axecc, **colorbar_kwargs)
 
     return axe
 
@@ -529,7 +529,7 @@ def plot_data_on_topo(
     return axe
 
 
-def plot_shotgather(x, t, data, xlabel="X (m)", **kwargs):
+def plot_shotgather(x, t, data, xlabel="X (m)", ylabel=None, **kwargs):
     """
     Plot shotgather like image, with vertical axis as time and horizontal axis
     and spatial dimension. This is a simple call to plot_shotgather, but
@@ -558,7 +558,10 @@ def plot_shotgather(x, t, data, xlabel="X (m)", **kwargs):
     if "aspect" not in kwargs:
         kwargs["aspect"] = "auto"
     axe = plot_imshow(x, t[::-1], data.T, **kwargs)
-    axe.set_ylabel("Time (s)")
+    axe.set_adjustable("box")
+    if ylabel is None:
+        ylabel = "Time (s)"
+    axe.set_ylabel(ylabel)
     axe.set_xlabel(xlabel)
 
     return axe
@@ -669,11 +672,12 @@ def colorbar(
         orientation = "vertical"
     else:
         orientation = "horizontal"
-    if cax is None:
-        # divider = ax.get_axes_locator()
-        # if divider is None:
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes(position, size=size, pad=pad)
+
+    # if cax is None:
+    #     # divider = ax.get_axes_locator()
+    #     # if divider is None:
+    #     divider = make_axes_locatable(ax)
+    #     cax = divider.append_axes(position, size=size, pad=pad)
 
     cc = fig.colorbar(mappable, cax=cax, orientation=orientation, **kwargs)
 

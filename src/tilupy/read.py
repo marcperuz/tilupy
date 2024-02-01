@@ -270,7 +270,12 @@ class TemporalResults1D(TemporalResults):
             kwargs["colorbar_kwargs"]["label"] = clabel
 
         axe = plt_fn.plot_shotgather(
-            self.coords, self.t, self.d, xlabel=xlabel, **kwargs
+            self.coords,
+            self.t,
+            self.d,
+            xlabel=xlabel,
+            ylabel=notations.get_label("t"),
+            **kwargs
         )
 
         return axe
@@ -368,6 +373,12 @@ class TemporalResults2D(TemporalResults):
 
         if z is None:
             warnings.warn("No topography given.")
+
+        if "colorbar_kwargs" not in kwargs:
+            kwargs["colorbar_kwargs"] = dict()
+        if "label" not in kwargs["colorbar_kwargs"]:
+            clabel = notations.get_label(self.notation)
+            kwargs["colorbar_kwargs"]["label"] = clabel
 
         plt_fn.plot_maps(
             x,
