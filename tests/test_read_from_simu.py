@@ -66,12 +66,38 @@ def test_plot(folder_data, folder_plots, simu_data, args, expected):
     res = tiread.get_results(
         args[0], file_params=simu_data["param_file"], folder_base=folder_simus
     )
-    # pytest.set_trace()
+    # Test generation of ouput and plot
     output = res.get_output(args[1])
     axe = output.plot()
     axe.figure.savefig(file_out)
     assert output.d.ndim == expected[0]
     assert isinstance(output, expected[1])
+
+
+@pytest.mark.parametrize(
+    "args, expected",
+    [
+        (("shaltop", "h_init"), None),
+        (("shaltop", "h_max"), None),
+        (("shaltop", "h_int"), None),
+        (("shaltop", "h_int_x"), None),
+        (("shaltop", "hvert_int_xy"), None),
+        (("shaltop", "shearx_int"), None),
+    ],
+)
+def test_plot_Results(folder_data, folder_plots, simu_data, args, expected):
+    folder_simus = os.path.join(folder_data, simu_data["simu_name"], args[0])
+    folder_output = os.path.join(folder_plots, simu_data["simu_name"], args[0])
+    file_out = os.path.join(folder_output, args[1] + "_from_res.png")
+    if os.path.isfile(file_out):
+        os.remove(file_out)
+    os.makedirs(folder_output, exist_ok=True)
+    res = tiread.get_results(
+        args[0], file_params=simu_data["param_file"], folder_base=folder_simus
+    )
+    # Test generation of ouput and plot
+    res.plot(args[1], folder_out=folder_output, file_suffix="from_res")
+    assert os.path.isfile(file_out)
 
 
 @pytest.mark.parametrize(
