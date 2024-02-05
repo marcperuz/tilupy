@@ -242,16 +242,7 @@ class TemporalResults1D(TemporalResults):
         self.coords = coords
         self.coords_name = coords_name
 
-    def plot(
-        self,
-        coords=None,
-        folder_out=None,
-        suffix=None,
-        prefix=None,
-        fmt="png",
-        dpi=150,
-        **kwargs
-    ):
+    def plot(self, coords=None, **kwargs):
         """Plot results.
 
         :param axe: DESCRIPTION, defaults to None
@@ -286,18 +277,6 @@ class TemporalResults1D(TemporalResults):
             ylabel=notations.get_label("t"),
             **kwargs
         )
-
-        if folder_out is not None:
-            file_name = self.name
-            if suffix is not None:
-                file_name = file_name + "_" + suffix
-            if prefix is not None:
-                file_name = prefix + "_" + file_name
-            file_out = os.path.join(folder_out, file_name + "." + fmt)
-            # axe.figure.tight_layout(pad=0.1)
-            axe.figure.savefig(
-                file_out, dpi=dpi, bbox_inches="tight", pad_inches=0.05
-            )
 
         return axe
 
@@ -553,11 +532,6 @@ class StaticResults2D(StaticResults):
         self,
         axe=None,
         figsize=None,
-        folder_out=None,
-        suffix=None,
-        prefix=None,
-        fmt="png",
-        dpi=150,
         x=None,
         y=None,
         z=None,
@@ -597,18 +571,6 @@ class StaticResults2D(StaticResults):
             if sup_plt_fn_args is None:
                 sup_plt_fn_args = dict()
             sup_plt_fn(axe, **sup_plt_fn_args)
-
-        if folder_out is not None:
-            file_name = self.name
-            if suffix is not None:
-                file_name = file_name + "_" + suffix
-            if prefix is not None:
-                file_name = prefix + "_" + file_name
-            file_out = os.path.join(folder_out, file_name + "." + fmt)
-            # axe.figure.tight_layout(pad=0.1)
-            axe.figure.savefig(
-                file_out, dpi=dpi, bbox_inches="tight", pad_inches=0.05
-            )
 
         return axe
 
@@ -864,6 +826,8 @@ class Results:
         folder_out=None,
         dpi=150,
         fmt="png",
+        file_suffix=None,
+        file_prefix=None,
         h_thresh=None,
         from_file=True,
         display_plot=True,
@@ -902,14 +866,6 @@ class Results:
 
         """
 
-        if save:
-            if folder_out is None:
-                folder_out = os.path.join(self.folder_output, "plots")
-            os.makedirs(folder_out, exist_ok=True)
-            kwargs["folder_out"] = folder_out
-            kwargs["dpi"] = dpi
-            kwargs["fmt"] = fmt
-
         if not display_plot:
             backend = plt.get_backend()
             plt.switch_backend("Agg")
@@ -931,7 +887,33 @@ class Results:
         # if "z" not in kwargs:
         #     kwargs["z"] = self.zinit
 
+        if save:
+            if folder_out is None:
+                folder_out = os.path.join(self.folder_output, "plots")
+            os.makedirs(folder_out, exist_ok=True)
+
+        if folder_out is not None and isinstance(data, TemporalResults2D):
+            # If data is TemporalResults2D then saving is managed directly
+            # by the associated plot method
+            kwargs["folder_out"] = folder_out
+            kwargs["dpi"] = dpi
+            kwargs["fmt"] = fmt
+            # kwargs["file_suffix"] = file_prefix
+            # kwargs["file_prefix"] = file_prefix
+
         axe = data.plot(**kwargs)
+
+        if folder_out is not None and not isinstance(data, TemporalResults2D):
+            file_name = name
+            if file_suffix is not None:
+                file_name = file_name + "_" + file_suffix
+            if file_prefix is not None:
+                file_name = file_prefix + "_" + file_name
+            file_out = os.path.join(folder_out, file_name + "." + fmt)
+            # axe.figure.tight_layout(pad=0.1)
+            axe.figure.savefig(
+                file_out, dpi=dpi, bbox_inches="tight", pad_inches=0.05
+            )
 
         if not display_plot:
             plt.switch_backend(backend)
