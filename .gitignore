@@ -2,3 +2,4 @@
 *~
 dist
 src/*.egg-info
+tests/plots/*
