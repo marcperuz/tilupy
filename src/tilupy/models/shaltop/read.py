@@ -254,6 +254,8 @@ class Results(tilupy.read.Results):
             d = read_file_bin(file, self.nx, self.ny)
             if name == "hvert":
                 d = d / self.costh[:, :, np.newaxis]
+            if name in ["ux", "uy"]:
+                d = d * self.get_costh()[:, :, np.newaxis]
             t = self.tim
 
         if name == "u":
