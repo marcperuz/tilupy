@@ -762,7 +762,7 @@ class Results:
 
     def get_costh(self):
         """Get cos(slope) of topography"""
-        [Fx, Fy] = np.gradient(self.zinit, self.y, self.x)
+        [Fx, Fy] = np.gradient(self.zinit, np.flip(self.y), self.x)
         costh = 1 / np.sqrt(1 + Fx**2 + Fy**2)
         return costh
 

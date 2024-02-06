@@ -445,7 +445,7 @@ class Results(tilupy.read.Results):
         file = os.path.join(self.folder_output, "ut" + ".bin")
         ut = read_file_bin(file, self.nx, self.ny)
 
-        [Fx, Fy] = np.gradient(self.zinit, self.y, self.x)
+        [Fx, Fy] = np.gradient(self.zinit, np.flip(self.y), self.x)
         u = u * self.costh[:, :, np.newaxis]
         ut = ut * self.costh[:, :, np.newaxis]
         d = np.sqrt(
