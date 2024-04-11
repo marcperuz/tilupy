@@ -194,9 +194,13 @@ class Results(tilupy.read.Results):
 
         # Get time of outputs
         self.tim = np.loadtxt(os.path.join(self.folder_output, "time_im.d"))
-        self.tforces = np.loadtxt(
-            os.path.join(self.folder_output, "time_forces.d")
-        )
+        file_tforces = os.path.join(self.folder_output, "time_forces.d")
+        if os.path.isfile(file_tforces):
+            self.tforces = np.loadtxt(
+                os.path.join(self.folder_output, "time_forces.d")
+            )
+        else:
+            self.tforces = []
 
     @property
     def zinit(self):
