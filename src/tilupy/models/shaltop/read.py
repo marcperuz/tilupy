@@ -71,7 +71,8 @@ def read_params(file):
     else:
         params = dict()
         with open(file, "r") as f:
-            for line in f:
+            lines = filter(None, (line.rstrip() for line in f_in))
+            for line in lines:
                 (key, val) = line.split(" ")
                 try:
                     params[key] = float(val)
