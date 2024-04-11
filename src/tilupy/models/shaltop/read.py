@@ -71,7 +71,7 @@ def read_params(file):
     else:
         params = dict()
         with open(file, "r") as f:
-            lines = filter(None, (line.rstrip() for line in f_in))
+            lines = filter(None, (line.rstrip() for line in f))
             for line in lines:
                 (key, val) = line.split(" ")
                 try:
