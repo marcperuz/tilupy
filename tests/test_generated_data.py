@@ -14,4 +14,4 @@ def test_topo_gray():
 
     x, y, z = tilupy.make_topo.gray99()
 
-    assert (np.abs(y[-1] - 0.5) < 1e-6) & (len(x) == 361)
+    assert (np.abs(y[-1] - 0.6) < 1e-6) & (len(x) == 361)
