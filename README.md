@@ -1,7 +1,7 @@
 # tilupy
 
 - [Description](#description)
-- [Installation](#installation)
+- [Installation](#installation-pip)
 - [Quick start](#quick-start)
   - [Prepare simulations](#prepare-simus)
   - [Get simulation results](#simu-results)
@@ -24,9 +24,9 @@ Note that `tilupy` is still under development, thus only minimal documentation i
 Contributions are feedback are most welcome. Reading and writing is available for the `SHALTOP` model (most commonly used by the author) and `r.avaflow`
 (only partly maintained).
 
-## Installation <a name="installation"></a>
+## Installation with pip <a name="installation-pip"></a>
 
-To install `tilupy` from GitHub or PyPi, you'll need to have `pip` installed on your computer. `tilupy`is not yet available on `conda-forge`. 
+To install `tilupy` from GitHub or PyPi, you'll need to have `pip` installed on your computer. 
 
 It is strongly recommended to install `tilupy` in a virtual environnement dedicated to this package. This can be done with `virtualenv`
 (see the documentation e.g. [here](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/)).
@@ -86,6 +86,14 @@ Open a terminal in the created folder and type:
 
 ```
 python -m pip install .
+```
+
+## Installation with from conda-forge
+
+The latest stable version of `tilupy` on PyPi is also (supposedly) distributed on `conda-forge`. It can be intalled with Anaconda (or any equivalent) with
+
+```
+conda install conda-forge::tilupy
 ```
 
 ## Quick start <a name="quick-start"></a>
