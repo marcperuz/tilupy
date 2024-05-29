@@ -97,6 +97,54 @@ def get_contour_intervals(
     return bold_intv, thin_intv
 
 
+def auto_uniform_grey(
+    z, vert_exag, azdeg=315, altdeg=45, dx=1, dy=1, std_threshold=0.01
+):
+    """
+    Detect if shading must be applied to topography or not (uniform grey). The
+    criterion in colors.LightSource.hillshade is the difference between min
+    and max illumination, and seems to restrictive.
+    :param z: DESCRIPTION
+    :type z: TYPE
+    :param vert_exag: DESCRIPTION
+    :type vert_exag: TYPE
+    :param dx: DESCRIPTION, defaults to 1
+    :type dx: TYPE, optional
+    :param dy: DESCRIPTION, defaults to 1
+    :type dy: TYPE, optional
+    :return: DESCRIPTION
+    :rtype: TYPE
+
+    """
+
+    # Get topography normal direction
+    e_dy, e_dx = np.gradient(vert_exag * z, dy, dx)
+    normal = np.empty(z.shape + (3,)).view(type(z))
+    normal[..., 0] = -e_dx
+    normal[..., 1] = -e_dy
+    normal[..., 2] = 1
+    sum_sq = 0
+    for i in range(normal.shape[-1]):
+        sum_sq += normal[..., i, np.newaxis] ** 2
+    normal /= np.sqrt(sum_sq)
+
+    # Light source direction
+    az = np.radians(90 - azdeg)
+    alt = np.radians(altdeg)
+    direction = np.array(
+        [np.cos(az) * np.cos(alt), np.sin(az) * np.cos(alt), np.sin(alt)]
+    )
+
+    # Compute intensity (equivalent to LightSource hillshade, whithour rescaling)
+    intensity = normal.dot(direction)
+    std = np.std(intensity)
+
+    if std > std_threshold:
+        return None
+    else:
+        return 0.5
+
+
 def plot_topo(
     z,
     x,
@@ -112,7 +160,7 @@ def plot_topo(
     vert_exag=1,
     fraction=1,
     ndv=-9999,
-    uniform_grey=None,
+    uniform_grey="auto",
     contours_prop=None,
     contours_bold_prop=None,
     figsize=None,
@@ -206,6 +254,16 @@ def plot_topo(
     axe.set_ylabel("Y (m)")
     axe.set_xlabel("X (m)")
     axe.set_aspect("equal")
+
+    if uniform_grey == "auto":
+        uniform_grey = auto_uniform_grey(
+            z,
+            vert_exag,
+            azdeg=azdeg,
+            altdeg=altdeg,
+            dx=dx,
+            dy=dx,
+        )
 
     if uniform_grey is None:
         shaded_topo = ls.hillshade(
