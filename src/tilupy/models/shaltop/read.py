@@ -212,9 +212,7 @@ class Results(tilupy.read.Results):
 
     def set_zinit(self, zinit=None):
         """Set zinit, initial topography."""
-        path_zinit = os.path.join(
-            self.folder_base, self.folder_output, "z.bin"
-        )
+        path_zinit = os.path.join(self.folder_output, "z.bin")
         if not os.path.isfile(path_zinit) and "file_z_init" in self.params:
             path_zinit = os.path.join(
                 self.folder_base, self.params["file_z_init"]

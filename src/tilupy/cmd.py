@@ -32,7 +32,10 @@ def process_results(
 
     print(folder, param_files)
 
-    param_files = glob.glob(os.path.join(folder, param_files))
+    param_files = [
+        os.path.basename(x)
+        for x in glob.glob(os.path.join(folder, param_files))
+    ]
 
     if len(param_files) == 0:
         print("No parameter file matching param_files pattern was found")
