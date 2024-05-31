@@ -49,3 +49,17 @@ def test_make_edges_matrices(arg, expected):
     res = lave2Dinit.make_edges_matrices(*arg)
     assert np.array_equal(res[0], expected[0])
     assert np.array_equal(res[1], expected[1])
+
+
+@pytest.mark.parametrize(
+    "arg, expected",
+    [
+        ([[1.5, 2.5], [0, 0], "S"], [5, 8]),
+        ([[0, 0], [0.1, 1.9], "W"], [4, 16, 25]),
+    ],
+)
+def test_get_edges(arg, expected):
+    tmp = lave2Dinit.ModellingDomain(nx=4, ny=3, dx=1, dy=1, xmin=0, ymin=0)
+    tmp.set_edges()
+    edges = tmp.get_edges(*arg)
+    assert edges[arg[2][0]] == expected
