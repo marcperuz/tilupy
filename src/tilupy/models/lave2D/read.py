@@ -12,8 +12,6 @@ import tilupy.read
 
 from scipy.interpolate import RegularGridInterpolator
 
-from tilupy import notations
-
 
 class Results(tilupy.read.Results):
     def __init__(self, folder, name, raster, grid="edges"):
