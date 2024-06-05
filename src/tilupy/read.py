@@ -735,6 +735,7 @@ class Results:
         self._h = None
         self._costh = None
         self._zinit = None
+        self.folder_output = None
 
     @property
     def zinit(self):
@@ -889,6 +890,9 @@ class Results:
 
         if save:
             if folder_out is None:
+                assert (
+                    self.folder_output is not None
+                ), "folder_output attribute must be set"
                 folder_out = os.path.join(self.folder_output, "plots")
             os.makedirs(folder_out, exist_ok=True)
 
@@ -930,6 +934,9 @@ class Results:
         **kwargs
     ):
         if folder is None:
+            assert (
+                self.folder_output is not None
+            ), "folder_output attribute must be set"
             folder = os.path.join(self.folder_output, "processed")
             os.makedirs(folder, exist_ok=True)
 
