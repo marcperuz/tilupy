@@ -444,7 +444,7 @@ def plot_imshow(
             cmap = "hot_r"
         else:
             cmap = "seismic"
-    if maxval * minval >= 0:
+    if (maxval * minval >= 0) or np.isnan(maxval * minval):
         color_map = matplotlib.colormaps[cmap]
     else:
         color_map = centered_map(cmap, minval, maxval)
