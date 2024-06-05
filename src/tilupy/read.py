@@ -429,8 +429,10 @@ class TemporalResults2D(TemporalResults):
                     inds = [0]
             else:
                 inds = [np.argmin(time - np.abs(np.array(self.t) - time))]
+        else:
+            inds = range(len(self.t))
 
-        for i in range(inds):
+        for i in inds:
             file_out = file_name + "_{:04d}.".format(i) + fmt
             tilupy.raster.write_raster(
                 x, y, self.d[:, :, i], file_out, fmt=fmt, **kwargs
