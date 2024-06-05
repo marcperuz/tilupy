@@ -1,5 +1,58 @@
 # CHANGELOG
 
+## [v1.1.0](https://github.com/marcperuz/tilupy/releases/tag/v1.1.0) - 2024-06-05 16:42:11
+
+Add a module for LAVE2D simulations.
+Minor bug corrections and improvements.
+
+### Feature
+
+- lave2D:
+  - add read module for lave2D simulations ([8a6f35f](https://github.com/marcperuz/tilupy/commit/8a6f35fb22b291e4854dc15033ba6466af6d07e0)) ([#1](https://github.com/marcperuz/tilupy/pull/1))
+  - add functions to prepare Lave2D simulations ([cb8fcd0](https://github.com/marcperuz/tilupy/commit/cb8fcd0e8f1b5124867eb57c5a8a35efee75cc2f)) ([#1](https://github.com/marcperuz/tilupy/pull/1))
+  - add method for deterimining cell edges from coordinates ([a696a31](https://github.com/marcperuz/tilupy/commit/a696a31ba9cfcd877e9ee50e1ff301d2f516cd54)) ([#1](https://github.com/marcperuz/tilupy/pull/1))
+  - add subpackage for processing LAVE2D ([a69e187](https://github.com/marcperuz/tilupy/commit/a69e1872bc3a4f53312ac1dd0fe08a4d7f6fb271)) ([#1](https://github.com/marcperuz/tilupy/pull/1))
+
+- plot:
+  - add automatic shading function ([9c27f91](https://github.com/marcperuz/tilupy/commit/9c27f91021d619d455439fc4fa1a2de78aae165f))
+  - change behaviour of saving plots ([9823222](https://github.com/marcperuz/tilupy/commit/98232221f7290693d5451ad9a30b6da305ed5fca))
+
+### Bug Fixes
+
+- lave2D:
+  - correct axis coordinates for Modelling domain ([da28b49](https://github.com/marcperuz/tilupy/commit/da28b49f9ab02a3782d244703a2c30b9db5de052)) ([#1](https://github.com/marcperuz/tilupy/pull/1))
+
+- read:
+  - get time indexes that must be saved for TemporalResults ([77e83bb](https://github.com/marcperuz/tilupy/commit/77e83bbf589fccb35ebbf968d1d2cdbba8bf5944)) ([#1](https://github.com/marcperuz/tilupy/pull/1))
+  - check existence of folder_out attribute ([6ac28f2](https://github.com/marcperuz/tilupy/commit/6ac28f2e84f8009850e39692b69d0252af50476c)) ([#1](https://github.com/marcperuz/tilupy/pull/1))
+  - fix path merging ([a7ddf7d](https://github.com/marcperuz/tilupy/commit/a7ddf7d11fe16174452e645704d39e07bb6f0787))
+  - correct numpy gradient usage ([2b94bef](https://github.com/marcperuz/tilupy/commit/2b94bef0d447945bfa41319f56906367663845e0))
+
+- plot:
+  - set colormap when only nan in data ([0b7d818](https://github.com/marcperuz/tilupy/commit/0b7d8180ecc861af0ecab86dcc0dc6e08e05a621)) ([#1](https://github.com/marcperuz/tilupy/pull/1))
+  - remove non necessary tight_layout and assertion and  and plot saving options ([e54a82d](https://github.com/marcperuz/tilupy/commit/e54a82df64c92dd92ce2eb08d35358b8514150b2))
+
+- shaltop.read:
+  - correct file identifier name ([2f4a0ca](https://github.com/marcperuz/tilupy/commit/2f4a0cafd10c1ea52078b559bca5a9f3d6effd53))
+  - ignore blank lines when reading parameters ([328fe03](https://github.com/marcperuz/tilupy/commit/328fe03aa5c95b3607ae6b7e2ee7ef8a967d890f))
+  - check for the existence of time_forces.d ([f86d04a](https://github.com/marcperuz/tilupy/commit/f86d04a0343b857344bfab0c3cd7fef896de8017))
+
+- shaltop:
+  - correct loading of velocity for shaltop simulations ([175f392](https://github.com/marcperuz/tilupy/commit/175f3925e70410c3d016fb38e3ed3b2ca0a8dd0a))
+
+- gray99:
+  - correct setup for gray99 experiment ([bc641b8](https://github.com/marcperuz/tilupy/commit/bc641b88ad7cc516db73176c20f3cbe6bfab1e65))
+
+### Documentation
+
+- README:
+  - add installation instruction from conda-forge ([93eccdc](https://github.com/marcperuz/tilupy/commit/93eccdc51b2471abc5104adfc356d9171410fa81))
+
+### Refactor
+
+- plot:
+  - change default valueof from_file in Results.read ([b72932e](https://github.com/marcperuz/tilupy/commit/b72932e92820a2ff951963b137874028c8e6135c))
+
 ## [v1.0.0](https://github.com/marcperuz/tilupy/releases/tag/v1.0.0) - 2024-02-01 13:40:53
 
 Management of spatial and temporal integration of simulation results. Major improvements include 
