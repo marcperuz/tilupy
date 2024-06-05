@@ -165,8 +165,8 @@ class ModellingDomain:
         assert (self.h_edges is not None) and (
             self.v_edges is not None
         ), "h_edges and v_edges must be computed to get edge number"
-        ix = np.argmin(np.abs(self.x[:-1] + self.dx - xcoord))
-        iy = np.argmin(np.abs(self.y[:-1] + self.dx - ycoord))
+        ix = np.argmin(np.abs(self.x[:-1] + self.dx / 2 - xcoord))
+        iy = np.argmin(np.abs(self.y[:-1] + self.dx / 2 - ycoord))
         if cardinal == "S":
             return self.h_edges[-iy - 1, ix]
         elif cardinal == "N":
@@ -380,5 +380,6 @@ class Simu:
 
 
 if __name__ == "__main__":
-    domain = ModellingDomain(xmin=0, ymin=0, nx=16, ny=11)
+    domain = ModellingDomain(xmin=0, ymin=0, nx=4, ny=3, dx=1, dy=1)
     domain.set_edges()
+    res = domain.get_edges([1.5, 2.5], [0, 0], "S")

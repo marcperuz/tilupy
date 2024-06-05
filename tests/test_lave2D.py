@@ -55,7 +55,7 @@ def test_make_edges_matrices(arg, expected):
     "arg, expected",
     [
         ([[1.5, 2.5], [0, 0], "S"], [5, 8]),
-        ([[0, 0], [0.1, 1.9], "W"], [4, 16, 25]),
+        ([[0, 0], [0.1, 1.9], "W"], [4, 13]),
     ],
 )
 def test_get_edges(arg, expected):
