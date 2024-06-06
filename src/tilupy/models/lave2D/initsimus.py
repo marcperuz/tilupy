@@ -9,6 +9,8 @@ import warnings
 import numpy as np
 import os
 
+from scipy.interpolate import RegularGridInterpolator
+
 import tilupy.raster
 
 
@@ -377,6 +379,30 @@ class Simu:
                             edge, thicknesses[i], qn, qt
                         )
                     )
+
+    def set_init_mass(self, mass_raster, h_min=0.01):
+        x, y, m = tilupy.raster.read_ascii(mass_raster)
+        # The input raster is given as the topography for the grid corners,
+        # but results are then written on grid cell centers
+        x2 = x[1:] - (x[1] - x[0]) / 2
+        y2 = y[1:] - (y[1] - y[0]) / 2
+        fm = RegularGridInterpolator(
+            (y, x),
+            m,
+            method="linear",
+            bounds_error=False,
+            fill_value=None,
+        )
+        x_mesh, y_mesh = np.meshgrid(x2, y2)
+        m2 = fm((y_mesh, x_mesh))
+        m2[m2 < h_min] = h_min
+        np.savetxt(
+            os.path.join(self.folder, self.name + ".cin"),
+            m2.flatten(),
+            header="0.000000E+00",
+            comments="",
+            fmt="%.10E",
+        )
 
 
 if __name__ == "__main__":

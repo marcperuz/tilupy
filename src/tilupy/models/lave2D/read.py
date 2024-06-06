@@ -73,6 +73,11 @@ class Results(tilupy.read.Results):
     def read_resfile(
         self,
     ):
+        # read initial mass
+        h_init = np.loadtxt(
+            os.path.join(self.folder, self.name + ".cin"), skiprows=1
+        )
+
         # Read results
         file_res = os.path.join(self.folder, self.name + ".asc")
         n_times = int(self.params["tmax"] / self.params["dtsorties"])
@@ -81,13 +86,27 @@ class Results(tilupy.read.Results):
             ny_out = self.params["ny"] - 1
             x_out = self.x[1:] - self.dx / 2
             y_out = self.y[1:] - self.dy / 2
+            x_mesh, y_mesh = np.meshgrid(self.x, self.y)
+            h_init = h_init.reshape(
+                self.params["ny"] - 1, self.params["nx"] - 1
+            )
+            fh = RegularGridInterpolator(
+                (y_out, x_out),
+                h_init,
+                method="linear",
+                bounds_error=False,
+                fill_value=None,
+            )
+            h_init = fh((y_mesh, x_mesh))
         else:
             ny_out = self.params["ny"]
+            h_init = h_init.reshape(self.params["ny"], self.params["nx"])
         # x_mesh_out, y_mesh_out = np.meshgrid(
         #     self.x[1:] - self.dx / 2, self.y[1:] - self.dy / 2
         # )
-        x_mesh, y_mesh = np.meshgrid(self.x, self.y)
+
         self._h = np.zeros((self.params["ny"], self.params["nx"], n_times + 1))
+        self._h[:, :, 0] = np.flip(h_init, axis=0)
         self._u = np.zeros((self.params["ny"], self.params["nx"], n_times + 1))
         with open(file_res, "r") as fid:
             lines = fid.readlines()
