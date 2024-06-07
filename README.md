@@ -291,7 +291,7 @@ although there are less options.
 ```
 tilupy_plot [-h] [-n RES_NAME] [-p PARAM_FILES] [-f FOLDER] [--fmt FMT] [--vmin VMIN] [--vmax VMAX]
                    [--minval_abs MINVAL_ABS]
-                   model
+                   [model]
 ```
 
 `RES_NAME` can be any of the strings listed in the previous section. For instance, to plot all thicknesses snaphsots from shaltop simulations in the current folder, type `tilupy_plot shaltop -n h`. If parameters files are located in `another/folder`, type, `tilupy shaltop -n h -f another/folder`. Similarly, to save  thicknesses snapshots as ascii rasters, use `tilupy_to_raster shaltop -n h --fmt asc`.
@@ -318,9 +318,14 @@ We provide here a basic descriptions of models compatible with `tilupy`. The lis
 
 ### r.avaflow <a name="ref-ravaflow"></a>
 
-`r.avaflow represents` a GIS-supported open source software tool for the simulation of complex, cascading mass flows over arbitrary topography. It can be downloaded, along with the associated documentation, on the officiel [website](https://www.landslidemodels.org/r.avaflow/). Note that the integration of `r.avaflow` in `tilupy` is partial and potentially not adapted to new releases of `r.avaflow`. 
+`r.avaflow` is a GIS-supported open source software tool for the simulation of complex, cascading mass flows over arbitrary topography. It can be downloaded, along with the associated documentation, on the officiel [website](https://www.landslidemodels.org/r.avaflow/). Note that the integration of `r.avaflow` in `tilupy` is partial and potentially not adapted to new releases of `r.avaflow`. 
 
 - Mergili, M., Fischer, J.-T., Krenn, J., Pudasaini, S.P., 2017. r.avaflow v1, an advanced open source computational framework for the propagation and interaction of two-phase mass flows. Geoscientific Model Development Discussions 10, 553–569. [https://doi.org/10.5194/gmd-10-553-2017](https://doi.org/10.5194/gmd-10-553-2017)
 - Pudasaini, S.P., Mergili, M., 2019. A Multi-Phase Mass Flow Model. Journal of Geophysical Research: Earth Surface 124, 2920–2942. [https://doi.org/10.1029/2019JF005204](https://doi.org/10.1029/2019JF005204)
 
+### Lave2D <a name="ref-Lave2D"></a>
 
+`Lave2D` is a software developped by the INRAE for the modeling of debris flows with the Herschel-Bulkley rheology.
+
+- Laigle, D., Hector, A.-F., Hübl, J., Rickenmann, D., 2006. Confrontation de la simulation numérique de l’étalement de laves torrentielles boueuses à des observations d’événements réels. La Houille Blanche 92, 105–112. https://doi.org/10.1051/lhb:2006108
+- Rickenmann, D., Laigle, D., McArdell, B.W., Hübl, J., 2006. Comparison of 2D debris-flow simulation models with field events. Computational Geosciences 10, 241–264. https://doi.org/10.1007/s10596-005-9021-3
