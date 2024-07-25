@@ -564,8 +564,6 @@ class StaticResults2D(StaticResults):
             clabel = notations.get_label(self.notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
 
-        print(self.name)
-
         axe = plt_fn.plot_data_on_topo(
             x, y, z, self.d, axe=axe, figsize=figsize, **kwargs
         )
