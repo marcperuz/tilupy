@@ -849,17 +849,20 @@ class Results:
         vol = np.nansum(w, axis=(0, 1))
         w = w / vol[np.newaxis, np.newaxis, :]
         # Compute center of mass coordinates
-        coord = np.zeros((2, h2.shape[3]))
-        xx = X[:, :, np.newaxis] * w
-        coord[0, :] = np.nansum(xx, axis=(0, 1))
-        yy = Y[:, :, np.newaxis] * w
-        coord[1, :] = np.nansum(yy, axis=(0, 1))
+        nt = h2.shape[2]
+        coord = np.zeros((3, nt))
+        tmp = X[:, :, np.newaxis] * w
+        coord[0, :] = np.nansum(tmp, axis=(0, 1))
+        tmp = Y[:, :, np.newaxis] * w
+        coord[1, :] = np.nansum(tmp, axis=(0, 1))
+        tmp = self.zinit[:, :, np.newaxis] * w
+        coord[2, :] = np.nansum(tmp, axis=(0, 1))
         # Make TemporalResults
         res = TemporalResults0D(
             "centermass",
             coord,
             self.tim,
-            scalar_names=["X", "Y"],
+            scalar_names=["X", "Y", "z"],
             notation=None,
         )
         return res
