@@ -738,6 +738,7 @@ class Results:
         self._costh = None
         self._zinit = None
         self.folder_output = None
+        self.tim = None
 
     @property
     def zinit(self):
@@ -777,6 +778,10 @@ class Results:
         return self._costh
 
     def get_output(self, output_name, from_file=True, **kwargs):
+        # Specific case of center of mass
+        if output_name == "centermass":
+            return self.get_center_of_mass(**kwargs)
+
         strs = output_name.split("_")
         n_strs = len(strs)
         # If no operator is called, call directly _get_output
@@ -821,6 +826,43 @@ class Results:
 
     def _read_from_file(self):
         raise NotImplementedError
+
+    def get_center_of_mass(self, h_thresh=None):
+        """
+        Compute center of mass coordinates depending on time
+        :param h_thresh: DESCRIPTION, defaults to None
+        :type h_thresh: TYPE, optional
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+        dx = self.x[1] - self.x[0]
+        dy = self.y[1] - self.y[0]
+        # Make meshgrid
+        X, Y = np.meshgrid(self.x, np.flip(self.y))
+
+        # Weights for coordinates average (volume in cell / total volume)
+        h2 = self.h.copy()
+        if h_thresh is not None:
+            h2[h2 < h_thresh] = 0
+        w = h2 / self.costh[:, :, np.newaxis] * dx * dy
+        vol = np.nansum(w, axis=(0, 1))
+        w = w / vol[np.newaxis, np.newaxis, :]
+        # Compute center of mass coordinates
+        coord = np.zeros((2, h2.shape[3]))
+        xx = X[:, :, np.newaxis] * w
+        coord[0, :] = np.nansum(xx, axis=(0, 1))
+        yy = Y[:, :, np.newaxis] * w
+        coord[1, :] = np.nansum(yy, axis=(0, 1))
+        # Make TemporalResults
+        res = TemporalResults0D(
+            "centermass",
+            coord,
+            self.tim,
+            scalar_names=["X", "Y"],
+            notation=None,
+        )
+        return res
 
     def plot(
         self,
