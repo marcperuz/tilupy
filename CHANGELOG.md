@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [v1.2.0](https://github.com/marcperuz/tilupy/releases/tag/v1.2.0) - 2024-06-07 10:08:07
+
+Function to set an initial mass in Lave2D simulation
+
+### Feature
+
+- lave2D:
+  - add function for setting initial mass ([953f07a](https://github.com/marcperuz/tilupy/commit/953f07a76553eca79bf084c9c7478d439c6914ca))
+
+### Documentation
+
+- README:
+  - Add references for Lave2D in README ([ed1103c](https://github.com/marcperuz/tilupy/commit/ed1103cb9851340cd49adbb0a08edebf2d68e85c))
+
 ## [v1.1.0](https://github.com/marcperuz/tilupy/releases/tag/v1.1.0) - 2024-06-05 16:42:11
 
 Add a module for LAVE2D simulations.
