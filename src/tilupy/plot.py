@@ -243,13 +243,13 @@ def plot_topo(
 
     if level_min is None:
         if contour_step is not None:
-            level_min = np.ceil(np.nanmin(z) / contour_step) * contour_step
+            level_min = np.ceil(np.nanmin(tmpz) / contour_step) * contour_step
         else:
-            level_min = np.nanmin(z)
+            level_min = np.nanmin(tmpz)
     if contour_step is not None:
-        levels = np.arange(level_min, np.nanmax(z), contour_step)
+        levels = np.arange(level_min, np.nanmax(tmpz), contour_step)
     else:
-        levels = np.linspace(level_min, np.nanmax(z), nlevels)
+        levels = np.linspace(level_min, np.nanmax(tmpz), nlevels)
 
     if axe is None:
         fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
@@ -290,7 +290,7 @@ def plot_topo(
     axe.contour(
         x,
         y,
-        np.flip(z, axis=0),
+        np.flip(tmpz, axis=0),
         extent=im_extent,
         levels=levels,
         **contours_prop
@@ -302,15 +302,15 @@ def plot_topo(
     if step_contour_bold == "auto":
         if auto_bold_intv is None:
             auto_bold_intv, _ = get_contour_intervals(
-                np.nanmin(z), np.nanmax(z)
+                np.nanmin(tmpz), np.nanmax(tmpz)
             )
         step_contour_bold = auto_bold_intv
 
     if step_contour_bold > 0:
-        lmin = np.ceil(np.nanmin(z) / step_contour_bold) * step_contour_bold
+        lmin = np.ceil(np.nanmin(tmpz) / step_contour_bold) * step_contour_bold
         if lmin < level_min:
             lmin = lmin + step_contour_bold
-        levels = np.arange(lmin, np.nanmax(z), step_contour_bold)
+        levels = np.arange(lmin, np.nanmax(tmpz), step_contour_bold)
         cs = axe.contour(
             x,
             y,
