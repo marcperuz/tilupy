@@ -233,9 +233,12 @@ def plot_topo(
 
     auto_bold_intv = None
 
+    tmpz = np.copy(z)
+    tmpz[tmpz == ndv] = np.nan
+
     if nlevels is None and contour_step is None:
         auto_bold_intv, contour_step = get_contour_intervals(
-            np.nanmin(z), np.nanmax(z)
+            np.nanmin(tmpz), np.nanmax(tmpz)
         )
 
     if level_min is None:
