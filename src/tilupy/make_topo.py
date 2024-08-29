@@ -136,7 +136,7 @@ def gray99(
     # Conversion in fixed cartesian frame
     zd = np.gradient(zbase, x[1] - x[0], edge_order=2, axis=0)
     Xd = np.sqrt(1 - zd**2)
-    X = scipy.integrate.cumtrapz(Xd, x, axis=0, initial=0)
+    X = scipy.integrate.cumulative_trapezoid(Xd, x, axis=0, initial=0)
     X = X + xmin * np.cos(theta1)
 
     # plt.figure()
