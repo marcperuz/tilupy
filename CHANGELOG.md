@@ -1,5 +1,30 @@
 # CHANGELOG
 
+## [v1.3.0](https://github.com/marcperuz/tilupy/releases/tag/v1.3.0) - 2024-08-29 11:51:45
+
+Minor bug fix + functions to determine the position of the center of mass.
+
+### Feature
+
+- read:
+  - add z coordinate to center of mass position ([7e5840c](https://github.com/marcperuz/tilupy/commit/7e5840cfcf149a07ec97519265dc4630e3953fd0)) ([#2](https://github.com/marcperuz/tilupy/pull/2))
+  - add function to get center of mass position ([f03777e](https://github.com/marcperuz/tilupy/commit/f03777eb23048fca316bfbde7badc00ce1090a64)) ([#2](https://github.com/marcperuz/tilupy/pull/2))
+
+### Bug Fixes
+
+- make_topo:
+  - change cumptrapz to cumulative_trapezoid ([fc9a867](https://github.com/marcperuz/tilupy/commit/fc9a867bd7a96d1908b0a4ab2d78b0f1560444de))
+
+- plot:
+  - correct plot_topography function ([4d83e70](https://github.com/marcperuz/tilupy/commit/4d83e70866d0dffb51f644832d3925972b0b701c))
+  - correct determination of contour intervals ([2ed4667](https://github.com/marcperuz/tilupy/commit/2ed46672771d11bafddfe2b0c8040696fac6c187))
+  - fix contour level determination when ndv is given ([80b78bc](https://github.com/marcperuz/tilupy/commit/80b78bc5ea299790f7f5184e0b1b53df0e24a952))
+
+### Refactor
+
+- read:
+  - deal with depreciation warnings ([da92c18](https://github.com/marcperuz/tilupy/commit/da92c183871f0d777637932507beb77188df0f3a))
+
 ## [v1.2.0](https://github.com/marcperuz/tilupy/releases/tag/v1.2.0) - 2024-06-07 10:08:07
 
 Function to set an initial mass in Lave2D simulation
