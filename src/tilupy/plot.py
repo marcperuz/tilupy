@@ -137,7 +137,7 @@ def auto_uniform_grey(
 
     # Compute intensity (equivalent to LightSource hillshade, whithour rescaling)
     intensity = normal.dot(direction)
-    std = np.std(intensity)
+    std = np.nanstd(intensity)
 
     if std > std_threshold:
         return None
@@ -268,13 +268,16 @@ def plot_topo(
             dy=dx,
         )
 
+    z_shade = np.copy(z)
+    z_shade[np.isnan(z_shade)] = ndv
     if uniform_grey is None:
         shaded_topo = ls.hillshade(
-            z, vert_exag=vert_exag, dx=dx, dy=dy, fraction=1
+            z_shade, vert_exag=vert_exag, dx=dx, dy=dy, fraction=1
         )
     else:
         shaded_topo = np.ones(z.shape) * uniform_grey
     shaded_topo[z == ndv] = np.nan
+    shaded_topo[np.isnan(z)] = np.nan
     axe.imshow(
         shaded_topo,
         cmap="gray",
@@ -314,7 +317,7 @@ def plot_topo(
         cs = axe.contour(
             x,
             y,
-            np.flip(z, axis=0),
+            np.flip(tmpz, axis=0),
             extent=im_extent,
             levels=levels,
             **contours_bold_prop
@@ -339,6 +342,8 @@ def plot_topo(
                 origin="lower",
                 interpolation="none",
             )
+
+    return axe
 
 
 def plot_imshow(
