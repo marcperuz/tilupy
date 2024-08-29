@@ -128,3 +128,26 @@ def test_plot_spatial_stat(
     axe = res.plot()
     axe.figure.savefig(file_out)
     assert os.path.isfile(file_out)
+
+
+def test_centermass(gaussian_temporal_results):
+    simu = tiread.Results()
+    simu._h = gaussian_temporal_results.d
+    simu._zinit = gaussian_temporal_results.d[:, :, 0] * 0
+    simu.tim = gaussian_temporal_results.t
+    simu.x = gaussian_temporal_results.x
+    simu.y = gaussian_temporal_results.y
+    # print(simu._zinit.shape)
+    # print(len(simu.x), len(simu.y))
+    Dx = simu.x[-1] - simu.x[0]
+    Dy = simu.y[-1] - simu.y[0]
+    nt = len(simu.tim)
+    res = simu.get_center_of_mass()
+    meanx = np.linspace(simu.x[0] + 0.2 * Dx, simu.x[-1] - 0.4 * Dx, nt)
+    meany = np.linspace(simu.y[0] + 0.3 * Dy, simu.x[-1] - 0.3 * Dy, nt)
+    maxdiffx = np.max(np.abs(res.d[0, :] - meanx))
+    maxdiffy = np.max(np.abs(res.d[1, :] - meany))
+    maxdiffz = np.max(np.abs(res.d[2, :] - 0))
+    # assert (res.d[0, 0] == meanx[0]) & (res.d[1, 0] == meany[0])
+    assert (maxdiffx < 0.05) & (maxdiffy < 0.05) & (maxdiffz < 0.05)
+    # assert simu._zinit.shape == (len(simu.x), len(simu.y))
