@@ -98,7 +98,7 @@ class TemporalResults(AbstractResults):
         elif stat == "init":
             dnew = self.d[..., 0]
         elif stat == "int":
-            dnew = np.trapz(self.d, x=self.t)
+            dnew = np.trapezoid(self.d, x=self.t)
 
         notation = notations.add_operator(self.notation, stat, axis="t")
 
@@ -871,6 +871,7 @@ class Results:
 
         if not display_plot:
             backend = plt.get_backend()
+            plt.close("all")
             plt.switch_backend("Agg")
 
         data = self.get_output(name, from_file=from_file, h_thresh=h_thresh)
@@ -922,6 +923,7 @@ class Results:
             )
 
         if not display_plot:
+            plt.close("all")
             plt.switch_backend(backend)
 
         return axe
