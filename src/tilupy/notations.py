@@ -78,7 +78,7 @@ class Unit(pd.Series):
         if series is not None:
             super().__init__(series)
         else:
-            super().__init__()
+            super().__init__(dtype="object")
             for key in kwargs:
                 if key not in Unit.UNITS:
                     raise ValueError("unrecognized unit")
