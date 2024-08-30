@@ -231,7 +231,7 @@ def get_operator_unit(name, axis):
         if axis == "xy":
             unit = Unit(m=2)
     else:
-        unit = Unit(pd.Series())
+        unit = Unit(pd.Series(dtype="object"))
     return unit
 
 
