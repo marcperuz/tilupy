@@ -49,9 +49,17 @@ def write_params_file(params, directory=None, file_name="params.txt"):
     with open(os.path.join(directory, file_name), "w") as file_params:
         for name in params:
             val = params[name]
-            if isinstance(val, int) or isinstance(val, np.int64):
+            if (
+                isinstance(val, int)
+                or isinstance(val, np.int64)
+                or isinstance(val, np.int32)
+            ):
                 file_params.write("{:s} {:d}\n".format(name, val))
-            if isinstance(val, float) or isinstance(val, np.float64):
+            if (
+                isinstance(val, float)
+                or isinstance(val, np.float64)
+                or isinstance(val, np.float32)
+            ):
                 file_params.write("{:s} {:.8G}\n".format(name, val))
             if isinstance(val, str):
                 file_params.write("{:s} {:s}\n".format(name, val))
