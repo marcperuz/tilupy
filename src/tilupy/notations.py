@@ -127,6 +127,13 @@ NOTATIONS["x"] = Notation(
     long_name=LongName(english="X", french="X"),
     gender=Gender(english=None, french="f"),
 )
+NOTATIONS["z"] = Notation(
+    "z",
+    symbol="z",
+    unit=Unit(m=1),
+    long_name=LongName(english="Altitude", french="Altitude"),
+    gender=Gender(english=None, french="f"),
+)
 NOTATIONS["y"] = Notation(
     "y",
     symbol="Y",

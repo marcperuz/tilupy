@@ -40,7 +40,7 @@ def diff_runout(
     section = revert_line(section, orientation)
     intersections = section.intersection(contour)
     if isinstance(intersections, geom.MultiPoint):
-        intersections = geom.LineString(section.intersection(contour))
+        intersections = geom.LineString(intersections.geoms)
     intersections = np.array(intersections.coords)
     if orientation == "W-E":
         i = np.argmax(intersections[:, 0])

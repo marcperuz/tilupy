@@ -782,6 +782,19 @@ class Results:
 
         strs = output_name.split("_")
         n_strs = len(strs)
+
+        # get topography
+        if output_name in TOPO_DATA_2D:
+            res = StaticResults2D(
+                output_name,
+                getattr(self, output_name),
+                x=self.x,
+                y=self.y,
+                z=self.z,
+                notation=None,
+            )
+            return res
+
         # If no operator is called, call directly _get_output
         if n_strs == 1:
             res = self._get_output(output_name, **kwargs)
@@ -916,6 +929,12 @@ class Results:
             backend = plt.get_backend()
             plt.close("all")
             plt.switch_backend("Agg")
+
+        if name in ["z", "zinit", "z_init"]:
+            topo_kwargs = dict()
+            if "topo_kwargs" in kwargs:
+                topo_kwargs = kwargs["topo_kwargs"]
+            axe = plt_fn.plot_topo(self.z, self.x, self.y, **topo_kwargs)
 
         data = self.get_output(name, from_file=from_file, h_thresh=h_thresh)
 
