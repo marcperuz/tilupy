@@ -935,6 +935,7 @@ class Results:
             if "topo_kwargs" in kwargs:
                 topo_kwargs = kwargs["topo_kwargs"]
             axe = plt_fn.plot_topo(self.z, self.x, self.y, **topo_kwargs)
+            return axe
 
         data = self.get_output(name, from_file=from_file, h_thresh=h_thresh)
 
