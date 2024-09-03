@@ -128,10 +128,12 @@ def eval_simus(
             kws[calib_parameter_name] = calib_parameters
             _, calib_res = fn[method](simu, **kws)
             for param in recorded_params:
-                res.loc[:, param].iloc[istart:iend] = simu.params[param]
-            res.loc[:, calib_parameter_name].iloc[
-                istart:iend
+                res.iloc[
+                    istart:iend, res.columns.get_loc(param)
+                ] = simu.params[param]
+            res.iloc[
+                istart:iend, res.columns.get_loc(calib_parameter_name)
             ] = calib_parameters
-            res.loc[:, method].iloc[istart:iend] = calib_res
+            res.iloc[istart:iend, res.columns.get_loc(method)] = calib_res
 
     return res
