@@ -598,6 +598,7 @@ def plot_data_on_topo(
         axecc=axecc,
         colorbar_kwargs=colorbar_kwargs,
         unique_values=unique_values,
+        alpha=alpha,
     )
 
     # Adjust axes limits
