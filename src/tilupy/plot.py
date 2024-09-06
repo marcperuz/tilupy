@@ -360,6 +360,7 @@ def plot_imshow(
     alpha=1,
     minval_abs=None,
     cmap_intervals=None,
+    unique_values=False,
     extend_cc="max",
     plot_colorbar=True,
     axecc=None,
@@ -418,10 +419,7 @@ def plot_imshow(
 
     # Remove values below and above minval and maxval, depending on whether
     # cmap_intervals are given with or without extend_cc
-    if cmap_intervals is not None:
-        norm = matplotlib.colors.BoundaryNorm(
-            cmap_intervals, 256, extend=extend_cc
-        )
+    if (cmap_intervals is not None) and not unique_values:
         if extend_cc in ["neither", "max"]:
             minval = cmap_intervals[0]
             f[f < minval] = np.nan
@@ -429,9 +427,6 @@ def plot_imshow(
             maxval = cmap_intervals[-1]
             f[f > maxval] = np.nan
     else:
-        norm = None
-        # if maxval is not None:
-        #     f[f > maxval] = np.nan
         if minval is not None:
             f[f < minval] = np.nan
 
@@ -452,19 +447,34 @@ def plot_imshow(
             cmap = "hot_r"
         else:
             cmap = "seismic"
-    if (maxval * minval >= 0) or np.isnan(maxval * minval):
-        color_map = matplotlib.colormaps[cmap]
-    else:
-        color_map = centered_map(cmap, minval, maxval)
 
-    if cmap_intervals is not None:
+    norm = None
+    if unique_values:
+        if cmap_intervals is not None:
+            values = cmap_intervals
+        else:
+            values = np.unique(f[~np.isnan(f)])
+        n_values = len(values)
+        color_map = matplotlib.cm.get_cmap(cmap, n_values)
+        bounds = np.zeros(n_values + 1)
+        bounds[1:-1] = 0.5 * (values[1:] + values[:-1])
+        bounds[0] = values[0] - 0.5
+        bounds[-1] = values[-1] + 0.5
+        norm = matplotlib.colors.BoundaryNorm(bounds, n_values)
+        minval = None
+        maxval = None
+    else:
+        if (maxval * minval >= 0) or np.isnan(maxval * minval):
+            color_map = matplotlib.colormaps[cmap]
+        else:
+            color_map = centered_map(cmap, minval, maxval)
+
+    if cmap_intervals is not None and not unique_values:
         norm = matplotlib.colors.BoundaryNorm(
             cmap_intervals, 256, extend=extend_cc
         )
         maxval = None
         minval = None
-    else:
-        norm = None
 
     # get map_extent
     dx = x[1] - x[0]
@@ -491,7 +501,12 @@ def plot_imshow(
         colorbar_kwargs = {} if colorbar_kwargs is None else colorbar_kwargs
         if cmap_intervals is not None and extend_cc is not None:
             colorbar_kwargs["extend"] = extend_cc
-        axe.figure.colorbar(fim, cax=axecc, **colorbar_kwargs)
+        cb = axe.figure.colorbar(fim, cax=axecc, **colorbar_kwargs)
+        if unique_values:
+            cb.set_ticks(
+                [(b0 + b1) / 2 for b0, b1 in zip(bounds[:-1], bounds[1:])],
+                labels=values,
+            )
 
     return axe
 
@@ -510,6 +525,7 @@ def plot_data_on_topo(
     vmax=None,
     minval_abs=None,
     cmap_intervals=None,
+    unique_values=False,
     extend_cc="max",
     topo_kwargs=None,
     sup_plot=None,
@@ -581,6 +597,7 @@ def plot_data_on_topo(
         plot_colorbar=plot_colorbar,
         axecc=axecc,
         colorbar_kwargs=colorbar_kwargs,
+        unique_values=unique_values,
     )
 
     # Adjust axes limits
