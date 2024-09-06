@@ -1,7 +1,10 @@
 # tilupy
 
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/tilupy/badges/version.svg)](https://anaconda.org/conda-forge/tilupy) [![Anaconda-Server Badge](https://anaconda.org/conda-forge/tilupy/badges/downloads.svg)](https://anaconda.org/conda-forge/tilupy)
+
 - [Description](#description)
-- [Installation](#installation-pip)
+- [Installation with pip](#installation-pip)
+- [Installation with anaconda](#installation-conda)
 - [Quick start](#quick-start)
   - [Prepare simulations](#prepare-simus)
   - [Get simulation results](#simu-results)
@@ -88,7 +91,7 @@ Open a terminal in the created folder and type:
 python -m pip install .
 ```
 
-## Installation with from conda-forge
+## Installation with from conda-forge <a name="installation-conda"></a>
 
 The latest stable version of `tilupy` on PyPi is also (supposedly) distributed on `conda-forge`. It can be intalled with Anaconda (or any equivalent) with
 
