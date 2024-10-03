@@ -994,18 +994,18 @@ class Results:
     def save(
         self,
         name,
-        folder=None,
+        folder_out=None,
         file_name=None,
         fmt="txt",
         from_file=True,
         **kwargs
     ):
-        if folder is None:
+        if folder_out is None:
             assert (
                 self.folder_output is not None
             ), "folder_output attribute must be set"
-            folder = os.path.join(self.folder_output, "processed")
-            os.makedirs(folder, exist_ok=True)
+            folder_out = os.path.join(self.folder_output, "processed")
+            os.makedirs(folder_out, exist_ok=True)
 
         if name in DATA_NAMES:
             data = self.get_output(name, from_file=from_file)
@@ -1015,12 +1015,14 @@ class Results:
                 if "y" not in kwargs:
                     kwargs["y"] = self.y
 
-            data.save(folder=folder, file_name=file_name, fmt=fmt, **kwargs)
+            data.save(
+                folder=folder_out, file_name=file_name, fmt=fmt, **kwargs
+            )
 
         elif name in TOPO_DATA_2D:
             if file_name is None:
                 file_name = name
-            file_out = os.path.join(folder, file_name)
+            file_out = os.path.join(folder_out, file_name)
             tilupy.raster.write_raster(
                 self.x,
                 self.y,
