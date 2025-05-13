@@ -106,7 +106,7 @@ def get_contour(x, y, z, zlevels, indstep=1, maxdist=30, closed_contour=True):
 
     backend = plt.get_backend()
     plt.switch_backend("Agg")
-    plt.figure()
+    fig = plt.figure()
     ax = plt.gca()
     cs = ax.contour(x2, y2, np.flip(z2, 0), zlevels)
     nn1 = 1
@@ -130,6 +130,7 @@ def get_contour(x, y, z, zlevels, indstep=1, maxdist=30, closed_contour=True):
                 yc[0] = None
         xcontour[zlevels[indlevel]] = xc[0]
         ycontour[zlevels[indlevel]] = yc[0]
+    plt.close(fig)
     plt.switch_backend(backend)
     return xcontour, ycontour
 
