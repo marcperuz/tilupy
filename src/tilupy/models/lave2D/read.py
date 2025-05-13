@@ -159,6 +159,10 @@ class Results(tilupy.read.Results):
             self.read_resfile()
         return self._tim
 
+    @tim.setter
+    def tim(self, value):
+        self._tim = value
+
     def _get_output(self, name, **kwargs):
         d = None
         t = None
