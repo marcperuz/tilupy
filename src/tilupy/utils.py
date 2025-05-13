@@ -114,10 +114,11 @@ def get_contour(x, y, z, zlevels, indstep=1, maxdist=30, closed_contour=True):
     xcontour = {}
     ycontour = {}
     for indlevel in range(len(zlevels)):
-        for p in cs.collections[indlevel].get_paths():
-            if p.vertices.shape[0] > nn1:
-                v1 = p.vertices
-                nn1 = p.vertices.shape[0]
+        levels = cs.allsegs[indlevel]
+        for p in levels:
+            if p.shape[0] > nn1:
+                v1 = p
+                nn1 = p.shape[0]
         xc = [v1[::indstep, 0]]
         yc = [v1[::indstep, 1]]
         if maxdist is not None and not closed_contour:
