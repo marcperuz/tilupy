@@ -10,7 +10,9 @@ import numpy as np
 
 import tilupy.make_topo
 import tilupy.make_mass
-import tilupy.plot
+import pytopomap.plot
+
+import matplotlib.pyplot as plt
 
 
 def make_constant_slope(
@@ -92,4 +94,5 @@ def gray99_topo_mass(
 
 if __name__ == "__main__":
     x, y, z, m = gray99_topo_mass(dx=0.01, dy=0.01)
-    tilupy.plot.plot_data_on_topo(x, y, z, m, topo_kwargs=dict(level_min=0.1))
+    axe = pytopomap.plot.plot_data_on_topo(x, y, z, m, topo_kwargs=dict(level_min=0.1))
+    plt.show()
