@@ -14,7 +14,7 @@ import importlib
 import warnings
 
 import tilupy.notations as notations
-import tilupy.plot as plt_fn
+import pytopomap.plot as plt_fn
 import tilupy.raster
 
 RAW_STATES = ["hvert", "h", "ux", "uy"]
