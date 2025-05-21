@@ -6,13 +6,9 @@ Created on Wed Jun  2 16:16:39 2021
 @author: peruzzetto
 """
 
-import matplotlib
-import copy
-import os
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 import seaborn as sns
 import pytopomap.plot as pyplt
 
