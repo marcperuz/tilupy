@@ -8,7 +8,7 @@ Created on Fri Aug  4 12:09:41 2023
 import numpy as np
 import scipy
 
-import tilupy.plot
+import pytopomap.plot
 
 
 def gray99(
@@ -181,13 +181,13 @@ def gray99(
 
     if plot:
         if theta2 == 0:
-            blod, thin = tilupy.plot.get_contour_intervals(
+            blod, thin = pytopomap.plot.get_contour_intervals(
                 np.nanmin(Zout), np.nanmax(Zout)
             )
             level_min = thin
         else:
             level_min = None
-        tilupy.plot.plot_topo(
+        pytopomap.plot.plot_topo(
             Zout.T, Xout[:, 1], Yout[1, :], level_min=level_min
         )
 
@@ -431,13 +431,13 @@ def channel(
 
     if plot:
         if theta_end == 0:
-            blod, thin = tilupy.plot.get_contour_intervals(
+            blod, thin = pytopomap.plot.get_contour_intervals(
                 np.nanmin(Zout), np.nanmax(Zout)
             )
             level_min = thin
         else:
             level_min = None
-        tilupy.plot.plot_topo(
+        pytopomap.plot.plot_topo(
             Zout.T, Xout[:, 1], Yout[1, :], level_min=level_min
         )
 
