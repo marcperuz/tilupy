@@ -7,3 +7,4 @@ requests
 seaborn
 shapely
 scipy
+pytopomap
