@@ -15,6 +15,7 @@ import warnings
 
 import tilupy.notations as notations
 import pytopomap.plot as plt_fn
+import tilupy.plot as plt_tlp
 import tilupy.raster
 
 RAW_STATES = ["hvert", "h", "ux", "uy"]
@@ -269,7 +270,7 @@ class TemporalResults1D(TemporalResults):
             clabel = notations.get_label(self.notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
 
-        axe = plt_fn.plot_shotgather(
+        axe = plt_tlp.plot_shotgather(
             self.coords,
             self.t,
             self.d,
