@@ -142,7 +142,7 @@ class Depth_result(ABC):
 class Dam_break_wet_domain(Depth_result):
     """Dam-break solution on a wet domain using shallow water theory.
 
-    This class implements the 1D analytical Stoker's solution of an ideal dam break on a wet wet domain.
+    This class implements the 1D analytical Stoker's solution of an ideal dam break on a wet domain.
     The dam break is instantaneous, over an horizontal and flat surface with no friction.
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Stoker's equation.
@@ -341,6 +341,7 @@ class Dam_break_wet_domain(Depth_result):
         else:
             print("No critical velocity found")
 
+
     def compute_u(self, 
                   x: int | np.ndarray, 
                   t: int):
@@ -390,20 +391,104 @@ class Dam_break_wet_domain(Depth_result):
 
 
 class Dam_break_dry_domain(Depth_result):
-    def __init__(self, x_0, l, h_l, h_r=0):
+    r"""Dam-break solution on a dry domain using shallow water theory.
+
+    This class implements the 1D analytical Ritter's solution of an ideal dam break on a dry domain.
+    The dam break is instantaneous, over an horizontal and flat surface with no friction.
+    It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
+    in SWASHES, based on Ritter's equation.
+    
+    Ritter A. Die Fortpflanzung der Wasserwellen. Zeitschrift des Vereines Deuscher Ingenieure 
+    August 1892; 36(33): 947-954.
+
+    Parameters
+    ----------
+    x_0 : int
+        Initial dam location (position along x-axis).
+    l : int
+        Spatial domain length.
+    h_l : int
+        Water depth to the left of the dam.
+    h_r : int, optinal
+        Water depth to the right of the dam, by default 0.
+    """
+    def __init__(self, 
+                 x_0: int, 
+                 l: int, 
+                 h_l: int, 
+                 h_r: int=0, 
+                 ):
         super().__init__()
         self._x0 = x_0
         self._l = l
         self._hl = h_l
         self._hr = h_r
 
-    def xa(self, t):
+
+    def xa(self, t: int) -> float:
+        r"""
+        Position of the rarefaction wave front (left-most edge) :
+        
+        .. math::
+            x_A = x_0 - t \sqrt{g h_l}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the rarefaction wave.
+        """
         return self._x0 - (t * np.sqrt(self._g*self._hl))
 
-    def xb(self, t):
+
+    def xb(self, t: int) -> float:
+        r"""
+        Position of the contact discontinuity:
+        
+        .. math::
+            x_B(t) = x_0 + 2 t \sqrt{g h_l}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the contact wave (end of rarefaction).
+        """
         return self._x0 + (2 * t * np.sqrt(self._g*self._hl))
 
-    def compute_h(self, x, t):
+
+    def compute_h(self, 
+                  x: int | np.ndarray, 
+                  t: int):
+        r"""Compute the flow height h(x, t) at given time and positions.
+
+        .. math::
+                h(x, t) = 
+                \begin{cases}
+                    h_l & \text{if } x \leq x_A(t), \\\\
+                    \frac{4}{9g} \left( \sqrt{g h_l} - \frac{x - x_0}{2t} \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    0 & \text{if } x_B(t) < x,
+                \end{cases}
+
+        Parameters
+        ----------
+        x : int or np.ndarray
+            Spatial positions.
+        t : int
+            Time instant.
+
+        Notes
+        -----
+        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        """
         if isinstance(x, int):
             x = [x]
         self._x = x
@@ -420,7 +505,31 @@ class Dam_break_dry_domain(Depth_result):
                 h.append(self._hr)
         self._h = h
 
-    def compute_u(self, x, t):
+
+    def compute_u(self, 
+                  x: int | np.ndarray, 
+                  t: int):
+        r"""Compute the flow velocity u(x, t) at given time and positions.
+
+        .. math::
+                u(x,t) = 
+                \begin{cases}
+                    0 & \text{if } x \leq x_A(t), \\\\
+                    \frac{2}{3} \left( \frac{x - x_0}{t} + \sqrt{g h_l} \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    0 & \text{if } x_B(t) < x,
+                \end{cases}
+
+        Parameters
+        ----------
+        x : int or np.ndarray
+            Spatial positions.
+        t : int
+            Time instant.
+
+        Notes
+        -----
+        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        """
         if isinstance(x, int):
             x = [x]
         self._x = x
@@ -438,6 +547,29 @@ class Dam_break_dry_domain(Depth_result):
 
 
 class Dam_break_friction(Depth_result):
+    r"""Dam-break solution on a dry domain with friction using shallow water theory.
+
+    This class implements the 1D analytical Dressler's solution of an ideal dam break on a dry domain with friction.
+    The dam break is instantaneous, over an horizontal and flat surface with friction.
+    It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
+    in SWASHES, based on Dressler's equation.
+    
+    Dressler RF. Hydraulic resistance effect upon the dam-break functions. Journal of Research of the National Bureau 
+    of Standards September 1952; 49(3): 217-225.
+
+    Parameters
+    ----------
+    x_0 : int
+        Initial dam location (position along x-axis).
+    l : int
+        Spatial domain length.
+    h_l : int
+        Water depth to the left of the dam.
+    h_r : int, optinal
+        Water depth to the right of the dam, by default 0.
+    C : int, optional
+        Chézy coefficient, by default 40.
+    """
     def __init__(self, x_0, l, h_l, h_r=0, C=40):
         super().__init__()
         self._x0 = x_0
