@@ -115,7 +115,6 @@ class Depth_result(ABC):
 
 
     def show_res(self, 
-                 z_surf=[0, 0], 
                  show_h=False, 
                  show_u=False
                 ):
@@ -130,8 +129,17 @@ class Depth_result(ABC):
         show_u : bool, optional
             If True, plot the flow velocity ('u') curve.
         """
+        inclined_surf = None
+        z_surf = [0, 0]
+        if self._theta is not None:
+            z_surf = [z_surf[0], -self._x[-1]*np.tan(self._theta)]
+            inclined_surf = np.linspace(z_surf[0], z_surf[1], len(self._x))
         if show_h:
-            plt.plot(self._x, self._h)
+            if self._theta is not None:
+                h_inclined = [(self._h[i]/np.cos(self._theta)) + inclined_surf[i] for i in range(len(self._h))]
+                plt.plot(self._x, h_inclined)
+            else:
+                plt.plot(self._x, self._h)
         if show_u:
             plt.plot(self._x, self._u)
 
@@ -140,9 +148,9 @@ class Depth_result(ABC):
 
 
 class Dam_break_wet_domain(Depth_result):
-    """Dam-break solution on a wet domain using shallow water theory.
+    r"""Dam-break solution on a wet domain using shallow water theory.
 
-    This class implements the 1D analytical Stoker's solution of an ideal dam break on a wet domain.
+    This class implements the 1D analytical Stocker's solution of an ideal dam break on a wet domain.
     The dam break is instantaneous, over an horizontal and flat surface with no friction.
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Stoker's equation.
@@ -329,10 +337,11 @@ class Dam_break_wet_domain(Depth_result):
             for i in x:
                 if i <= self.xa(t):
                     h.append(self._hl)
-                elif i > self.xa(t) and i <= self.xb(t):
+                # elif i > self.xa(t) and i <= self.xb(t):
+                elif self.xa(t) < i <= self.xb(t):
                     h.append((4/(9*self._g))*(np.sqrt(self._g *
                              self._hl)-((i-self._x0)/(2*t)))**2)
-                elif i > self.xb(t) and i <= self.xc(t):
+                elif self.xb(t) < i <= self.xc(t):
                     h.append((self._cm**2)/self._g)
                 else:
                     h.append(self._hr)
@@ -498,7 +507,7 @@ class Dam_break_dry_domain(Depth_result):
         for i in x:
             if i <= self.xa(t):
                 h.append(self._hl)
-            elif i > self.xa(t) and i <= self.xb(t):
+            elif self.xa(t) < i <= self.xb(t):
                 h.append((4/(9*self._g)) *
                          (np.sqrt(self._g*self._hl)-((i-self._x0)/(2*t)))**2)
             else:
@@ -578,21 +587,112 @@ class Dam_break_friction(Depth_result):
         self._hr = h_r
         self._c = C
 
-    def xa(self, t):
+
+    def xa(self, t: int) -> float:
+        r"""
+        Position of the rarefaction wave front (left-most edge) :
+        
+        .. math::
+            x_A = x_0 - t \sqrt{g h_l}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the rarefaction wave.
+        """
         return self._x0 - (t * np.sqrt(self._g*self._hl))
 
-    def xb(self, t):
+
+    def xb(self, t: int) -> float:
+        r"""
+        Position of the contact discontinuity:
+        
+        .. math::
+            x_B(t) = x_0 + 2 t \sqrt{g h_l}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the contact wave (end of rarefaction).
+        """
         return self._x0 + (2 * t * np.sqrt(self._g*self._hl))
 
     def alpha1(self, x, t):
+        r"""
+        Correction coefficient for the height:
+        
+        .. math::
+            \alpha_1(\xi) = \frac{6}{5(2-\xi)} - \frac{2}{3} + \frac{4 \sqrt{3}}{135} (2-\xi)^{3/2}), \\\\
+            \xi = \frac{x-x_0}{t\sqrt{g h_l}}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Correction coefficient.
+        """
         xi = (x-self._x0)/(t*np.sqrt(self._g*self._hl))
         # return (6 / (5*(2 - (x/(t*np.sqrt(self._g*self._hl)))))) - (2/3) + (4*np.sqrt(3)/135)*((2 - (x/(t*np.sqrt(self._g*self._hl))))**(3/2))
         return (6 / (5 * (2 - xi))) - (2 / 3) + (4 * np.sqrt(3) / 135) * (2 - xi) ** (3 / 2)
 
+
     def alpha2(self, x, t):
+        r"""
+        Correction coefficient for the velocity:
+        
+        .. math::
+            \alpha_2(\xi) = \frac{12}{2-(2-\xi)} - \frac{8}{3} + \frac{8 \sqrt{3}}{189} (2-\xi)^{3/2}) - \frac{108}{7(2 - \xi)}, \\\\
+            \xi = \frac{x-x_0}{t\sqrt{g h_l}}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Correction coefficient.
+        """
         return (12 / (2 - (x/(t*np.sqrt(self._g*self._hl))))) - (8/3) + (8*np.sqrt(3)/189)*((2 - (x/(t*np.sqrt(self._g*self._hl))))**(3/2)) - (108/(7*(2 - (x/(t*np.sqrt(self._g*self._hl))))))
 
+
     def compute_h(self, x, t):
+        r"""Compute the flow height h(x, t) at given time and positions.
+
+        .. math::
+                h(x, t) = 
+                \begin{cases}
+                    h_l & \text{if } x \leq x_A(t), \\\\
+                    \frac{1}{g} \left( \frac{2}{3} \sqrt{g h_l} - \frac{x - x_0}{3t} + \frac{g^{2}}{C^2} \alpha_1 t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    0 & \text{if } x_B(t) < x,
+                \end{cases}
+
+        Parameters
+        ----------
+        x : int or np.ndarray
+            Spatial positions.
+        t : int
+            Time instant.
+
+        Notes
+        -----
+        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        """
         if isinstance(x, int):
             x = [x]
         self._x = x
@@ -602,7 +702,7 @@ class Dam_break_friction(Depth_result):
         for i in x:
             if i <= self.xa(t):
                 h.append(self._hl)
-            elif i > self.xa(t) and i <= self.xb(t):
+            elif self.xa(t) < i <= self.xb(t):
                 # h.append( (1/self._g) * ( ((2/3)*np.sqrt(self._g*self._hl)) - ((i-self._x0)/(3*t)) + ((self._g**2)/(self._c**2))*self.alpha1(i-self._x0, t)*t ) )
                 term = ((2/3)*np.sqrt(self._g*self._hl)) - ((i - self._x0) /
                                                             (3*t)) + ((self._g**2)/(self._c**2)) * self.alpha1(i, t) * t
@@ -616,21 +716,123 @@ class Dam_break_friction(Depth_result):
                 h.append(self._hr)
         self._h = h
 
-    def compute_u(self, x, t):
+
+class Dam_break_friction_inclined(Depth_result):
+    r"""Dam-break solution on an inclined dry domain with friction using shallow water theory.
+
+    This class implements the 1D analytical Stocker's solution of an ideal dam break on a dry domain.
+    The dam break is instantaneous, over an inclined and flat surface with friction.
+    It computes the flow height (took normal to the surface) and velocity over space and time, based on Stocker's equation.
+    
+    MANGENEY, A., HEINRICH, P., et ROCHE, R. Analytical solution for testing debris avalanche 
+    numerical models. Pure and Applied Geophysics, 2000, vol. 157, p. 1081-1096.
+
+    Parameters
+    ----------
+    theta : int
+        Angle of the surface, in degree.
+    delta : int
+        Dynamic friction angle (20°-40° for debris avalanche), in degree.
+    h_0 : int
+        Initial water depth.
+    """
+    def __init__(self, 
+                 theta: int,
+                 delta: int,
+                 h_0: int,  
+                 ):
+        super().__init__(theta=np.radians(theta))
+        self._delta = np.radians(delta) #is the dynamic friction angle (20°Bd B40° for debris avalanche)
+        self._h0 = h_0
+        self._c0 = np.sqrt(self._g * self._h0 * np.cos(self._theta))
+        
+        self._m = - (self._g * np.sin(self._theta)) + (self._g * np.cos(self._theta)) * np.tan(self._delta)
+
+
+    def xa(self, t: int) -> float:
+        r"""
+        Front of the fluid:
+        
+        .. math::
+            x_A = \frac{1}{2}mt - 2 c_0 t
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the fluid.
+        """
+        return 0.5*self._m*t - (2*self._c0*t)
+    
+    
+    def xb(self, t: int) -> float:
+        r"""
+        Edge of the quiet region:
+        
+        .. math::
+            x_B = \frac{1}{2}mt + c_0 t
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the edge of the quiet region.
+        """
+        return 0.5*self._m*t + (self._c0*t)
+
+
+    def compute_h(self, 
+                  x: int | np.ndarray, 
+                  t: int):
+        r"""Compute the flow height h(x, t) at given time and positions.
+        The x-axis must be negative oriented.
+
+        .. math::
+                h(x, t) = 
+                \begin{cases}
+                    0 & \text{if } x \leq x_A(t), \\\\
+                    \frac{1}{9g cos(\thêta)} \left( \frac{x}{t} + 2 c_0 - \frac{1}{2} m t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    h_0 & \text{if } x_B(t) < x,
+                \end{cases}
+
+        Parameters
+        ----------
+        x : int or np.ndarray
+            Spatial positions.
+        t : int
+            Time instant.
+
+        Notes
+        -----
+        Updates the internal '_h', '_x', '_t' attributes with the computed result, and reorients 
+        '_h' and '_x' to positive axes 
+        """
         if isinstance(x, int):
             x = [x]
-        self._x = x
+        self._x = [-i for i in x[::-1]]
         self._t = t
-
-        u = []
+        
+        h = []
         for i in x:
             if i <= self.xa(t):
-                u.append(0)
-            elif i > self.xa(t) and i <= self.xb(t):
-                u.append((2/3)*(((i-self._x0)/t) + np.sqrt(self._g*self._hl)))
+                h.append(0)
+            elif self.xa(t) < i < self.xb(t):
+                h.append( (1/(9*self._g*np.cos(self._theta))) * ( (i/t) + (2 * self._c0) - (0.5*t*self._m))**2 )
             else:
-                u.append(0)
-        self._u = u
+                h.append(self._h0)
+        
+        if all(v == 0 for v in h):
+            h[-1] = self._h0
+        
+        self._h = h[::-1]
 
 
 class Shape_result:
@@ -656,13 +858,17 @@ class Front_result:
 
 
 if __name__ == "__main__":
-    # A = Dam_break_wet_domain(5, 10, 0.005, 0.001)
-    B = Dam_break_dry_domain(5, 10, 0.005)
-    C = Dam_break_friction(1000, 2000, 6)
-    T = [i*5 for i in range(0, 1)]
-    x = np.linspace(0, 2000, 100)
+    A = Dam_break_friction_inclined(25, 20, 50)
+    T = [i for i in range(0, 5)]
+    x = np.linspace(-100, 0, 100)
     for t in T:
-        C.compute_h(x, t)
-        # B.u(x, t)
-        C.show_res(show_h=True)
-        print(C.h)
+        A.compute_h(x, t)
+        A.show_res(show_h=True)
+    
+    # B = Dam_break_wet_domain(5, 15, 1, 0.3)
+    # T = [i for i in range(0, 5)]
+    # x = np.linspace(0, 15, 100)
+    # for t in T:
+    #     B.compute_h(x, t)
+    #     B.show_res(show_h=True)
+    
