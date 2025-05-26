@@ -61,6 +61,15 @@ sphinx_gallery_conf = {
     'within_subsection_order': FileNameSortKey,
 }
 
+# sphinx-autoapi configuration
+autoapi_options = {
+    "members",
+    "undoc-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",  # optionnel, si tu veux aussi les __init__ etc.
+}
+
 templates_path = ['_templates']
 exclude_patterns = []
 
