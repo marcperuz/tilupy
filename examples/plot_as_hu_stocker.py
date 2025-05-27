@@ -9,11 +9,11 @@ flow volume.
 """
 
 import numpy as np
-from tilupy.analytic_sol import Dam_break_wet_domain
+from tilupy.analytic_sol import Stocker_wet
 
 # %%
 # Initialisation:
-A = Dam_break_wet_domain(x_0=0, l=10, h_l=0.5, h_r=0.1)
+A = Stocker_wet(x_0=0, l=10, h_l=0.5, h_r=0.1)
 x = np.linspace(-5, 25, 100)
 
 # %%

@@ -11,12 +11,12 @@ Extract from fig 3 of Mangeney et al, 2000.
 """
 
 import numpy as np
-from tilupy.analytic_sol import Dam_break_friction_inclined
+from tilupy.analytic_sol import Mangeney_dry
 
 
 # %%
 # Initialisation with no friction:
-A = Dam_break_friction_inclined(theta=30, delta=0, h_0=20)
+A = Mangeney_dry(theta=30, delta=0, h_0=20)
 x = np.linspace(0, 1000, 1000)
 
 
@@ -33,7 +33,7 @@ A.show_res(show_u=True)
 
 # %%
 # Adding friction:
-B = Dam_break_friction_inclined(theta=30, delta=20, h_0=20)
+B = Mangeney_dry(theta=30, delta=20, h_0=20)
 
 
 # %%

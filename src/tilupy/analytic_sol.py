@@ -17,7 +17,6 @@ class Depth_result(ABC):
     This class defines a common interface for analytical solution that compute flow height 
     h(x,t) and flow velocity u(x,t).
 
-    
     Attributes:
     -----------
         _g : float 
@@ -33,19 +32,11 @@ class Depth_result(ABC):
         _u : np.ndarray
             Flow velocity depending on space at a moment.
     
-    
     Parameters:
     -----------
         theta : float, optional
             Angle of the surface, by default 0.
     """
-    _g: float = 9.18
-    _theta: float
-    _x: np.ndarray
-    _t: int
-    _h: np.ndarray
-    _u: np.ndarray
-    
     def __init__(self, 
                  theta: float=None):
         self._g = 9.18
@@ -57,9 +48,9 @@ class Depth_result(ABC):
 
 
     @abstractmethod
-    def h(self, 
+    def compute_h(self, 
           x: int | np.ndarray, 
-          t: int | float
+          t: int | np.ndarray
           ) -> None:
         """Virtual function that compute the flow height 'h' at given space and time.
 
@@ -67,16 +58,16 @@ class Depth_result(ABC):
         ----------
         x : int or np.ndarray
             Spatial coordinates.
-        t : int | float
+        t : int or np.ndarray
             Time instant.
         """
         pass
 
 
     @abstractmethod
-    def u(self, 
+    def compute_u(self, 
           x: int | np.ndarray, 
-          t: int | float
+          t: int | np.ndarray
           ) -> None:
         """Virtual function that compute the flow velocity 'u' at given space and time.
 
@@ -84,7 +75,7 @@ class Depth_result(ABC):
         ----------
         x : int or np.ndarray
             Spatial coordinates.
-        t : int | float
+        t : int or np.ndarray
             Time instant.
         """
         pass
@@ -212,7 +203,7 @@ class Depth_result(ABC):
             plt.show()
 
 
-class Dam_break_wet_domain(Depth_result):
+class Stocker_wet(Depth_result):
     r"""Dam-break solution on a wet domain using shallow water theory.
 
     This class implements the 1D analytical Stocker's solution of an ideal dam break on a wet domain.
@@ -227,8 +218,6 @@ class Dam_break_wet_domain(Depth_result):
     -----------
         _x0 : int 
             Initial dam location (position along x-axis).
-        _l : int
-            Spatial domain length.
         _hl : float
             Water depth to the left of the dam.
         _hr : float
@@ -240,8 +229,6 @@ class Dam_break_wet_domain(Depth_result):
     -----------
         x_0 : int
             Initial dam location (position along x-axis).
-        l : int
-            Spatial domain length.
         h_l : float
             Water depth to the left of the dam.
         h_r : float
@@ -259,7 +246,6 @@ class Dam_break_wet_domain(Depth_result):
                  ):
         super().__init__()
         self._x0 = x_0
-        self._l = l
         self._hl = h_l
         self._hr = h_r
         self._cm = None
@@ -333,7 +319,6 @@ class Dam_break_wet_domain(Depth_result):
         r"""Equation of the critical velocity cm:
         
         .. math::
-
             -8.g.hr.cm^{2}.(g.hl - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0
 
         Parameters
@@ -419,7 +404,7 @@ class Dam_break_wet_domain(Depth_result):
                     # elif i > self.xa(t) and i <= self.xb(t):
                     elif self.xa(T) < i <= self.xb(T):
                         h.append((4/(9*self._g))*(np.sqrt(self._g *
-                                self._hl)-((i-self._x0)/(2*t)))**2)   # i-x0 and not i to recenter the breach of the dam at x=0.
+                                self._hl)-((i-self._x0)/(2*T)))**2)   # i-x0 and not i to recenter the breach of the dam at x=0.
                     elif self.xb(T) < i <= self.xc(T):
                         h.append((self._cm**2)/self._g)
                     else:
@@ -512,7 +497,7 @@ class Dam_break_wet_domain(Depth_result):
             print("First define cm")
 
 
-class Dam_break_dry_domain(Depth_result):
+class Ritter_dry(Depth_result):
     r"""Dam-break solution on a dry domain using shallow water theory.
 
     This class implements the 1D analytical Ritter's solution of an ideal dam break on a dry domain.
@@ -704,7 +689,7 @@ class Dam_break_dry_domain(Depth_result):
             self._u = np.array(u)
 
 
-class Dam_break_friction(Depth_result):
+class Dressler_dry(Depth_result):
     r"""Dam-break solution on a dry domain with friction using shallow water theory.
 
     This class implements the 1D analytical Dressler's solution of an ideal dam break on a dry domain with friction.
@@ -935,12 +920,12 @@ class Dam_break_friction(Depth_result):
             u = []
             for i in x:
                 if i <= self.xa(T):
-                    sub_u.append(0)
+                    u.append(0)
                 elif self.xa(T) < i <= self.xb(T):
                     u_val = ((2*np.sqrt(self._g*self._hl))/3) + ((2*(i-self._x0))/3*T) + ((self._g**2)/(self._c**2)) * self.alpha2(i, T) * T
-                    sub_u.append(u_val)
+                    u.append(u_val)
                 else:
-                    sub_u.append(0)
+                    u.append(0)
             self._u = np.array(u)
         
         else:
@@ -959,7 +944,7 @@ class Dam_break_friction(Depth_result):
             self._u = np.array(u)
 
 
-class Dam_break_friction_inclined(Depth_result):
+class Mangeney_dry(Depth_result):
     r"""Dam-break solution on an inclined dry domain with friction using shallow water theory.
 
     This class implements the 1D analytical Stocker's solution of an ideal dam break on a dry domain.
@@ -983,16 +968,16 @@ class Dam_break_friction_inclined(Depth_result):
     
     Parameters:
     -----------
-        theta : int
+        theta : float
             Angle of the surface, in degree.
-        delta : int
+        delta : float
             Dynamic friction angle (20°-40° for debris avalanche), in degree.
         h_0 : int
             Initial water depth.
     """    
     def __init__(self,
-                 theta: int,
-                 delta: int,
+                 theta: float,
+                 delta: float,
                  h_0: int,  
                  ):
         super().__init__(theta=np.radians(theta))
@@ -1022,7 +1007,7 @@ class Dam_break_friction_inclined(Depth_result):
         Returns
         -------
         float
-            Position of the front edge of the fluid.
+            Position of the front edge of the fluid, in negative axis.
         """
         return 0.5*self._m*t**2 - (2*self._c0*t)
     
@@ -1042,7 +1027,7 @@ class Dam_break_friction_inclined(Depth_result):
         Returns
         -------
         float
-            Position of the edge of the quiet region.
+            Position of the edge of the quiet region, in negative axis.
         """
         return 0.5*self._m*t**2 + (self._c0*t)
 
@@ -1051,7 +1036,6 @@ class Dam_break_friction_inclined(Depth_result):
                   x: int | np.ndarray, 
                   T: int | np.ndarray):
         r"""Compute the flow height h(x, t) at given time and positions.
-        The x-axis must be negative oriented.
 
         .. math::
                 h(x, t) = 
@@ -1070,8 +1054,7 @@ class Dam_break_friction_inclined(Depth_result):
 
         Notes
         -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result, and reorients 
-        '_h' and '_x' to positive axes 
+        Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
         if isinstance(x, int):
             x = [x]
@@ -1172,27 +1155,5 @@ class Dam_break_friction_inclined(Depth_result):
                         sub_u.append(0)
                 u.append(sub_u[::-1])
             self._u = np.array(u)
-
-
-class Shape_result:
-    def __init__(self):
-        pass
-
-    def shape(self):
-        return None
-
-    def show_res(self):
-        return None
-
-
-class Front_result:
-    def __init__(self):
-        pass
-
-    def xf(self):
-        return None
-
-    def show_res(self):
-        return None
 
 

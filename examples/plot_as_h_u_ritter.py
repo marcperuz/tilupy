@@ -9,11 +9,11 @@ flow volume.
 """
 
 import numpy as np
-from tilupy.analytic_sol import Dam_break_dry_domain
+from tilupy.analytic_sol import Ritter_dry
 
 # %%
 # Initialisation:
-A = Dam_break_dry_domain(x_0=0, h_l=0.5)
+A = Ritter_dry(x_0=0, h_l=0.5)
 x = np.linspace(-5, 25, 100)
 
 
@@ -31,7 +31,7 @@ A.show_res(show_u=True)
 
 # %%
 # Specific case for hl = 0.005m, x0 = 5m, L = 10m and t = 6 s found in SWASHES (https://www.idpoisson.fr/swashes/)
-B = Dam_break_dry_domain(x_0=5, h_l=0.005)
+B = Ritter_dry(x_0=5, h_l=0.005)
 x = np.linspace(0, 10, 100)
 B.compute_h(x, 6)
 B.show_res(show_h=True)

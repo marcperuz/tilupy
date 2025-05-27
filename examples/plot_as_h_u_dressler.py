@@ -9,11 +9,11 @@ flow volume.
 """
 
 import numpy as np
-from tilupy.analytic_sol import Dam_break_friction
+from tilupy.analytic_sol import Dressler_dry
 
 # %%
 # Initialisation:
-A = Dam_break_friction(x_0=0, h_l=0.5)
+A = Dressler_dry(x_0=0, h_l=0.5)
 x = np.linspace(-5, 15, 100)
 
 # %%
