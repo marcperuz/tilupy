@@ -1180,3 +1180,168 @@ class Mangeney_dry(Depth_result):
                         sub_u.append(0)
                 u.append(sub_u[::-1])
             self._u = np.array(u)
+
+
+class Shape_result(ABC):
+    def __init__(self,
+                 theta: float=0):
+        self._g = 9.81
+        self._theta = theta
+        
+        self._x = None
+        self._h = None
+
+
+    def show_res(self, 
+                 show_h=False, 
+                 show_u=False,
+                 show_slop=False,
+                 x_unit:str = "m",
+                 h_unit:str = "m",
+                 u_unit:str = "m/s"
+                ):
+        """Plot the simulation results.
+
+        Parameters
+        ----------
+        show_h : bool, optional
+            If True, plot the flow height ('h') curve.
+        show_u : bool, optional
+            If True, plot the flow velocity ('u') curve.
+        show_slop : bool, optional
+            If True, plot the slop of the surface.
+        x_unit: str
+            Space unit.
+        h_unit: str
+            Height unit.
+        u_unit: str
+            Velocity unit.
+        """
+        inclined_surf = None
+        z_surf = [0, 0]
+        
+        if self._theta is not None and show_slop:
+            z_surf = [z_surf[0], -self._x[-1]*np.tan(self._theta)]
+            inclined_surf = np.linspace(z_surf[0], z_surf[1], len(self._x))
+        
+        if self._x is not None and self._h is not None:
+            if self._h.ndim == 1:
+                if self._theta is not None and show_slop:
+                    h_inclined = [(self._h[i]/np.cos(self._theta)) + inclined_surf[i] for i in range(len(self._h))]
+                    plt.plot(self._x, h_inclined, color='black', linewidth=1)
+                else:
+                    plt.plot(self._x, self._h, color='black', linewidth=1)
+
+            plt.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
+            
+            plt.title(f"Flow height")
+            plt.xlabel(f"x [{x_unit}]")
+            plt.ylabel(f"h [{h_unit}]")
+            plt.show()
+
+
+class Coussot_shape(Shape_result):
+    def __init__(self, 
+                 l0: int, #Longueur du dépôt ==> distance x0-xf (rupture barrage - front de l'écoulement)
+                 rho: float,
+                 tau: float,
+                 theta: float=0):
+        super().__init__(theta)
+        self._rho = rho
+        self._tau = tau
+        
+        self._l0 = l0
+        self._x0 = self.compute_x0()
+        
+        self._X = None
+
+
+    def compute_x0(self) -> float:
+        return np.sqrt(1-np.exp(-self._l0)) + np.log(1+np.sqrt(1-np.exp(-self._l0)))
+        
+    
+    def compute_hmax(self) -> float:
+        return np.sqrt(1-np.exp(-self._l0))
+
+
+    def auto_compute_h(self,
+                       left_size: int,
+                       right_size: int
+                       ) -> np.ndarray:
+        hmax = self.compute_hmax() 
+        
+        left_h = np.array([hmax+ 0.1]*left_size)
+        right_h = np.linspace(hmax, 0, right_size)
+        
+        h = np.concatenate((left_h, right_h), axis=None)
+        
+        print(self._l0)
+        
+        return h
+
+
+    def H(self, 
+          h: float
+          ) -> float:
+        if self._theta == 0:
+            print("todo")
+            return (self._rho*self._g*h)/self._tau
+        else:
+            return (self._rho*self._g*h*np.sin(self._theta))/self._tau
+
+
+    def X(self,
+          h: float | np.ndarray
+          ) -> None:
+        self._h = h
+        
+        if isinstance(h, float):
+            h = [h]
+        
+        X = []
+        hmax = self.compute_hmax()
+        for v in h:
+            if v > hmax:
+                X.append(self.H(v) - np.log(1 + self.H(v)))
+            else:
+                X.append(self.H(v) + self._l0 + np.log(1 - self.H(v)))
+            # print(v)
+            # print( self.H(v))
+            # x = self.H(v) - np.log(1 + self.H(v))
+            # # print(x)
+            # if x <= self._x0:
+            #     print(1)
+            #     X.append(x)
+            # else:
+            #     print(2)
+            #     X.append(self.H(v) + self._l0 + np.log(1 - self.H(v)))
+            # print(X)
+        self._X = X
+        
+        
+    def X_to_x(self) -> None:
+        x = []
+        for v in self._X:
+            if self._theta == 0:
+                x.append((v*self._tau)/(self._rho*self._g))
+            else:
+                x.append((v*self._tau*np.cos(self._theta))/(self._rho*self._g*np.sin(self._theta)*np.sin(self._theta)))
+        self._x = x
+     
+
+class Front_result:
+    def __init__(self):
+        pass
+
+    def xf(self):
+        return None
+
+    def show_res(self):
+        return None
+    
+    
+# A = Coussot_shape(5, 2, 3, 5)
+# h = A.auto_compute_h(10, 10)
+# A.X(h)
+# A.X_to_x()
+# A.show_res(True)
