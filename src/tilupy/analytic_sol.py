@@ -23,7 +23,7 @@ class Depth_result(ABC):
             Gravitational constant.
         _theta : float
             Angle of the surface.
-        _x : np.ndarray
+        _x : int or np.ndarray
             Spatial coordinates.
         _t : int or np.ndarray
             Time instant.
@@ -239,7 +239,6 @@ class Stocker_wet(Depth_result):
     """
     def __init__(self, 
                  x_0: int, 
-                 l: int, 
                  h_l: int, 
                  h_r: int, 
                  h_m: int=None
@@ -260,7 +259,7 @@ class Stocker_wet(Depth_result):
         Position of the rarefaction wave front (left-most edge) :
         
         .. math::
-            x_A = x_0 - t \sqrt{g h_l}
+            x_A(t) = x_0 - t \sqrt{g h_l}
 
         Parameters
         ----------
@@ -542,7 +541,7 @@ class Ritter_dry(Depth_result):
         Position of the rarefaction wave front (left-most edge) :
         
         .. math::
-            x_A = x_0 - t \sqrt{g h_l}
+            x_A(t) = x_0 - t \sqrt{g h_l}
 
         Parameters
         ----------
@@ -739,7 +738,7 @@ class Dressler_dry(Depth_result):
         Position of the rarefaction wave front (left-most edge) :
         
         .. math::
-            x_A = x_0 - t \sqrt{g h_l}
+            x_A(t) = x_0 - t \sqrt{g h_l}
 
         Parameters
         ----------
@@ -896,7 +895,7 @@ class Dressler_dry(Depth_result):
                 u(x,t) = 
                 \begin{cases}
                     0 & \text{if } x \leq x_A(t), \\\\
-                    \frac{2}{3} \left( \frac{x - x_0}{t} + \sqrt{g h_l} \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    \frac{2\sqrt{g h_l}}{3} + \frac{2(x - x_0)}{3t} + \frac{g^2}{C^2} \alpha_2 t & \text{if } x_A(t) < x \leq x_B(t), \\\\
                     0 & \text{if } x_B(t) < x,
                 \end{cases}
 
@@ -983,10 +982,8 @@ class Mangeney_dry(Depth_result):
         super().__init__(theta=np.radians(theta))
         self._delta = np.radians(delta)
         self._h0 = h_0
-        self._c0 = np.sqrt(self._g * self._h0 * np.cos(self._theta))
-        
-        # self._m = (self._g * np.sin(self._theta)) + (self._g * np.cos(self._theta)) * np.tan(self._delta)
-        self._m = -1 * (self._g * np.cos(self._theta)) * (np.tan(self._theta)-np.tan(self._delta))
+        self._c0 = self.compute_c0()
+        self._m = self.compute_m()
         
         
         print(f"delta: {self._delta}, theta: {self._theta}, m: {self._m}, c0: {self._c0}")
@@ -997,7 +994,7 @@ class Mangeney_dry(Depth_result):
         Front of the flow:
         
         .. math::
-            x_A = \frac{1}{2}mt - 2 c_0 t
+            x_A(t) = \frac{1}{2}mt - 2 c_0 t
 
         Parameters
         ----------
@@ -1017,7 +1014,7 @@ class Mangeney_dry(Depth_result):
         Edge of the quiet area:
         
         .. math::
-            x_B = \frac{1}{2}mt + c_0 t
+            x_B(t) = \frac{1}{2}mt + c_0 t
 
         Parameters
         ----------
@@ -1030,6 +1027,34 @@ class Mangeney_dry(Depth_result):
             Position of the edge of the quiet region, in negative axis.
         """
         return 0.5*self._m*t**2 + (self._c0*t)
+
+
+    def compute_c0(self) -> float:
+        r"""Compute the initial wave propagation speed defined by:
+        
+        .. math::
+            c_0 = \sqrt{g h_0 \cos{\theta}}
+            
+        Returns
+        -------
+        float
+            Value of the initial wave propagation speed.
+        """
+        return np.sqrt(self._g * self._h0 * np.cos(self._theta))
+
+
+    def compute_m(self) -> float:
+        r"""Compute the constant horizontal acceleration of the front defined by:
+        
+        .. math::
+            m = -g \sin{\theta} + g \cos{\theta} \tan{\delta}
+            
+        Returns
+        -------
+        float
+            Value of the constant horizontal acceleration of the front.
+        """
+        return -1 * (self._g * np.cos(self._theta)) * (np.tan(self._theta)-np.tan(self._delta))
 
 
     def compute_h(self, 
@@ -1155,5 +1180,3 @@ class Mangeney_dry(Depth_result):
                         sub_u.append(0)
                 u.append(sub_u[::-1])
             self._u = np.array(u)
-
-
