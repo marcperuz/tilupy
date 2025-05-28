@@ -22,7 +22,7 @@ class Depth_result(ABC):
         _g : float 
             Gravitational constant.
         _theta : float
-            Angle of the surface.
+            Angle of the surface, in radian.
         _x : int or np.ndarray
             Spatial coordinates.
         _t : int or np.ndarray
@@ -35,7 +35,7 @@ class Depth_result(ABC):
     Parameters:
     -----------
         theta : float, optional
-            Angle of the surface, by default 0.
+            Angle of the surface, in radian, by default 0.
     """
     def __init__(self, 
                  theta: float=None):
@@ -1183,6 +1183,27 @@ class Mangeney_dry(Depth_result):
 
 
 class Shape_result(ABC):
+    """Abstract base class representing shape results of a simulated flow.
+
+    This class defines a common interface for flow simulation that compute 
+    the geometry of the final shape of a flow simulation. 
+
+    Attributes:
+    -----------
+        _g : float 
+            Gravitational constant.
+        _theta : float
+            Angle of the surface, in radian.
+        _x : int or np.ndarray
+            Spatial coordinates.
+        _h : np.ndarray
+            Flow height depending on space.
+    
+    Parameters:
+    -----------
+        theta : float, optional
+            Angle of the surface, in radian, by default 0.
+    """
     def __init__(self,
                  theta: float=0):
         self._g = 9.81
@@ -1193,29 +1214,20 @@ class Shape_result(ABC):
 
 
     def show_res(self, 
-                 show_h=False, 
-                 show_u=False,
                  show_slop=False,
                  x_unit:str = "m",
                  h_unit:str = "m",
-                 u_unit:str = "m/s"
                 ):
-        """Plot the simulation results.
+        """Plot the shape results.
 
         Parameters
         ----------
-        show_h : bool, optional
-            If True, plot the flow height ('h') curve.
-        show_u : bool, optional
-            If True, plot the flow velocity ('u') curve.
         show_slop : bool, optional
             If True, plot the slop of the surface.
         x_unit: str
             Space unit.
         h_unit: str
             Height unit.
-        u_unit: str
-            Velocity unit.
         """
         inclined_surf = None
         z_surf = [0, 0]
@@ -1234,55 +1246,133 @@ class Shape_result(ABC):
 
             plt.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
             
-            plt.title(f"Flow height")
+            plt.title("Flow height")
             plt.xlabel(f"x [{x_unit}]")
             plt.ylabel(f"h [{h_unit}]")
             plt.show()
 
 
 class Coussot_shape(Shape_result):
+    r"""Shape solution on an inclined dry domain without friction.
+
+    This class implements the final shape of a simulated flow.
+    The flow is over an inclined and flat surface without friction with a finite volume of fluid.
+    It computes the spatial coordinates from the flow lenght and height.
+    
+    Coussot P., Proust S., Ancey C. Rheological interpretation of deposits of yield stress fluids, 
+    Journal of Non-Newtonian Fluid Mechanics, 1996, vol 66(1), p. 55-70, DOI:10.1016/0377-0257(96)01474-7.
+
+    Attributes:
+    -----------
+        _l0 : int 
+            Length of deposit.
+        _rho : float
+            Fluid density.
+        _tau : float
+            Threshold constraint.
+        _x0 : float
+            Spatial coordinates of the maximal height.
+        _X : float or np.ndarray
+            Normalized spatial coordinates.
+    
+    Parameters:
+    -----------
+        l0 : int 
+            Length of deposit.
+        rho : float
+            Fluid density.
+        tau : float
+            Threshold constraint.
+        theta : float, optional
+            Angle of the surface, in degree, by default 0.
+    """   
     def __init__(self, 
                  l0: int, #Longueur du dépôt ==> distance x0-xf (rupture barrage - front de l'écoulement)
                  rho: float,
                  tau: float,
                  theta: float=0):
-        super().__init__(theta)
+        super().__init__(np.radians(theta))
         self._rho = rho
         self._tau = tau
         
-        self._l0 = l0
+        self._l0 = (self._rho * self._g * l0 * np.sin(self._theta) * np.sin(self._theta)) / (self._tau * np.cos(self._theta))
         self._x0 = self.compute_x0()
         
         self._X = None
 
 
     def compute_x0(self) -> float:
+        r"""Compute the normalized coordinate of the maximal fluid depth:
+        
+        .. math::
+            X_0 = \sqrt{1-exp(-L_0)} + \ln(1+\sqrt{1-exp(-L_0)})
+            
+        Returns
+        -------
+        float
+            X-coordinate of the maximal fluid depth.
+        """
         return np.sqrt(1-np.exp(-self._l0)) + np.log(1+np.sqrt(1-np.exp(-self._l0)))
         
     
     def compute_hmax(self) -> float:
+        r"""Compute the maximal fluid depth:
+        
+        .. math::
+            H_{max} = \sqrt{1-exp(-L_0)}      
+              
+        Returns
+        -------
+        float
+            Maximal fluid depth.
+        """
         return np.sqrt(1-np.exp(-self._l0))
 
 
     def auto_compute_h(self,
-                       left_size: int,
-                       right_size: int
+                       size: int
                        ) -> np.ndarray:
-        hmax = self.compute_hmax() 
+        r"""Create an array of fluid depth from the maximal fluid depth:
+
+        Parameters
+        ----------
+        size : int
+            Number of value wanted.         
+
+        Returns
+        -------
+        np.ndarray
+            Array of fluid depth.
+        """
+        #TODO
+        hmax = self.compute_hmax()  #VALEUR NORMALISEE, BESOIN DU H INITIALE
         
-        left_h = np.array([hmax+ 0.1]*left_size)
-        right_h = np.linspace(hmax, 0, right_size)
+        left_h = np.array([hmax])
+        right_h = np.linspace(hmax, 0, size)
         
         h = np.concatenate((left_h, right_h), axis=None)
-        
-        print(self._l0)
-        
+                
         return h
 
 
     def H(self, 
           h: float
           ) -> float:
+        r"""Normalize the fluid depth by following:
+        
+        .. math::
+            H = \frac{\rho g h \sin(\theta)}{\tau_c}
+
+        Parameters
+        ----------
+        h : float
+            Initial fluid depth.         
+
+        Returns
+        -------
+        float
+            Normalized fluid depth.
+        """
         if self._theta == 0:
             print("todo")
             return (self._rho*self._g*h)/self._tau
@@ -1293,33 +1383,72 @@ class Coussot_shape(Shape_result):
     def X(self,
           h: float | np.ndarray
           ) -> None:
+        r"""Compute the normalize x-coordinates from the fluid depth by following:
+        
+        .. math::
+                X = 
+                \begin{cases}
+                    H - \ln(1 + H) & \text{if } 0 \leq X \leq X_0, \\\\
+                    H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
+                \end{cases}
+
+        Parameters
+        ----------
+        h : float or np.ndarray
+            Initial fluid depth.         
+        """
         self._h = h
         
         if isinstance(h, float):
             h = [h]
-        
         X = []
-        hmax = self.compute_hmax()
-        for v in h:
-            if v > hmax:
-                X.append(self.H(v) - np.log(1 + self.H(v)))
-            else:
-                X.append(self.H(v) + self._l0 + np.log(1 - self.H(v)))
-            # print(v)
-            # print( self.H(v))
-            # x = self.H(v) - np.log(1 + self.H(v))
-            # # print(x)
-            # if x <= self._x0:
-            #     print(1)
-            #     X.append(x)
-            # else:
-            #     print(2)
-            #     X.append(self.H(v) + self._l0 + np.log(1 - self.H(v)))
-            # print(X)
+       
+        i = 0
+        H = self.H(h[0])
+        temp_x = []
+        
+        while H >= 1 and i < len(h):
+            H = self.H(h[i])
+            x = H + np.log(1 + H)
+            temp_x.append(x)    
+            i += 1
+        
+        if len(temp_x) != 0:
+            max_x = max(temp_x)
+            X = [(i-max_x)*-1 for i in temp_x]
+        
+        while i < len(h):
+            x = self.H(h[i]) + self._l0 + np.log(1 - self.H(h[i]))
+            X.append(x)
+            i += 1
+
         self._X = X
         
         
-    def X_to_x(self) -> None:
+    def x(self,
+          h: float | np.ndarray
+          ) -> None:
+        r"""Compute the x-coordinates from the fluid depth by following:
+        
+        .. math::
+                X = 
+                \begin{cases}
+                    H - \ln(1 + H) & \text{if } 0 \leq X \leq X_0, \\\\
+                    H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
+                \end{cases}
+                
+        and :
+        
+        .. math::
+            X = \frac{\rho g x (\sin(\theta))^2}{\tau_c \cos(\theta)}
+
+
+        Parameters
+        ----------
+        h : float or np.ndarray
+            Initial fluid depth.         
+        """
+        self.X(h)
         x = []
         for v in self._X:
             if self._theta == 0:
@@ -1328,20 +1457,3 @@ class Coussot_shape(Shape_result):
                 x.append((v*self._tau*np.cos(self._theta))/(self._rho*self._g*np.sin(self._theta)*np.sin(self._theta)))
         self._x = x
      
-
-class Front_result:
-    def __init__(self):
-        pass
-
-    def xf(self):
-        return None
-
-    def show_res(self):
-        return None
-    
-    
-# A = Coussot_shape(5, 2, 3, 5)
-# h = A.auto_compute_h(10, 10)
-# A.X(h)
-# A.X_to_x()
-# A.show_res(True)
