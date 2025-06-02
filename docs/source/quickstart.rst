@@ -1,5 +1,5 @@
-Introduction to pytopomap
+Introduction to tilupy
 =========================
 
-General introduction to pytopomap
+General introduction to tilupy
 
