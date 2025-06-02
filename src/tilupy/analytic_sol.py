@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.optimize import fsolve
+from scipy.optimize import root_scalar
+
 from abc import ABC, abstractmethod
 
 
@@ -1211,6 +1213,30 @@ class Shape_result(ABC):
         
         self._x = None
         self._h = None
+    
+    
+    @property
+    def h(self):
+        """Accessor of the shape h of the flow.
+        
+        Returns
+        -------
+        self._h : np.ndarray
+            Flow height in self._x. If None, no solution computed.
+        """
+        return self._h
+
+
+    @property
+    def x(self):
+        """Accessor of the spatial distribution of the computed solution.
+        
+        Returns
+        -------
+        self._x : np.ndarray
+            Spatial distribution of the computed solution. If None, no solution computed.
+        """
+        return self._x
 
 
     def show_res(self, 
@@ -1265,43 +1291,190 @@ class Coussot_shape(Shape_result):
     Attributes:
     -----------
         _l0 : int 
-            Length of deposit.
+            Length of the deposit.
+        _L0 : int 
+            Normalized length of the deposit.
+        _hmax : int 
+            Max fluid depth.
+        _Hmax : int 
+            Normalized max fluid depth.
         _rho : float
             Fluid density.
         _tau : float
             Threshold constraint.
-        _x0 : float
-            Spatial coordinates of the maximal height.
+        _X0 : float
+            Normalized spatial coordinates of the maximal height.
         _X : float or np.ndarray
             Normalized spatial coordinates.
+        _H : float or np.ndarray
+            Normalized fluid depth.
     
     Parameters:
     -----------
         l0 : int 
-            Length of deposit.
+            Length of the deposit.
         rho : float
             Fluid density.
         tau : float
             Threshold constraint.
         theta : float, optional
             Angle of the surface, in degree, by default 0.
+        H_size : int, optional
+            Number of value wanted in the H array, by default 100.
+        hmax : float; optional
+            Max fluid depth.
     """   
     def __init__(self, 
                  l0: int, #Longueur du dépôt ==> distance x0-xf (rupture barrage - front de l'écoulement)
                  rho: float,
                  tau: float,
-                 theta: float=0):
+                 theta: float=0,
+                 H_size: int=100,
+                 hmax: float=None):
         super().__init__(np.radians(theta))
         self._rho = rho
         self._tau = tau
         
-        self._l0 = (self._rho * self._g * l0 * np.sin(self._theta) * np.sin(self._theta)) / (self._tau * np.cos(self._theta))
-        self._x0 = self.compute_x0()
+        self._l0 = l0
+        self._L0 = self.x_to_X(l0)
+        self._X0 = self.compute_X0()
+        self._hmax = hmax
+        self._Hmax = self.compute_Hmax(hmax)
         
         self._X = None
+        self._H = self.compute_H(H_size)
+        
+        print("X0: ", self._X0)
+        print("Hmax: ", self._Hmax)
+        print("l0: ", self._l0)
+        print("L0: ", self._L0)
 
 
-    def compute_x0(self) -> float:
+    def h_to_H(self, 
+               h: float
+               ) -> float:
+        r"""Normalize the fluid depth by following:
+        
+        .. math::
+            H = \frac{\rho g h \sin(\theta)}{\tau_c}
+            
+        If :math:`\theta = 0`, the the expression is:
+        
+        .. math::
+            H = \frac{\rho g h}{\tau_c} 
+
+        Parameters
+        ----------
+        h : float
+            Initial fluid depth.         
+
+        Returns
+        -------
+        float
+            Normalized fluid depth.
+        """
+        if self._theta == 0:
+            return (self._rho*self._g*h)/self._tau
+        else:
+            return (self._rho*self._g*h*np.sin(self._theta))/self._tau
+
+
+    def H_to_h(self,
+               H: np.ndarray
+               ) -> np.ndarray:
+        r"""Find the original value of the fluid depth from the normalized one
+        by following:
+        
+        .. math::
+            h = \frac{H \tau_c}{\rho g \sin(\theta)} 
+
+        If :math:`\theta = 0`, the the expression is:
+        
+        .. math::
+            h = \frac{H \tau_c}{\rho g} 
+    
+        Parameters
+        ----------
+        H : np.ndarray
+            Normalized values of the fluid depth.
+
+        Returns
+        -------
+        np.ndarray
+            True values of the fluid depth.
+        """
+        h = []
+        for v in H:
+            if self._theta == 0:
+                h.append((v*self._tau)/(self._rho*self._g))
+            else:    
+                h.append((v*self._tau)/(self._rho*self._g*np.sin(self._theta)))
+        return np.array(h)
+
+
+    def x_to_X(self, 
+               x: float
+               ) -> float:
+        r"""Normalize the spatial coordinates by following:
+        
+        .. math::
+            X = \frac{\rho g x (\sin(\theta))^2}{\tau_c \cos(\theta)}
+            
+        If :math:`\theta = 0`, the the expression is:
+        
+        .. math::
+            X = \frac{\rho g x}{\tau_c} 
+
+        Parameters
+        ----------
+        x : float
+            Initial spatial coordinate.         
+
+        Returns
+        -------
+        float
+            Normalized spatial coordinate.
+        """
+        if self._theta == 0:
+            return (self._rho*self._g*x)/self._tau
+        else:
+            return (self._rho*self._g*x*np.sin(self._theta)*np.sin(self._theta)) / (self._tau*np.cos(self._theta))
+    
+    
+    def X_to_x(self,
+               X: np.ndarray
+               ) -> np.ndarray:
+        r"""Find the original value of the spatial coordinates from the normalized one
+        by following:
+        
+        .. math::
+            x = \frac{X \tau_c \cos(\theta)}{\rho g (\sin(\theta))^2} 
+
+        If :math:`\theta = 0`, the the expression is:
+        
+        .. math::
+            x = \frac{X \tau_c}{\rho g} 
+    
+        Parameters
+        ----------
+        X : np.ndarray
+            Normalized values of the spatial coordinates.
+
+        Returns
+        -------
+        np.ndarray
+            True values of the spatial coordinate.
+        """
+        x = []
+        for v in X:
+            if self._theta == 0:
+                x.append((v*self._tau)/(self._rho*self._g))
+            else:
+                x.append((v*self._tau*np.cos(self._theta))/(self._rho*self._g*np.sin(self._theta)*np.sin(self._theta)))
+        return x
+
+
+    def compute_X0(self) -> float:
         r"""Compute the normalized coordinate of the maximal fluid depth:
         
         .. math::
@@ -1315,145 +1488,159 @@ class Coussot_shape(Shape_result):
         return np.sqrt(1-np.exp(-self._l0)) + np.log(1+np.sqrt(1-np.exp(-self._l0)))
         
     
-    def compute_hmax(self) -> float:
-        r"""Compute the maximal fluid depth:
+    def compute_Hmax(self, 
+                     hmax: float=None) -> float:
+        r"""Compute the normalized maximal fluid depth:
         
         .. math::
-            H_{max} = \sqrt{1-exp(-L_0)}      
+            H_{max} = \sqrt{1-exp(-L_0)}
+            
+        Or if hmax is define: 
+        
+        .. math::
+            H_{max} = \frac{\rho g h_{max} \sin(\theta)}{\tau_c}
               
         Returns
         -------
         float
-            Maximal fluid depth.
+            Maximal fluid depth (dimensionless).
         """
         return np.sqrt(1-np.exp(-self._l0))
 
 
-    def auto_compute_h(self,
-                       size: int
-                       ) -> np.ndarray:
-        r"""Create an array of fluid depth from the maximal fluid depth:
+    def compute_H(self,
+                 size: int
+                 ) -> np.ndarray:
+        r"""Create an array of fluid depth from the normalized maximal fluid depth:
 
         Parameters
         ----------
         size : int
-            Number of value wanted.         
+            Number of value wanted.      
 
         Returns
         -------
         np.ndarray
-            Array of fluid depth.
+            Array of fluid depth (dimensionless).
         """
-        #TODO
-        hmax = self.compute_hmax()  #VALEUR NORMALISEE, BESOIN DU H INITIALE
+        H = np.linspace(0, self._Hmax, size)        
         
-        left_h = np.array([hmax])
-        right_h = np.linspace(hmax, 0, size)
-        
-        h = np.concatenate((left_h, right_h), axis=None)
-                
-        return h
+        return H
 
 
-    def H(self, 
-          h: float
-          ) -> float:
-        r"""Normalize the fluid depth by following:
-        
-        .. math::
-            H = \frac{\rho g h \sin(\theta)}{\tau_c}
-
-        Parameters
-        ----------
-        h : float
-            Initial fluid depth.         
-
-        Returns
-        -------
-        float
-            Normalized fluid depth.
-        """
-        if self._theta == 0:
-            print("todo")
-            return (self._rho*self._g*h)/self._tau
-        else:
-            return (self._rho*self._g*h*np.sin(self._theta))/self._tau
-
-
-    def X(self,
-          h: float | np.ndarray
-          ) -> None:
-        r"""Compute the normalize x-coordinates from the fluid depth by following:
+    def compute_Xx(self) -> None:
+        r"""Compute the normalize x-coordinates (:math:`0 < X < L_0`) from the fluid depth by following:
         
         .. math::
                 X = 
                 \begin{cases}
                     H - \ln(1 + H) & \text{if } 0 \leq X \leq X_0, \\\\
                     H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
-                \end{cases}
-
-        Parameters
-        ----------
-        h : float or np.ndarray
-            Initial fluid depth.         
+                \end{cases}     
         """
-        self._h = h
+        self._h = self.H_to_h(np.concatenate((self._H, np.flip(self._H)), axis=None)) * (self._hmax/np.max(self.H_to_h(self._H)))
+        xr = []
+        xl = []        
         
-        if isinstance(h, float):
-            h = [h]
+        for H_val in self._H:
+            if self._theta == 0:
+                x_left = (H_val*H_val)/2
+                x_right = (H_val*H_val)/2
+            else:
+                x_left = H_val - np.log(1 + H_val)
+                if H_val < 1:
+                    x_right = H_val + self._l0 + np.log(1 - H_val)
+                else:
+                    x_right = self._X0
+
+            xl.append(x_left)
+            xr.append(x_right)
+        
+        if self._theta == 0:
+            xr = [(-1*(i-max(xr)))*(self._L0/max(xr)) for i in xr]
+            xl = [(i-max(xl))*(self._L0/max(xl)) for i in xl]
+
+        self._X = np.concatenate((xl, np.flip(xr)), axis=None)
+        self._x = self.X_to_x(self._X)
+
+
+    def compute_Xx_back(self) -> None:
+        r"""Compute the normalize x-coordinates (:math:`0 < X < X_0`) from the fluid depth by following the first equation of:
+        
+        .. math::
+                X = 
+                \begin{cases}
+                    H - \ln(1 + H) & \text{if } 0 \leq X \leq X_0, \\\\
+                    H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
+                \end{cases}     
+        """
+        self._h = self.H_to_h(self._H) * (self._hmax/np.max(self.H_to_h(self._H)))
         X = []
-       
-        i = 0
-        H = self.H(h[0])
-        temp_x = []
         
-        while H >= 1 and i < len(h):
-            H = self.H(h[i])
-            x = H + np.log(1 + H)
-            temp_x.append(x)    
-            i += 1
-        
-        if len(temp_x) != 0:
-            max_x = max(temp_x)
-            X = [(i-max_x)*-1 for i in temp_x]
-        
-        while i < len(h):
-            x = self.H(h[i]) + self._l0 + np.log(1 - self.H(h[i]))
-            X.append(x)
-            i += 1
+        for H_val in self._H:
+            if self._theta == 0:
+                X.append((H_val*H_val)/2)
+            else:
+                X.append(H_val - np.log(1 + H_val))
 
         self._X = X
-        
-        
-    def x(self,
-          h: float | np.ndarray
-          ) -> None:
-        r"""Compute the x-coordinates from the fluid depth by following:
+        self._x = self.X_to_x(self._X)
+
+
+    def compute_Xx_front(self) -> None:
+        r"""Compute the normalize x-coordinates (:math:`X_0 < X < L0`) from the fluid depth by following the second equation of:
         
         .. math::
                 X = 
                 \begin{cases}
                     H - \ln(1 + H) & \text{if } 0 \leq X \leq X_0, \\\\
                     H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
-                \end{cases}
-                
-        and :
+                \end{cases}     
+        """
+        self._h = self.H_to_h(self._H) * (self._hmax/np.max(self.H_to_h(self._H)))
+        X = []
+        
+        for H_val in self._H:
+            if self._theta == 0:
+                X.append((H_val*H_val)/2)
+            else:
+                X.append(H_val + self._L0 + np.log(1 - H_val))
+        
+        X = np.array(X)
+        X[X<0] = 0
+        
+        if self._theta == 0:
+            X = [-1*(i-max(X)) for i in X]
+
+        self._X = X
+        self._x = self.X_to_x(self._X)
+        
+             
+    def compute_Xx_front_remaitre(self):
+        r"""Compute the normalize x-coordinates (:math:`X_0 < X < L0`) from the fluid depth by following:
         
         .. math::
-            X = \frac{\rho g x (\sin(\theta))^2}{\tau_c \cos(\theta)}
-
-
-        Parameters
-        ----------
-        h : float or np.ndarray
-            Initial fluid depth.         
+                X = -H - \ln(1-H) 
         """
-        self.X(h)
-        x = []
-        for v in self._X:
-            if self._theta == 0:
-                x.append((v*self._tau)/(self._rho*self._g))
-            else:
-                x.append((v*self._tau*np.cos(self._theta))/(self._rho*self._g*np.sin(self._theta)*np.sin(self._theta)))
-        self._x = x
-     
+        if self._theta == 0:
+            self._h = np.concatenate((self.H_to_h(self._H), np.flip(self.H_to_h(self._H))), axis=None) * (self._hmax/np.max(self.H_to_h(self._H)))
+        else:
+            self._h = self.H_to_h(self._H) * (self._hmax/np.max(self.H_to_h(self._H)))
+
+        X = []
+        for H_val in self._H:
+            X.append(((-1*H_val) - np.log(1-(H_val))))
+
+        if self._theta == 0:
+            X_l = [(i - max(X))*(self._L0/max(X)) for i in X]
+            X_r = [(-1*(i - max(X)))*(self._L0/max(X)) for i in X]
+            self._X = np.concatenate((X_l, np.flip(X_r)), axis=None)
+        else:
+            self._X = [(-1*(i - max(X)))*(self._L0/max(X)) for i in X]
+        self._x = self.X_to_x(self._X)
+
+
+    def compute_Hf(self) -> float:
+        Hmax = self.compute_Hmax()
+        val = 1 - ((2/Hmax)*(1-np.log(2/Hmax)))
+        print(self.H_to_h([val*Hmax]))
