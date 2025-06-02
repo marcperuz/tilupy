@@ -33,6 +33,8 @@ represents the front flow.
 # %%
 # Initialisation with :math:`l_0 = 10m`, :math:`h_{max} = 0.5m`, :math:`\rho = 1000kg/m^3`, :math:`\tau_c = 500Pa` and 
 # :math:`\theta = 10°`:
+import matplotlib.pyplot as plt
+
 from tilupy.analytic_sol import Coussot_shape
 
 A = Coussot_shape(l0=10, rho=1000, tau=500, theta=10, hmax=0.5)
@@ -51,8 +53,6 @@ A.show_res()
 
 # %%
 # The two solutions aren't exactly the same:
-import matplotlib.pyplot as plt
-
 A = Coussot_shape(l0=10, rho=1000, tau=500, theta=10, hmax=0.5)
 A.compute_Xx_front()
 
@@ -72,8 +72,6 @@ fig.show()
 
 # %%
 # The result is different if we choose :math:`\theta = 0°`:
-import matplotlib.pyplot as plt
-
 A = Coussot_shape(l0=10, rho=1000, tau=500, theta=0, hmax=0.5)
 A.compute_Xx()
 # A.show_res()
