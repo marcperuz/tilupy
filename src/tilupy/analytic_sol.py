@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.optimize import fsolve
-from adjustText import adjust_text
 
 from abc import ABC, abstractmethod
 
@@ -1865,7 +1864,7 @@ class Front_result:
             return xf
             
         else:
-            print(f"Didn't find cm, try with greater range of value.")
+            print("Didn't find cm, try with greater range of value.")
             return None
 
 

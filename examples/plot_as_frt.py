@@ -7,7 +7,6 @@ specific time.
 
 For all examples, we will have :math:`\theta = 30°`, :math:`h_0 = 20m` and :math:`t = 5s`:
 """
-import matplotlib.pyplot as plt
 from tilupy.analytic_sol import Front_result
 
 A = Front_result(theta=30, h0=20)
