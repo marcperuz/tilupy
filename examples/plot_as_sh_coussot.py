@@ -23,7 +23,7 @@ where
                 \text{X : Normalized spatial coordinate}, \\\\
                 \text{H : Normalized fluid depth}, \\\\
                 \text{X_0 : Normalized spatial coordinate of the maximal fluid depth}, \\\\
-                \text{L_0 : Normalized flow lenght}, \\\\
+                \text{L_0 : Normalized flow lenght}
             \end{cases}
 
 For :math:`0 < X \leq X_0` the equation represent the back front of the flow and :math:`X_0 < X \leq L_0` 

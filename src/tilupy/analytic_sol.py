@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.optimize import fsolve
+from adjustText import adjust_text
 
 from abc import ABC, abstractmethod
 
@@ -40,7 +41,7 @@ class Depth_result(ABC):
     """
     def __init__(self, 
                  theta: float=None):
-        self._g = 9.18
+        self._g = 9.81
         self._theta = theta
         self._x = None
         self._t = None
@@ -1091,6 +1092,7 @@ class Mangeney_dry(Depth_result):
 
         if isinstance(T, int):
             h = []
+            
             for i in x:
                 if i <= self.xa(T):
                     h.append(0)
@@ -1643,3 +1645,270 @@ class Coussot_shape(Shape_result):
         Hmax = self.compute_Hmax()
         val = 1 - ((2/Hmax)*(1-np.log(2/Hmax)))
         print(self.H_to_h([val*Hmax]))
+
+
+class Front_result:
+    """Class computing front position of a simulated flow.
+
+    This class defines multiple methods for flow simulation that compute 
+    the position of the front flow at the specified moment. 
+
+    Attributes:
+    -----------
+        _g : float 
+            Gravitational constant.
+        _theta : float
+            Angle of the surface, in radian.
+        _h0 : int
+            Initial fluid depth.
+        _xf : int or np.ndarray
+            Spatial coordinates of the front flow.
+        _t : int
+            Time instant.
+    
+    Parameters:
+    -----------
+        theta : float, optional
+            Angle of the surface, in radian, by default 0.
+        h0 : int
+            Initial fluid depth, by default 1.
+    """
+    def __init__(self,
+                 theta: float=0,
+                 h0: int=1):
+        self._g = 9.81
+        self._theta = np.radians(theta)
+        
+        self._h0 = h0
+        
+        self._xf = None
+        self._t = None
+        self._labels = []
+    
+
+    def xf_mangeney(self, 
+                    t: int,
+                    delta: float
+                    ) -> float:
+        r"""
+        Mangeney's equation for a dam-break solution over an infinite inclined dry domain with friction
+        and an infinitely-long fluid mass:
+        
+        .. math::
+            x_f(t) = \frac{1}{2}mt - 2 c_0 t
+            
+        with :math:`c_0` the initial wave propagation speed defined by:
+        
+        .. math::
+            c_0 = \sqrt{g h_0 \cos{\theta}}
+
+        and :math:`m` the constant horizontal acceleration of the front defined by:
+    
+        .. math::
+            m = -g \sin{\theta} + g \cos{\theta} \tan{\delta}
+    
+        Parameters
+        ----------
+        t : int
+            Time instant.
+            
+        delta : float
+            Dynamic friction angle, in degree.        
+
+        Returns
+        -------
+        float
+            Position of the front edge of the fluid.
+        """
+        m = -1 * (self._g * np.cos(self._theta)) * (np.tan(self._theta)-np.tan(np.radians(delta)))
+        c0 = np.sqrt(self._g * self._h0 * np.cos(self._theta))
+        xf = -1*(0.5*m*(t**2) - (2*c0*t))
+        
+        if f"Mangeney d{delta}" not in self._labels:
+            if self._xf is None:
+                self._xf = [xf]
+            else:
+                self._xf.append(xf)
+
+            self._labels.append(f"Mangeney d{delta}")
+            self._t = t
+            
+        return xf
+
+
+    def xf_dressler(self, 
+                    t: int,
+                    ) -> float:
+        r"""
+        Dressler's equation for a dam-break solution over an infinite inclined dry domain with friction:
+        
+        .. math::
+            x_f(t) = 2 t \sqrt{g h_0}
+    
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the fluid.
+        """
+        xf = 2 * t * np.sqrt(self._g*self._h0)
+        
+        if "Dressler" not in self._labels:
+            if self._xf is None:
+                self._xf = [xf]
+            else:
+                self._xf.append(xf)
+
+            self._labels.append("Dressler")
+            self._t = t
+            
+        return xf
+
+
+    def xf_ritter(self, 
+                    t: int,
+                    ) -> float:
+        r"""
+        Ritter's equation for a dam-break solution over an infinite inclined dry domain without friction:
+        
+        .. math::
+            x_f(t) = 2 t \sqrt{g h_0}
+    
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the fluid.
+        """
+        xf = 2 * t * np.sqrt(self._g*self._h0)
+        
+        if "Ritter" not in self._labels:
+            if self._xf is None:
+                self._xf = [xf]
+            else:
+                self._xf.append(xf)
+
+            self._labels.append("Ritter")
+            self._t = t
+            
+        return xf
+
+
+    def xf_stocker(self, 
+                    t: int,
+                    hr: int
+                    ) -> float:
+        r"""
+        Stocker's equation for a dam-break solution over an infinite inclined wet domain without friction:
+        
+        .. math::
+            x_f(t) =t \cdot \frac{2 c_m^2 \left( \sqrt{g h_l} - c_m \right)}{c_m^2 - g h_r}
+            
+        with :math:`c_m` the critical velocity defined by:
+
+        .. math::
+            -8.g.hr.cm^{2}.(g.hl - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0
+    
+        Parameters
+        ----------
+        t : int
+            Time instant.
+        hr : int
+            Fluid depth at the right of the dam.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the fluid.
+        """
+        def equation_cm(cm) -> float:
+            return -8 * self._g * hr * cm**2 * (self._g * self._h0 - cm**2)**2 + (cm**2 - self._g * hr)**2 * (cm**2 + self._g * hr)
+
+        guesses = np.linspace(0.01, 1000, 1000)
+        solutions = []
+
+        for guess in guesses:
+            sol = fsolve(equation_cm, guess)[0]
+
+            if abs(equation_cm(sol)) < 1e-6 and not any(np.isclose(sol, s, atol=1e-6) for s in solutions):
+                solutions.append(sol)
+
+        for sol in solutions:
+            hm = sol**2 / self._g
+            if hm < self._h0 and hm > hr:
+                find = True
+                self._cm = sol
+                break
+            else:
+                find = False
+
+        if find:
+            xf = t * (((2*self._cm**2)*(np.sqrt(self._g*self._h0)-self._cm)) / ((self._cm**2) - (self._g*hr)))
+            
+            if "Stocker" not in self._labels:
+                if self._xf is None:
+                    self._xf = [xf]
+                else:
+                    self._xf.append(xf)
+
+                self._labels.append("Stocker")
+                self._t = t
+                
+            return xf
+            
+        else:
+            print(f"Didn't find cm, try with greater range of value.")
+            return None
+
+
+    def show_res(self, 
+                 x_unit: str='m'):
+        """Plot the front position.
+
+        Parameters
+        ----------
+        x_unit: str
+            Space unit.
+        """
+        y_levels = np.arange(len(self._xf))[::-1]
+     
+        fig, ax = plt.subplots(figsize=(10, 5))
+        
+        for x, y, label in zip(self._xf, y_levels, self._labels):
+            ax.vlines(x, y - 0.3, y + 0.3, color='black', linewidth=2)
+            ax.text(x + 0.5, y, f"{x:.4f}", rotation=90, va='center')
+        
+        ax.set_yticks(y_levels)
+        ax.set_yticklabels(self._labels)
+        ax.invert_yaxis()
+
+        ax.set_xlim(left=0)
+        ax.set_xlim(right=max(self._xf)+5)
+
+
+        ax.set_xlabel(f"x [{x_unit}]")
+        ax.set_title(f"Flow front positions at t = {self._t}" if self._t else "Flow front positions")
+
+        ax.grid(True, axis='x')
+
+        plt.tight_layout()
+        plt.show()
+        
+
+# a = Front_result(30, 20)
+# print(a.xf_mangeney(5, 0))
+# print(a.xf_mangeney(5, 25))
+
+# print(a.xf_dressler(5))
+# print(a.xf_ritter(5))
+# print(a.xf_stocker(5, 5))
+
+# a.show_res()
