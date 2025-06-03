@@ -35,7 +35,7 @@ t = 5
 A.xf_mangeney(t, 25)
 A.xf_dressler(t)
 
-A.show_res()
+A.show_fronts_over_time()
 
 # %%
 # Second example using Ritter and Stocker's equations for a dam-break solution over an infinite 
@@ -54,4 +54,4 @@ A.show_res()
 B.xf_ritter(t)
 B.xf_stocker(t, hr=1)
 
-B.show_res()
+B.show_fronts_over_time()

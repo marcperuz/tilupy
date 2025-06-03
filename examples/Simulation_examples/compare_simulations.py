@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jun  3 13:04:31 2021
-
-@author: peruzzetto
+r"""
+Compare simulations example
+===========================
 """
 
 import itertools

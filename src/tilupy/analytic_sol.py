@@ -6,6 +6,8 @@ Created on Fri Aug  4 12:09:41 2023
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+
 
 from scipy.optimize import fsolve
 
@@ -1523,7 +1525,7 @@ class Coussot_shape(Shape_result):
         np.ndarray
             Array of fluid depth (dimensionless).
         """
-        H = np.linspace(0, self._Hmax, size)        
+        H = np.linspace(0, 0.99, size)        
         
         return H
 
@@ -1538,7 +1540,7 @@ class Coussot_shape(Shape_result):
                     H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
                 \end{cases}     
         """
-        self._h = self.H_to_h(np.concatenate((self._H, np.flip(self._H)), axis=None)) * (self._hmax/np.max(self.H_to_h(self._H)))
+        self._h = self.H_to_h(np.concatenate((self._H, np.flip(self._H)), axis=None)) 
         xr = []
         xl = []        
         
@@ -1574,7 +1576,7 @@ class Coussot_shape(Shape_result):
                     H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
                 \end{cases}     
         """
-        self._h = self.H_to_h(self._H) * (self._hmax/np.max(self.H_to_h(self._H)))
+        self._h = self.H_to_h(self._H)
         X = []
         
         for H_val in self._H:
@@ -1597,7 +1599,7 @@ class Coussot_shape(Shape_result):
                     H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
                 \end{cases}     
         """
-        self._h = self.H_to_h(self._H) * (self._hmax/np.max(self.H_to_h(self._H)))
+        self._h = self.H_to_h(self._H)
         X = []
         
         for H_val in self._H:
@@ -1625,7 +1627,7 @@ class Coussot_shape(Shape_result):
         if self._theta == 0:
             self._h = np.concatenate((self.H_to_h(self._H), np.flip(self.H_to_h(self._H))), axis=None) * (self._hmax/np.max(self.H_to_h(self._H)))
         else:
-            self._h = self.H_to_h(self._H) * (self._hmax/np.max(self.H_to_h(self._H)))
+            self._h = self.H_to_h(self._H)
 
         X = []
         for H_val in self._H:
@@ -1636,7 +1638,7 @@ class Coussot_shape(Shape_result):
             X_r = [(-1*(i - max(X)))*(self._L0/max(X)) for i in X]
             self._X = np.concatenate((X_l, np.flip(X_r)), axis=None)
         else:
-            self._X = [(-1*(i - max(X)))*(self._L0/max(X)) for i in X]
+            self._X = [(-1*(i - max(X))) for i in X]
         self._x = self.X_to_x(self._X)
 
 
@@ -1662,7 +1664,7 @@ class Front_result:
             Initial fluid depth.
         _xf : int or np.ndarray
             Spatial coordinates of the front flow.
-        _t : int
+        _t : int #TODO
             Time instant.
     
     Parameters:
@@ -1680,9 +1682,8 @@ class Front_result:
         
         self._h0 = h0
         
-        self._xf = None
-        self._t = None
-        self._labels = []
+        self._xf = {}
+        self._labels = {}
     
 
     def xf_mangeney(self, 
@@ -1723,14 +1724,22 @@ class Front_result:
         c0 = np.sqrt(self._g * self._h0 * np.cos(self._theta))
         xf = -1*(0.5*m*(t**2) - (2*c0*t))
         
-        if f"Mangeney d{delta}" not in self._labels:
-            if self._xf is None:
-                self._xf = [xf]
-            else:
-                self._xf.append(xf)
+        if t in self._labels:
+            if f"Mangeney d{delta}" not in self._labels[t] :
+                 self._labels[t].append(f"Mangeney d{delta}")
+                 self._xf[t].append(xf)
+        else:
+            self._labels[t] = [f"Mangeney d{delta}"]
+            self._xf[t] = [xf]
+                
+        # if f"Mangeney d{delta}" not in self._labels :
+        #     if self._xf is None:
+        #         self._xf = [xf]
+        #     else:
+        #         self._xf.append(xf)
 
-            self._labels.append(f"Mangeney d{delta}")
-            self._t = t
+        #     self._labels.append(f"Mangeney d{delta}")
+        #     self._t = t
             
         return xf
 
@@ -1756,14 +1765,22 @@ class Front_result:
         """
         xf = 2 * t * np.sqrt(self._g*self._h0)
         
-        if "Dressler" not in self._labels:
-            if self._xf is None:
-                self._xf = [xf]
-            else:
-                self._xf.append(xf)
+        if t in self._labels:
+            if "Dressler" not in self._labels[t] :
+                 self._labels[t].append("Dressler")
+                 self._xf[t].append(xf)
+        else:
+            self._labels[t] = ["Dressler"]
+            self._xf[t] = [xf]
+            
+        # if "Dressler" not in self._labels:
+        #     if self._xf is None:
+        #         self._xf = [xf]
+        #     else:
+        #         self._xf.append(xf)
 
-            self._labels.append("Dressler")
-            self._t = t
+        #     self._labels.append("Dressler")
+        #     self._t = t
             
         return xf
 
@@ -1789,14 +1806,22 @@ class Front_result:
         """
         xf = 2 * t * np.sqrt(self._g*self._h0)
         
-        if "Ritter" not in self._labels:
-            if self._xf is None:
-                self._xf = [xf]
-            else:
-                self._xf.append(xf)
+        if t in self._labels:
+            if "Ritter" not in self._labels[t] :
+                 self._labels[t].append("Ritter")
+                 self._xf[t].append(xf)
+        else:
+            self._labels[t] = ["Ritter"]
+            self._xf[t] = [xf]
+        
+        # if "Ritter" not in self._labels:
+        #     if self._xf is None:
+        #         self._xf = [xf]
+        #     else:
+        #         self._xf.append(xf)
 
-            self._labels.append("Ritter")
-            self._t = t
+        #     self._labels.append("Ritter")
+        #     self._t = t
             
         return xf
 
@@ -1852,14 +1877,22 @@ class Front_result:
         if find:
             xf = t * (((2*self._cm**2)*(np.sqrt(self._g*self._h0)-self._cm)) / ((self._cm**2) - (self._g*hr)))
             
-            if "Stocker" not in self._labels:
-                if self._xf is None:
-                    self._xf = [xf]
-                else:
-                    self._xf.append(xf)
+            if t in self._labels:
+                if "Stocker" not in self._labels[t] :
+                    self._labels[t].append("Stocker")
+                    self._xf[t].append(xf)
+            else:
+                self._labels[t] = ["Stocker"]
+                self._xf[t] = [xf]
+            
+            # if "Stocker" not in self._labels:
+            #     if self._xf is None:
+            #         self._xf = [xf]
+            #     else:
+            #         self._xf.append(xf)
 
-                self._labels.append("Stocker")
-                self._t = t
+            #     self._labels.append("Stocker")
+            #     self._t = t
                 
             return xf
             
@@ -1868,46 +1901,115 @@ class Front_result:
             return None
 
 
-    def show_res(self, 
-                 x_unit: str='m'):
-        """Plot the front position.
+    # def show_res(self, 
+    #              x_unit: str='m'):
+    #     """Plot the front position.
 
-        Parameters
-        ----------
-        x_unit: str
-            Space unit.
-        """
-        y_levels = np.arange(len(self._xf))[::-1]
+    #     Parameters
+    #     ----------
+    #     x_unit: str
+    #         Space unit.
+    #     """
+    #     print(self._xf)
+    #     print(self._labels)
+    #     y_levels = np.arange(len(self._xf))[::-1]
      
+    #     fig, ax = plt.subplots(figsize=(10, 5))
+        
+    #     for x, y, label in zip(self._xf, y_levels, self._labels):
+    #         ax.vlines(x, y - 0.3, y + 0.3, color='black', linewidth=2)
+    #         ax.text(x + 0.5, y, f"{x:.4f}", rotation=90, va='center')
+        
+    #     ax.set_yticks(y_levels)
+    #     ax.set_yticklabels(self._labels)
+    #     ax.invert_yaxis()
+
+    #     ax.set_xlim(left=0)
+    #     ax.set_xlim(right=max(self._xf)+5)
+
+
+    #     ax.set_xlabel(f"x [{x_unit}]")
+    #     ax.set_title(f"Flow front positions at t = {self._t}" if self._t else "Flow front positions")
+
+    #     ax.grid(True, axis='x')
+
+    #     plt.tight_layout()
+    #     plt.show()
+
+
+    def show_fronts_over_time(self, x_unit="m"):
         fig, ax = plt.subplots(figsize=(10, 5))
-        
-        for x, y, label in zip(self._xf, y_levels, self._labels):
-            ax.vlines(x, y - 0.3, y + 0.3, color='black', linewidth=2)
-            ax.text(x + 0.5, y, f"{x:.4f}", rotation=90, va='center')
-        
-        ax.set_yticks(y_levels)
-        ax.set_yticklabels(self._labels)
+
+        label_order = []
+        for t in sorted(self._labels.keys()):
+            for label in self._labels[t]:
+                if label not in label_order:
+                    label_order.append(label)
+
+        y_levels = {label: i for i, label in enumerate(reversed(label_order))}
+        yticks = list(y_levels.values())
+        yticklabels = list(reversed(label_order))
+
+        sorted_times = sorted(self._xf.keys())
+        colors = cm.viridis(np.linspace(0, 1, len(sorted_times)))
+
+        for color, t in zip(colors, sorted_times):
+            x_list = self._xf[t]
+            label_list = self._labels[t]
+
+            for x, label in zip(x_list, label_list):
+                y = y_levels[label]
+                ax.vlines(x, y - 0.3, y + 0.3, color=color, linewidth=2)
+                ax.text(x + 0.5, y, f"{x:.2f}", rotation=90, va='center', fontsize=8, color=color)
+
+        ax.set_yticks(yticks)
+        ax.set_yticklabels(yticklabels)
         ax.invert_yaxis()
 
         ax.set_xlim(left=0)
-        ax.set_xlim(right=max(self._xf)+5)
-
+        ax.set_xlim(right=max(x for sublist in self._xf.values() for x in sublist) + 5)
 
         ax.set_xlabel(f"x [{x_unit}]")
-        ax.set_title(f"Flow front positions at t = {self._t}" if self._t else "Flow front positions")
+        ax.set_title("Flow front positions over time")
 
         ax.grid(True, axis='x')
 
+        from matplotlib.lines import Line2D
+        legend_elements = [
+            Line2D([0], [0], color=color, lw=2, label=f"t = {t}")
+            for color, t in zip(colors, sorted_times)
+        ]
+        ax.legend(handles=legend_elements, title="Time steps", loc="lower right")
+
         plt.tight_layout()
         plt.show()
-        
+
 
 # a = Front_result(30, 20)
 # print(a.xf_mangeney(5, 0))
 # print(a.xf_mangeney(5, 25))
 
+# print(a.xf_mangeney(10, 0))
+# print(a.xf_mangeney(10, 25))
+
 # print(a.xf_dressler(5))
 # print(a.xf_ritter(5))
-# print(a.xf_stocker(5, 5))
+# print(a.xf_stocker(5, 0.01))
 
-# a.show_res()
+# a.show_fronts_over_time()
+
+# A = Coussot_shape(l0=16.11, rho=1000, tau=500, theta=10, hmax=0.5)
+# A.compute_Xx_front()
+
+# B = Coussot_shape(l0=10, rho=1000, tau=500, theta=10, hmax=0.5)
+# B.compute_Xx_front_remaitre()
+
+# fig, ax = plt.subplots()
+# ax.plot(A.x, A.h, label="First solution")
+# ax.plot(B.x, B.h, label="Second solution")
+# ax.legend()
+# ax.set_xlabel('x [m]')
+# ax.set_ylabel('h [m]')
+
+# ax.plot([A.x[0], A.x[-1]], [0, 0], color='black', linewidth=2)
+# plt.show()

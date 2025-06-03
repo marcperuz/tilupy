@@ -43,8 +43,10 @@ A.show_res()
 
 # %%
 # An other way to compute the shape of the front flow is to compute this equation:
+# 
 # .. math::
 #       X = -H - \ln(1-H)
+# 
 # With the same parameters, we obtain:
 
 A = Coussot_shape(l0=10, rho=1000, tau=500, theta=10, hmax=0.5)

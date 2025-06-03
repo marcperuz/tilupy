@@ -54,9 +54,9 @@ napoleon_attr_annotations = True
 # sphinx-gallery configuration
 sphinx_gallery_conf = {
     # path to your example scripts
-    'examples_dirs': ['../../examples'],
+    'examples_dirs': ['../../examples/Simulation_examples', '../../examples/Analytic_Solutions_Height', '../../examples/Analytic_Solutions_Front', '../../examples/Analytic_Solutions_Shape'],
     # path to where to save gallery generated output
-    'gallery_dirs': ['auto_gallery'],
+    'gallery_dirs': ['auto_examples/Simulation_examples', 'auto_examples/Analytic_Solutions_Height', 'auto_examples/Analytic_Solutions_Front', 'auto_examples/Analytic_Solutions_Shape'],
     # specify that examples should be ordered according to filename
     'within_subsection_order': FileNameSortKey,
 }

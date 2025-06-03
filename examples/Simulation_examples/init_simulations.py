@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed May 26 14:41:54 2021
-
-@author: peruzzetto
+r"""
+Initialize simulations example
+===========================
 """
 
 import os

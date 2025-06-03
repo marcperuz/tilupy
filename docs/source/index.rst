@@ -11,4 +11,5 @@ tilupy documentation
    :caption: Contents:
 
    quickstart
-   auto_gallery/index
+   auto_examples/Simulation_examples/index
+   analytic_solution
