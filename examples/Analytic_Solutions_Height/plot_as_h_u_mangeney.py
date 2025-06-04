@@ -1,25 +1,41 @@
 r"""
-Mangeney's solution of dam-break on a dry domain with friction.
-===========================
+Analytical solution of a dam-break problem on a dry slope with friction (Mangeney et al.)
+=========================================================================================
 
-This example demonstrates a 1D analytical solution of an ideal dam break on a dry domain.
+This script presents a one-dimensional analytical solution of a dam-break problem,
+as proposed by Mangeney et al. (2000), for gravity-driven flow on a dry, inclined plane,
+including basal friction.
 
-The dam break is instantaneous, over an inclined and flat surface with friction with a 
-infinite flow volume.
 
-The initial condition for this problem is:
+Model Assumptions
+-----------------
 
-.. math::
-        h(x, t) = 
-        \begin{cases}
-            h_0 > 0 & \text{for } x < 0, \\\\
-            0 & \text{for } 0 < x,
-        \end{cases}
-        
-.. math::
-        u(x, t) = 0
+- Instantaneous dam break at time :math:`t = 0`.
+- The downstream domain (:math:`x > 0`) is initially dry, while the upstream side (:math:`x < 0`) contains a fluid column of height :math:`h_0`.
+- The flow occurs on a constant slope inclined at an angle :math:`\theta`.
+- Basal friction is modeled via a constant friction angle :math:`\delta`, leading to a constant horizontal acceleration.
+- The fluid is incompressible, homogeneous, and only subject to gravity and basal friction.
+- The initial fluid volume is considered infinite.
 
-The analytic solution is given by
+
+Initial Conditions
+------------------
+
+    .. math::
+            h(x, 0) = 
+            \begin{cases}
+                h_0 > 0 & \text{for } x < 0, \\\\
+                0 & \text{for } 0 < x,
+            \end{cases}
+
+    .. math::
+            u(x, 0) = 0
+
+
+Analytical Solution
+-------------------
+
+The analytical expressions for fluid height and velocity at time t are given by:
 
     .. math::
             h(x, t) = 
@@ -48,34 +64,61 @@ where
 :math:`c_0` represent the initial wave propagation speed computed from :math:`\sqrt{g h_0 \cos{\theta}}` and 
 :math:`m` the constant horizontal acceleration of the front computed from :math:`-g \sin{\theta} + g \cos{\theta} \tan{\delta}`.
 
+
+Implementation
+--------------
+
+The following example replicates the case shown in Figure 3 of Mangeney et al. (2000).
 """
 
 # %%
-# Initialisation with no friction (:math:`\delta = 0°`), slope :math:`\theta = 30°` and :math:`h_0 = 20m`
-# (this example is the same as figure 3 of Mangeney et al, 2000):
+# 
+# -------------------
+
+# %%
+# First import required packages and define the spatial domain: 1D space from 0 to 1000 m.
 import numpy as np
 from tilupy.analytic_sol import Mangeney_dry
 
-A = Mangeney_dry(theta=30, delta=0, h_0=20)
 x = np.linspace(0, 1000, 1000)
 
+# %%
+# 
+# -------------------
 
 # %%
-# Compute flow height for t = {0, 5, 10, 15, 20}s:
-A.compute_h(x, [0, 5, 10, 15, 20])
-A.show_res(show_h=True)
+# Case 1: No friction (:math:`\delta = 0°`), slope :math:`\theta = 30°`, initial height :math:`h_0 = 20 m`.
+case_1 = Mangeney_dry(theta=30, delta=0, h_0=20)
 
 
 # %%
-# Compute flow velocity for t = {0, 2, 4, 6, 8, 10}s:
-A.compute_u(x, [0, 2, 4, 6, 8, 10])
-A.show_res(show_u=True)
+# Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15, 20} s`.
+case_1.compute_h(x, [0, 5, 10, 15, 20])
+case_1.show_res(show_h=True)
+
 
 # %%
-# Now adding some friction (:math:`\delta = 20°`):
-B = Mangeney_dry(theta=30, delta=20, h_0=20)
+# Compute and plot the fluid velocity at times :math:`t = {0, 5, 10, 15, 20} s`.
+case_1.compute_u(x, [0, 2, 4, 6, 8, 10])
+case_1.show_res(show_u=True)
 
 # %%
-# Compute flow height for t = {0, 5, 10, 15, 20}s:
-B.compute_h(x, [0, 5, 10, 15, 20])
-B.show_res(show_h=True)
+# 
+# -------------------
+
+# %%
+# Case 2: Add basal friction (:math:`\delta = 20°`), same slope and initial height.
+case_2 = Mangeney_dry(theta=30, delta=20, h_0=20)
+
+
+# %%
+# Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15, 20} s`.
+case_2.compute_h(x, [0, 5, 10, 15, 20])
+case_2.show_res(show_h=True)
+
+
+# %%
+# Original reference:
+#  
+# Mangeney A., Heinrich P. and Roche R. Analytical solution for testing debris avalanche 
+# numerical models. Pure and Applied Geophysics, 2000, vol. 157, p. 1081-1096.

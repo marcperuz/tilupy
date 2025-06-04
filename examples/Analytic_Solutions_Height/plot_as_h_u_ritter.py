@@ -1,26 +1,42 @@
 r"""
-Ritter's solution of dam-break on a dry domain without friction.
-===========================
+Analytical solution of a dam-break problem on a dry bed without friction (Ritter)
+===========================================================================================
 
-This example demonstrates a 1D analytical Ritter's solution of an ideal dam break on a dry domain.
+This example presents the classical one-dimensional analytical solution proposed by Ritter (1892)
+for the dam-break problem on a dry, horizontal bed without friction.
 
-The dam break is instantaneous, over an horizontal and flat surface without friction with a finite 
-flow volume.
 
-The initial condition for this problem is:
+Model Assumptions
+-----------------
 
-.. math::
-        h(x, t) = 
+- Instantaneous dam break at position :math:`x = x_0` and at time :math:`t = 0`.
+- The domain is initially dry for :math:`x > x_0`, with a finite volume of still water (with height :math:`h_l`) on the left of the dam (:math:`0 < x \leq x_0`).
+- The bed is flat and horizontal (no slope).
+- No bed friction is considered.
+- The fluid is incompressible and inviscid, subject only to gravity.
+- The solution is valid until the rarefaction wave reaches the left boundary of the water column.
+
+
+Initial Conditions
+------------------
+
+    .. math::
+        h(x, 0) = 
         \begin{cases}
             h_l > 0 & \text{for } 0 < x \leq x_0, \\\\
-            0 & \text{for } x_0 < x,
+            0 & \text{for } x > x_0,
         \end{cases}
-        
-.. math::
-        u(x, t) = 0
-with :math:`x_0` being the dam position.
-        
-The analytic solution is given by
+
+    .. math::
+        u(x, 0) = 0
+
+where :math:`x_0` is the initial dam location and :math:`h_l` is the height of the water column.
+
+
+Analytical Solution
+-------------------
+
+The water height and velocity profiles at any time t are given by:
 
     .. math::
             h(x, t) = 
@@ -38,39 +54,66 @@ The analytic solution is given by
                 0 & \text{if } x_B(t) < x,
             \end{cases}
 
-where 
+where the positions of the rarefaction wave front and the dry front are:
 
     .. math::
             \begin{cases}
                 x_A(t) = x_0 - t \sqrt{g h_l}, \\\\
                 x_B(t) = x_0 + 2 t \sqrt{g h_l}
             \end{cases}
-"""
 
+
+Implementation
+--------------
+"""
 # %%
-# Initialisation with :math:`x_0 = 0m` and :math:`h_l = 0.5m` :
+# First import required packages and define the spatial domain for visualization: 1D space from -5 to 25 m.
 import numpy as np
 from tilupy.analytic_sol import Ritter_dry
 
-A = Ritter_dry(x_0=0, h_l=0.5)
-x = np.linspace(-5, 25, 100)
+x = np.linspace(-5, 25, 1000)
+
+# %%
+# 
+# -------------------
+
+# %%
+# Case 1: Ritter's solution with dam at :math:`x_0 = 0 m` and initial height :math:`h_l = 0.5 m`
+case_1 = Ritter_dry(x_0=0, h_l=0.5)
 
 
 # %%
-# Compute flow height for t = {0, 2, 4, 6, 8, 10}s:
-A.compute_h(x, [0, 2, 4, 6, 8, 10])
-A.show_res(show_h=True)
+# Compute and plot fluid height at times :math:`t = {0, 2, 4, 6, 8, 10} s`.
+case_1.compute_h(x, [0, 2, 4, 6, 8, 10])
+case_1.show_res(show_h=True)
 
 
 # %%
-# Compute flow velocity for t = {0, 2, 4, 6, 8, 10}s:
-A.compute_u(x, [0, 2, 4, 6, 8, 10])
-A.show_res(show_u=True)
-
+# Compute and plot fluid velocity at times :math:`t = {0, 2, 4, 6, 8, 10} s`.
+case_1.compute_u(x, [0, 2, 4, 6, 8, 10])
+case_1.show_res(show_u=True)
 
 # %%
-# Specific case for :math:`x_0 = 5m`, :math:`h_l = 0.005m`, :math:`L = 10m` and :math:`t = 6s` found in SWASHES (https://www.idpoisson.fr/swashes/)
-B = Ritter_dry(x_0=5, h_l=0.005)
-x = np.linspace(0, 10, 100)
-B.compute_h(x, 6)
-B.show_res(show_h=True)
+# 
+# -------------------
+
+# %%
+# Case 2: Specific example from SWASHES benchmark database
+# Dam at :math:`x_0 = 5 m`, initial height :math:`h_l = 0.005 m`, domain length :math:`L = 10 m`, solution at :math:`t = 6 s`.
+x = np.linspace(0, 10, 1000)
+
+case_2 = Ritter_dry(x_0=5, h_l=0.005)
+case_2.compute_h(x, 6)
+case_2.show_res(show_h=True)
+
+# %%
+# 
+# -------------------
+
+# %%
+# Original reference:
+# 
+# ID Poisson. Swashes. ID Poisson, [online]. Available at: https://www.idpoisson.fr/swashes/ ; accessed June 2025.
+# 
+# Ritter A. Die Fortpflanzung der Wasserwellen. Zeitschrift des Vereines Deuscher Ingenieure 
+# August 1892; 36(33): 947-954.

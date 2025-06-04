@@ -1,13 +1,23 @@
 r"""
-Dressler's solution of dam-break on a dry domain with friction.
-===========================
+Analytical solution of a dam-break problem on a dry slope with friction (Dressler)
+=============================================================================================
 
-This example demonstrates a 1D analytical Dressler's solution of an ideal dam break on a dry domain.
+This example presents the classical one-dimensional analytical solution proposed by Dressler (1952)
+for the dam-break problem on a dry, horizontal bed with friction.
 
-The dam break is instantaneous, over an horizontal and flat surface with friction with a finite 
-flow volume.
 
-The initial condition for this problem is:
+Model Assumptions
+-----------------
+
+- Instantaneous dam break at position :math:`x = x_0` and at time :math:`t = 0`.
+- The domain is initially dry for :math:`x > x_0`, with a finite volume of still water (with height :math:`h_l`) on the left of the dam (:math:`0 < x \leq x_0`).
+- The bed is flat and horizontal (no slope).
+- Basal friction is modeled via Chézy coefficient :math:`C`.
+- The fluid is incompressible, homogeneous, and only subject to gravity and basal friction.
+
+
+Initial Conditions
+------------------
 
 .. math::
         h(x, t) = 
@@ -18,9 +28,14 @@ The initial condition for this problem is:
         
 .. math::
         u(x, t) = 0
-with :math:`x_0` being the dam position.
+        
+where :math:`x_0` is the initial dam location and :math:`h_l` is the height of the water column.
 
-The analytic solution is given by
+
+Analytical Solution
+-------------------
+
+The water height and velocity profiles for :math:`t > 0` are given by:
 
     .. math::
             h(x, t) = 
@@ -38,7 +53,7 @@ The analytic solution is given by
                 0 & \text{if } x_B(t) < x,
             \end{cases}
 
-where 
+where the positions of the rarefaction wave front and the dry front are:
 
     .. math::
             \begin{cases}
@@ -46,7 +61,7 @@ where
                 x_B(t) = x_0 + 2 t \sqrt{g h_l}
             \end{cases}
 
-and
+with the correction functions :math:`\alpha_1` and :math:`\alpha_2`:
 
     .. math::
             \begin{cases}
@@ -54,23 +69,44 @@ and
                 \alpha_2(\xi) = \frac{12}{2-(2-\xi)} - \frac{8}{3} + \frac{8 \sqrt{3}}{189} (2-\xi)^{3/2}) - \frac{108}{7(2 - \xi)}, \\\\
                 \xi = \frac{x-x_0}{t\sqrt{g h_l}}
             \end{cases}
-"""
+            
 
+Implementation
+--------------
+"""
 # %%
-# Initialisation with :math:`x_0 = 0m` and :math:`h_l = 0.5m` :
+# First import required packages and define the spatial domain for visualization: 1D space from -5 to 15 m.
 import numpy as np
 from tilupy.analytic_sol import Dressler_dry
 
-A = Dressler_dry(x_0=0, h_l=0.5)
 x = np.linspace(-5, 15, 100)
 
 # %%
-# Compute flow height for t = {0, 4, 6, 8, 10}s:
+# 
+# -------------------
+
+# %%
+# Case: Dressler's solution with dam at :math:`x_0 = 0 m`, initial height :math:`h_l = 0.5 m` and Chézy 
+# coefficient :math:`C = 40`. 
+A = Dressler_dry(x_0=0, h_l=0.5, C=40)
+
+# %%
+# Compute and plot fluid height at times :math:`t = {0, 4, 6, 8, 10} s`.
 A.compute_h(x, [0, 4, 6, 8, 10])
 A.show_res(show_h=True)
 
 
 # %%
-# Compute flow velocity for t = {0, 4, 6, 8, 10}s:
+# Compute and plot fluid velocity at times :math:`t = {0, 4, 6, 8, 10} s`.
 A.compute_u(x, [0, 4, 6, 8, 10])
 A.show_res(show_u=True)
+
+# %%
+# 
+# -------------------
+
+# %%
+# Original reference:
+# 
+# Dressler RF. Hydraulic resistance effect upon the dam-break functions. Journal of Research of the National Bureau 
+# of Standards September 1952; 49(3): 217-225.

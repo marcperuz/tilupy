@@ -1,26 +1,43 @@
 r"""
-Stocker's solution of dam-break on a wet domain without friction.
-===========================
+Analytical solution of a dam-break problem on a wet bed without friction (Stocker)
+=============================================================================================
 
-This example demonstrates a 1D analytical Stocker's solution of an ideal dam break on a wet domain.
+This example presents the one-dimensional analytical solution proposed by Stocker for the dam-break 
+problem on a wet, horizontal bed without friction.
 
-The dam break is instantaneous, over an horizontal and flat surface without friction with a finite 
-flow volume.
 
-The initial condition for this problem is:
+Model Assumptions
+-----------------
+
+- Instantaneous dam break at position :math:`x = x_0` and at time :math:`t = 0`.
+- The bed is flat and horizontal (no slope).
+- No bed friction is considered.
+- A finite volume of still water of height :math:`h_l` is located to the left of the dam at :math:`0 < x \leq x_0`.
+- A shallow layer of water of height :math:`h_r` (with :math:`h_r < h_l`) exists to the right of the dam (:math:`x_0 < x`).
+- The fluid is incompressible and inviscid, subject only to gravity.
+
+
+Initial Conditions
+------------------
 
 .. math::
-        h(x, t) = 
+        h(x, 0) = 
         \begin{cases}
             h_l > 0 & \text{for } 0 < x \leq x_0, \\\\
             0 < h_r < h_l & \text{for } x_0 < x,
         \end{cases}
         
 .. math::
-        u(x, t) = 0
-with :math:`x_0` being the dam position.
+        u(x, 0) = 0
 
-The analytic solution is given by
+where :math:`x_0` is the initial dam location and :math:`h_l` is the height of the water column at the left of the dam and
+:math:`h_r` is the height of the water column at the right of the dam.
+
+
+Analytical Solution
+-------------------
+
+The water height and velocity profiles for :math:`t > 0` are given by:
 
     .. math::
             h(x, t) = 
@@ -40,7 +57,7 @@ The analytic solution is given by
                 0 & \text{if } x_C(t) < x,
             \end{cases}
 
-where
+where the locations separating the flow regions evolve in time according to:
 
     .. math::
             \begin{cases}
@@ -49,24 +66,62 @@ where
                 x_C(t) = x_0 + t \frac{2 c_m^2 \left( \sqrt{g h_l} - c_m \right)}{c_m^2 - g h_r}
             \end{cases}
 
-with :math:`c_m` being the solution of :math:`-8.g.hr.cm^{2}.(g.hl - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0`
-"""
+with :math:`c_m` is the intermediate wave speed, obtained as the solution of the nonlinear equation: 
+    .. math::
+        -8.g.hr.cm^{2}.(g.hl - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0
 
+
+Implementation
+--------------
+"""
 # %%
-# Initialisation with :math:`x_0 = 0m`, :math:`h_l = 0.5m` and :math:`h_r = 0.1m` :
+# First import required packages and define the spatial domain for visualization: 1D space from -5 to 10 m.
 import numpy as np
 from tilupy.analytic_sol import Stocker_wet
 
-A = Stocker_wet(x_0=0, h_l=0.5, h_r=0.1)
-x = np.linspace(-5, 25, 100)
+x = np.linspace(-5, 10, 100)
 
 # %%
-# Compute flow height for t = {0, 2, 4, 6, 8, 10}s:
-A.compute_h(x, [0, 2, 4, 6, 8, 10])
-A.show_res(show_h=True)
+# 
+# -------------------
+
+# %%
+# Case: Stocker's solution with dam at :math:`x_0 = 0 m`, initial fluid height :math:`h_l = 0.5 m` and initial 
+# domain height :math:`h_r = 0.05 m`
+case = Stocker_wet(x_0=0, h_l=0.5, h_r=0.05)
 
 
 # %%
-# Compute flow velocity for t = {0, 2, 4, 6, 8, 10}s:
-A.compute_u(x, [0, 2, 4, 6, 8, 10])
-A.show_res(show_u=True)
+# Compute and plot fluid height at times :math:`t = {0, 0.5, 1, 1.5, 2} s`.
+case.compute_h(x, [0, 0.5, 1, 1.5, 2])
+case.show_res(show_h=True)
+
+
+# %%
+# Compute and plot fluid velocity at times :math:`t = {0, 0.5, 1, 1.5, 2} s`.
+case.compute_u(x, [0, 0.5, 1, 1.5, 2])
+case.show_res(show_u=True)
+
+# %%
+# 
+# -------------------
+
+# %%
+# Original reference:
+# 
+# Stoker JJ. Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, 
+# Vol. 4. Interscience Publishers: New York, USA, 1957.
+
+
+# %%
+# Papier original (pas d'accès)
+# https://www.researchgate.net/publication/230513364_Water_Waves_The_Mathematical_Theory_with_Applications
+# 
+# Code matlab:
+# https://github.com/psarkhosh/Stoker_solution
+# 
+# Article utilisant les travaux
+# https://www.mdpi.com/2073-4441/15/21/3841#
+# 
+# Article domaine humide sur pente inclinée (pas d'accès)
+# https://ascelibrary.org/doi/10.1061/%28ASCE%29HY.1943-7900.0001683
