@@ -79,7 +79,7 @@ Implementation
 import numpy as np
 from tilupy.analytic_sol import Dressler_dry
 
-x = np.linspace(-5, 15, 100)
+x = np.linspace(-500, 700, 1000)
 
 # %%
 # 
@@ -88,22 +88,28 @@ x = np.linspace(-5, 15, 100)
 # %%
 # Case: Dressler's solution with dam at :math:`x_0 = 0 m`, initial height :math:`h_l = 0.5 m` and Chézy 
 # coefficient :math:`C = 40`. 
-A = Dressler_dry(x_0=0, h_l=0.5, C=40)
-
-# %%
-# Compute and plot fluid height at times :math:`t = {0, 4, 6, 8, 10} s`.
-A.compute_h(x, [0, 4, 6, 8, 10])
-A.show_res(show_h=True)
+case = Dressler_dry(x_0=0, h_0=6, C=40)
 
 
 # %%
-# Compute and plot fluid velocity at times :math:`t = {0, 4, 6, 8, 10} s`.
-A.compute_u(x, [0, 4, 6, 8, 10])
-A.show_res(show_u=True)
+# Compute and plot fluid height at times :math:`t = 40 s`.
+case.compute_h(x, T=40, estimation= False, xt=200, a=0.7)
+case.show_res(show_h=True)
+
+
+# %%
+# Compute and plot fluid velocity at times :math:`t = 40 s`.
+case.compute_u(x, T=40, xt=200)
+case.show_res(show_u=True)
 
 # %%
 # 
 # -------------------
+
+# %%
+# We can try to estimate the tip solution by giving the tip position :math:`x_t = 200 m` and an empirical parameter :math:`a = 0.7`.
+case.compute_h(x, T=40, estimation= True, xt=200, a=0.7)
+case.show_res(show_h=True)
 
 # %%
 # Original reference:

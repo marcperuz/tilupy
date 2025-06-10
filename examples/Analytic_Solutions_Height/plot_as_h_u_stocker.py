@@ -12,8 +12,8 @@ Model Assumptions
 - Instantaneous dam break at position :math:`x = x_0` and at time :math:`t = 0`.
 - The bed is flat and horizontal (no slope).
 - No bed friction is considered.
-- A finite volume of still water of height :math:`h_l` is located to the left of the dam at :math:`0 < x \leq x_0`.
-- A shallow layer of water of height :math:`h_r` (with :math:`h_r < h_l`) exists to the right of the dam (:math:`x_0 < x`).
+- A finite volume of still water of height :math:`h_0` is located to the left of the dam at :math:`0 < x \leq x_0`.
+- A shallow layer of water of height :math:`h_r` (with :math:`h_r < h_0`) exists to the right of the dam (:math:`x_0 < x`).
 - The fluid is incompressible and inviscid, subject only to gravity.
 
 
@@ -23,14 +23,14 @@ Initial Conditions
 .. math::
         h(x, 0) = 
         \begin{cases}
-            h_l > 0 & \text{for } 0 < x \leq x_0, \\\\
-            0 < h_r < h_l & \text{for } x_0 < x,
+            h_0 > 0 & \text{for } 0 < x \leq x_0, \\\\
+            0 < h_r < h_0 & \text{for } x_0 < x,
         \end{cases}
         
 .. math::
         u(x, 0) = 0
 
-where :math:`x_0` is the initial dam location and :math:`h_l` is the height of the water column at the left of the dam and
+where :math:`x_0` is the initial dam location and :math:`h_0` is the height of the water column at the left of the dam and
 :math:`h_r` is the height of the water column at the right of the dam.
 
 
@@ -42,9 +42,9 @@ The water height and velocity profiles for :math:`t > 0` are given by:
     .. math::
             h(x, t) = 
             \begin{cases}
-                h_l & \text{if } x \leq x_A(t), \\\\
-                \frac{4}{9g} \left( \sqrt{g h_l} - \frac{x - x_0}{2t} \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
-                \frac{c_m^2}{g} & \text{if } x_B(t) < x \leq x_C(t), \\\\
+                h_0 & \text{if } x \leq x_A(t), \\\\
+                \frac{\left( 2 \sqrt{g h_0} - \frac{x}{t} \right)^2}{9 g} & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                h_m = \frac{1}{2} h_r \left( \sqrt{1 + \frac{8 c_m^2}{g h_r}} - 1 \right) & \text{if } x_B(t) < x \leq x_C(t), \\\\
                 h_r & \text{if } x_C(t) < x,
             \end{cases}
             
@@ -52,8 +52,8 @@ The water height and velocity profiles for :math:`t > 0` are given by:
             u(x,t) = 
             \begin{cases}
                 0 & \text{if } x \leq x_A(t), \\\\
-                \frac{2}{3} \left( \frac{x - x_0}{t} + \sqrt{g h_l} \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
-                2 \left( \sqrt{g h_l} - c_m \right) & \text{if } x_B(t) < x \leq x_C(t), \\\\
+                \frac{2}{3} \left( \frac{x}{t} + \sqrt{g h_0} \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                2 \sqrt{g h_0} - 2 \sqrt{g h_m} & \text{if } x_B(t) < x \leq x_C(t), \\\\
                 0 & \text{if } x_C(t) < x,
             \end{cases}
 
@@ -61,34 +61,35 @@ where the locations separating the flow regions evolve in time according to:
 
     .. math::
             \begin{cases}
-                x_A(t) = x_0 - t \sqrt{g h_l}, \\\\
-                x_B(t) = x_0 + t \left( 2 \sqrt{g h_l} - 3 c_m \right), \\\\
-                x_C(t) = x_0 + t \frac{2 c_m^2 \left( \sqrt{g h_l} - c_m \right)}{c_m^2 - g h_r}
+                x_A(t) = - t \sqrt{g h_0}, \\\\
+                x_B(t) = t \left( 2 \sqrt{g h_0} - 3 \sqrt{g h_m} \right), \\\\
+                x_C(t) =  c_m t
             \end{cases}
 
-with :math:`c_m` is the intermediate wave speed, obtained as the solution of the nonlinear equation: 
+with :math:`c_m` is the front shock wave speed, obtained as the solution of the nonlinear equation: 
     .. math::
-        -8.g.hr.cm^{2}.(g.hl - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0
+        c_m h_r - h_r \left( \sqrt{1 + \frac{8 c_m^2}{g h_r}} - 1 \right) \left( \frac{c_m}{2} - \sqrt{g h_0} + \sqrt{\frac{g h_r}{2} \left( \sqrt{1 + \frac{8 c_m^2}{g h_r}} - 1 \right)} \right) = 0
 
 
 Implementation
 --------------
 """
 # %%
-# First import required packages and define the spatial domain for visualization: 1D space from -5 to 10 m.
+# First import required packages and define the spatial domain for visualization.
+# For following examples we will use a 1D space from -5.5 to 6 m.
 import numpy as np
-from tilupy.analytic_sol import Stocker_wet
+from tilupy.analytic_sol import Stocker_SARKHOSH_wet
 
-x = np.linspace(-5, 10, 100)
+x = np.linspace(-5.5, 6, 1000)
 
 # %%
 # 
 # -------------------
 
 # %%
-# Case: Stocker's solution with dam at :math:`x_0 = 0 m`, initial fluid height :math:`h_l = 0.5 m` and initial 
+# Case: Stocker's solution with dam at :math:`x_0 = 0 m`, initial fluid height :math:`h_0 = 0.5 m` and initial 
 # domain height :math:`h_r = 0.05 m`
-case = Stocker_wet(x_0=0, h_l=0.5, h_r=0.05)
+case = Stocker_SARKHOSH_wet(h_0=0.5, h_r=0.025)
 
 
 # %%

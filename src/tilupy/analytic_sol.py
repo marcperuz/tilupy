@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-
+from numpy.polynomial.polynomial import Polynomial
 from scipy.optimize import fsolve
 
 from abc import ABC, abstractmethod
@@ -41,7 +41,8 @@ class Depth_result(ABC):
             Angle of the surface, in radian, by default 0.
     """
     def __init__(self, 
-                 theta: float=None):
+                 theta: float=None
+                 ):
         self._g = 9.81
         self._theta = theta
         self._x = None
@@ -51,10 +52,10 @@ class Depth_result(ABC):
 
 
     @abstractmethod
-    def compute_h(self, 
-          x: int | np.ndarray, 
-          t: int | np.ndarray
-          ) -> None:
+    def compute_h(self,
+                  x: int | np.ndarray, 
+                  t: int | np.ndarray
+                  ) -> None:
         """Virtual function that compute the flow height 'h' at given space and time.
 
         Parameters
@@ -68,10 +69,10 @@ class Depth_result(ABC):
 
 
     @abstractmethod
-    def compute_u(self, 
-          x: int | np.ndarray, 
-          t: int | np.ndarray
-          ) -> None:
+    def compute_u(self,
+                  x: int | np.ndarray,
+                  t: int | np.ndarray
+                  ) -> None:
         """Virtual function that compute the flow velocity 'u' at given space and time.
 
         Parameters
@@ -139,7 +140,7 @@ class Depth_result(ABC):
                  x_unit:str = "m",
                  h_unit:str = "m",
                  u_unit:str = "m/s"
-                ):
+                 ) -> None:
         """Plot the simulation results.
 
         Parameters
@@ -206,7 +207,176 @@ class Depth_result(ABC):
             plt.show()
 
 
-class Stocker_wet(Depth_result):
+class Ritter_dry(Depth_result):
+    r"""Dam-break solution on a dry domain using shallow water theory.
+
+    This class implements the 1D analytical Ritter's solution of an ideal dam break on a dry domain.
+    The dam break is instantaneous, over an horizontal and flat surface with no friction.
+    It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
+    in SWASHES, based on Ritter's equation.
+    
+    Ritter A. Die Fortpflanzung der Wasserwellen. Zeitschrift des Vereines Deuscher Ingenieure 
+    August 1892; 36(33): 947-954.
+
+    Attributes:
+    -----------
+        _h0 : int
+            Initial water depth to the left of the dam.
+        _x0 : int 
+            Initial dam location (position along x-axis).
+        
+    Parameters:
+    -----------
+        h_0 : int
+            Initial water depth to the left of the dam.
+        x_0 : int, optional
+            Initial dam location (position along x-axis), by default 0.
+    """
+    def __init__(self,
+                 h_0: int,  
+                 x_0: int=0, 
+                 ):
+        super().__init__()
+        self._x0 = x_0
+        self._h0 = h_0
+
+
+    def xa(self, t: int) -> float:
+        r"""
+        Position of the rarefaction wave front (left-most edge) :
+        
+        .. math::
+            x_A(t) = x_0 - t \sqrt{g h_0}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the rarefaction wave.
+        """
+        return self._x0 - (t * np.sqrt(self._g*self._h0))
+
+
+    def xb(self, t: int) -> float:
+        r"""
+        Position of the contact discontinuity:
+        
+        .. math::
+            x_B(t) = x_0 + 2 t \sqrt{g h_0}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the contact wave (end of rarefaction).
+        """
+        return self._x0 + (2 * t * np.sqrt(self._g*self._h0))
+
+
+    def compute_h(self, 
+                  x: int | np.ndarray, 
+                  T: int | np.ndarray
+                  ) -> None:
+        r"""Compute the flow height h(x, t) at given time and positions.
+
+        .. math::
+                h(x, t) = 
+                \begin{cases}
+                    h_0 & \text{if } x \leq x_A(t), \\\\
+                    \frac{4}{9g} \left( \sqrt{g h_0} - \frac{x - x_0}{2t} \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    0 & \text{if } x_B(t) < x,
+                \end{cases}
+
+        Parameters
+        ----------
+        x : int or np.ndarray
+            Spatial positions.
+        T : int or nd.ndarray
+            Time instant.
+
+        Notes
+        -----
+        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        """
+        if isinstance(x, int):
+            x = [x]
+        if isinstance(T, int):
+            T = [T]
+
+        self._x = x
+        self._t = T
+        
+        h = []
+        for t in T:
+            sub_h = []
+            for i in x:
+                if i <= self.xa(t):
+                    sub_h.append(self._h0)
+                elif self.xa(t) < i <= self.xb(t):
+                    sub_h.append((4/(9*self._g)) *
+                            (np.sqrt(self._g*self._h0)-((i-self._x0)/(2*t)))**2)
+                else:
+                    sub_h.append(0)
+            h.append(sub_h)
+        self._h = np.array(h)
+
+
+    def compute_u(self, 
+                  x: int | np.ndarray, 
+                  T: int | np.ndarray
+                  ) -> None:
+        r"""Compute the flow velocity u(x, t) at given time and positions.
+
+        .. math::
+                u(x,t) = 
+                \begin{cases}
+                    0 & \text{if } x \leq x_A(t), \\\\
+                    \frac{2}{3} \left( \frac{x - x_0}{t} + \sqrt{g h_0} \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    0 & \text{if } x_B(t) < x,
+                \end{cases}
+
+        Parameters
+        ----------
+        x : int or np.ndarray
+            Spatial positions.
+        T : int or np.ndarray
+            Time instant.
+
+        Notes
+        -----
+        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        """
+        if isinstance(x, int):
+            x = [x]
+        if isinstance(T, int):
+            T = [T]
+
+        self._x = x
+        self._t = T
+        
+        u = []
+        for t in T:
+            sub_u = []
+            for i in x:
+                if i <= self.xa(t):
+                    sub_u.append(np.nan)
+                elif i > self.xa(t) and i <= self.xb(t):
+                    sub_u.append((2/3)*(((i-self._x0)/t) + np.sqrt(self._g*self._h0)))
+                else:
+                    sub_u.append(np.nan)
+            u.append(sub_u)
+        self._u = np.array(u)
+
+
+class Stocker_SWASHES_wet(Depth_result):
     r"""Dam-break solution on a wet domain using shallow water theory.
 
     This class implements the 1D analytical Stocker's solution of an ideal dam break on a wet domain.
@@ -221,7 +391,7 @@ class Stocker_wet(Depth_result):
     -----------
         _x0 : int 
             Initial dam location (position along x-axis).
-        _hl : float
+        _h0 : float
             Water depth to the left of the dam.
         _hr : float
             Water depth to the right of the dam.
@@ -232,7 +402,7 @@ class Stocker_wet(Depth_result):
     -----------
         x_0 : int
             Initial dam location (position along x-axis).
-        h_l : float
+        h_0 : float
             Water depth to the left of the dam.
         h_r : float
             Water depth to the right of the dam.
@@ -242,13 +412,13 @@ class Stocker_wet(Depth_result):
     """
     def __init__(self, 
                  x_0: int, 
-                 h_l: int, 
+                 h_0: int, 
                  h_r: int, 
                  h_m: int=None
                  ):
         super().__init__()
         self._x0 = x_0
-        self._hl = h_l
+        self._h0 = h_0
         self._hr = h_r
         self._cm = None
         self.compute_cm()
@@ -262,7 +432,7 @@ class Stocker_wet(Depth_result):
         Position of the rarefaction wave front (left-most edge) :
         
         .. math::
-            x_A(t) = x_0 - t \sqrt{g h_l}
+            x_A(t) = x_0 - t \sqrt{g h_0}
 
         Parameters
         ----------
@@ -274,7 +444,7 @@ class Stocker_wet(Depth_result):
         float
             Position of the front edge of the rarefaction wave.
         """
-        return self._x0 - (t * np.sqrt(self._g*self._hl))
+        return self._x0 - (t * np.sqrt(self._g*self._h0))
 
 
     def xb(self, t: int) -> float:
@@ -282,7 +452,7 @@ class Stocker_wet(Depth_result):
         Position of the contact discontinuity:
         
         .. math::
-            x_B(t) = x_0 + t \left( 2 \sqrt{g h_l} - 3 c_m \right)
+            x_B(t) = x_0 + t \left( 2 \sqrt{g h_0} - 3 c_m \right)
 
         Parameters
         ----------
@@ -294,7 +464,7 @@ class Stocker_wet(Depth_result):
         float
             Position of the contact wave (end of rarefaction).
         """
-        return self._x0 + (t * ((2 * np.sqrt(self._g*self._hl)) - (3*self._cm)))
+        return self._x0 + (t * ((2 * np.sqrt(self._g*self._h0)) - (3*self._cm)))
 
 
     def xc(self, t: int) -> float:
@@ -302,7 +472,7 @@ class Stocker_wet(Depth_result):
         Position of the shock wave front (right-most wave):
         
         .. math::
-            x_C(t) = x_0 + t \cdot \frac{2 c_m^2 \left( \sqrt{g h_l} - c_m \right)}{c_m^2 - g h_r}
+            x_C(t) = x_0 + t \cdot \frac{2 c_m^2 \left( \sqrt{g h_0} - c_m \right)}{c_m^2 - g h_r}
 
         Parameters
         ----------
@@ -314,14 +484,14 @@ class Stocker_wet(Depth_result):
         float
             Position of the shock front.
         """
-        return self._x0 + (t * (((2*self._cm**2)*(np.sqrt(self._g*self._hl)-self._cm)) / ((self._cm**2) - (self._g*self._hr))))
+        return self._x0 + (t * (((2*self._cm**2)*(np.sqrt(self._g*self._h0)-self._cm)) / ((self._cm**2) - (self._g*self._hr))))
 
 
     def equation_cm(self, cm) -> float:
         r"""Equation of the critical velocity cm:
         
         .. math::
-            -8.g.hr.cm^{2}.(g.hl - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0
+            -8.g.hr.cm^{2}.(g.h0 - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0
 
         Parameters
         ----------
@@ -333,7 +503,7 @@ class Stocker_wet(Depth_result):
         float
             Residual of the equation. Zero when cm satisfies the system.
         """
-        return -8 * self._g * self._hr * cm**2 * (self._g * self._hl - cm**2)**2 + (cm**2 - self._g * self._hr)**2 * (cm**2 + self._g * self._hr)
+        return -8 * self._g * self._hr * cm**2 * (self._g * self._h0 - cm**2)**2 + (cm**2 - self._g * self._hr)**2 * (cm**2 + self._g * self._hr)
 
 
     def compute_cm(self) -> None:
@@ -353,7 +523,7 @@ class Stocker_wet(Depth_result):
 
         for sol in solutions:
             hm = sol**2 / self._g
-            if hm < self._hl and hm > self._hr:
+            if hm < self._h0 and hm > self._hr:
                 find = True
                 self._cm = sol
                 break
@@ -369,14 +539,15 @@ class Stocker_wet(Depth_result):
 
     def compute_h(self, 
                   x: int | np.ndarray, 
-                  T: int | np.ndarray):
+                  T: int | np.ndarray
+                  ) -> None:
         r"""Compute the flow height h(x, t) at given time and positions.
 
         .. math::
                 h(x, t) = 
                 \begin{cases}
-                    h_l & \text{if } x \leq x_A(t), \\\\
-                    \frac{4}{9g} \left( \sqrt{g h_l} - \frac{x - x_0}{2t} \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    h_0 & \text{if } x \leq x_A(t), \\\\
+                    \frac{4}{9g} \left( \sqrt{g h_0} - \frac{x - x_0}{2t} \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
                     \frac{c_m^2}{g} & \text{if } x_B(t) < x \leq x_C(t), \\\\
                     h_r & \text{if } x_C(t) < x,
                 \end{cases}
@@ -399,14 +570,15 @@ class Stocker_wet(Depth_result):
             self._t = T
 
             if isinstance(T, int):
+                print(self.xc(T))
                 h = []
                 for i in x:
                     if i <= self.xa(T):
-                        h.append(self._hl)
+                        h.append(self._h0)
                     # elif i > self.xa(t) and i <= self.xb(t):
                     elif self.xa(T) < i <= self.xb(T):
                         h.append((4/(9*self._g))*(np.sqrt(self._g *
-                                self._hl)-((i-self._x0)/(2*T)))**2)   # i-x0 and not i to recenter the breach of the dam at x=0.
+                                self._h0)-((i-self._x0)/(2*T)))**2)   # i-x0 and not i to recenter the breach of the dam at x=0.
                     elif self.xb(T) < i <= self.xc(T):
                         h.append((self._cm**2)/self._g)
                     else:
@@ -418,10 +590,10 @@ class Stocker_wet(Depth_result):
                     sub_h = []
                     for i in x:
                         if i <= self.xa(t):
-                            sub_h.append(self._hl)
+                            sub_h.append(self._h0)
                         elif self.xa(t) < i <= self.xb(t):
                             sub_h.append((4/(9*self._g))*(np.sqrt(self._g *
-                                    self._hl)-((i-self._x0)/(2*t)))**2)
+                                    self._h0)-((i-self._x0)/(2*t)))**2)
                         elif self.xb(t) < i <= self.xc(t):
                             sub_h.append((self._cm**2)/self._g)
                         else:
@@ -435,15 +607,16 @@ class Stocker_wet(Depth_result):
 
     def compute_u(self, 
                   x: int | np.ndarray, 
-                  T: int | np.ndarray):
+                  T: int | np.ndarray
+                  ) -> None:
         r"""Compute the flow velocity u(x, t) at given time and positions.
 
         .. math::
                 u(x,t) = 
                 \begin{cases}
                     0 & \text{if } x \leq x_A(t), \\\\
-                    \frac{2}{3} \left( \frac{x - x_0}{t} + \sqrt{g h_l} \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
-                    2 \left( \sqrt{g h_l} - c_m \right) & \text{if } x_B(t) < x \leq x_C(t), \\\\
+                    \frac{2}{3} \left( \frac{x - x_0}{t} + \sqrt{g h_0} \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    2 \left( \sqrt{g h_0} - c_m \right) & \text{if } x_B(t) < x \leq x_C(t), \\\\
                     0 & \text{if } x_C(t) < x,
                 \end{cases}
 
@@ -471,9 +644,9 @@ class Stocker_wet(Depth_result):
                         u.append(0)
                     elif i > self.xa(T) and i <= self.xb(T):
                         u.append((2/3)*(((i-self._x0)/T) +
-                                np.sqrt(self._g*self._hl)))
+                                np.sqrt(self._g*self._h0)))
                     elif i > self.xb(T) and i <= self.xc(T):
-                        u.append(2*(np.sqrt(self._g*self._hl) - self._cm))
+                        u.append(2*(np.sqrt(self._g*self._h0) - self._cm))
                     else:
                         u.append(0)
                 self._u = np.array(u)
@@ -487,9 +660,9 @@ class Stocker_wet(Depth_result):
                             sub_u.append(0)
                         elif i > self.xa(t) and i <= self.xb(t):
                             sub_u.append((2/3)*(((i-self._x0)/t) +
-                                    np.sqrt(self._g*self._hl)))
+                                    np.sqrt(self._g*self._h0)))
                         elif i > self.xb(t) and i <= self.xc(t):
-                            sub_u.append(2*(np.sqrt(self._g*self._hl) - self._cm))
+                            sub_u.append(2*(np.sqrt(self._g*self._h0) - self._cm))
                         else:
                             sub_u.append(0)
                     u.append(sub_u)
@@ -499,44 +672,51 @@ class Stocker_wet(Depth_result):
             print("First define cm")
 
 
-class Ritter_dry(Depth_result):
-    r"""Dam-break solution on a dry domain using shallow water theory.
+class Stocker_SARKHOSH_wet(Depth_result):
+    r"""Dam-break solution on a wet domain using shallow water theory.
 
-    This class implements the 1D analytical Ritter's solution of an ideal dam break on a dry domain.
+    This class implements the 1D analytical Stocker's solution of an ideal dam break on a wet domain.
     The dam break is instantaneous, over an horizontal and flat surface with no friction.
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
-    in SWASHES, based on Ritter's equation.
+    in SWASHES, based on Stoker's equation.
     
-    Ritter A. Die Fortpflanzung der Wasserwellen. Zeitschrift des Vereines Deuscher Ingenieure 
-    August 1892; 36(33): 947-954.
+    Stoker JJ. Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, 
+    Vol. 4. Interscience Publishers: New York, USA, 1957.
+    
+    Sarkhosh, P. (2021). Stoker solution package (1.0.0). Zenodo. https://doi.org/10.5281/zenodo.5598374
 
     Attributes:
     -----------
-        _x0 : int 
-            Initial dam location (position along x-axis).
-        _hl : int
+        _h0 : float
             Water depth to the left of the dam.
-        _hr : int
-            Water depth to the right of the dam, by default 0.
-        
+        _hr : float
+            Water depth to the right of the dam.
+        _cm : float
+            Shock front speed.
+        _hm : float
+            Height of the shock front.
+       
     Parameters:
     -----------
-        x_0 : int
-            Initial dam location (position along x-axis).
-        h_l : int
-            Water depth to the left of the dam.
-        h_r : int, optinal
-            Water depth to the right of the dam, by default 0.
+        h_0 : float
+            Initial water depth to the left of the dam.
+        h_r : float
+            Initial water depth to the right of the dam.
     """
     def __init__(self, 
-                 x_0: int, 
-                 h_l: int, 
-                 h_r: int=0, 
+                 h_0: int, 
+                 h_r: int, 
                  ):
         super().__init__()
-        self._x0 = x_0
-        self._hl = h_l
+        self._h0 = h_0
         self._hr = h_r
+        
+        if self._hr == 0:
+            self._cm = 0
+            self._hm = 0
+        else:
+            self._cm = self.compute_cm()
+            self._hm = 0.5 * self._hr * (np.sqrt(1 + 8 * self._cm**2 / np.sqrt(self._g * self._hr)**2) - 1)
 
 
     def xa(self, t: int) -> float:
@@ -544,7 +724,7 @@ class Ritter_dry(Depth_result):
         Position of the rarefaction wave front (left-most edge) :
         
         .. math::
-            x_A(t) = x_0 - t \sqrt{g h_l}
+            x_A(t) = x_0 - t \sqrt{g h_0}
 
         Parameters
         ----------
@@ -556,18 +736,20 @@ class Ritter_dry(Depth_result):
         float
             Position of the front edge of the rarefaction wave.
         """
-        return self._x0 - (t * np.sqrt(self._g*self._hl))
+        return -(t * np.sqrt(self._g*self._h0))
 
 
-    def xb(self, t: int) -> float:
+    def xb(self, hm: float, t: int) -> float:
         r"""
         Position of the contact discontinuity:
         
         .. math::
-            x_B(t) = x_0 + 2 t \sqrt{g h_l}
+            x_B(t) = t \left( 2 \sqrt{g h_0} - 3 \sqrt{g h_m} \right)
 
         Parameters
         ----------
+        hm : float
+            Height of the shock front.
         t : int
             Time instant.
 
@@ -576,259 +758,73 @@ class Ritter_dry(Depth_result):
         float
             Position of the contact wave (end of rarefaction).
         """
-        return self._x0 + (2 * t * np.sqrt(self._g*self._hl))
+        return (2 * np.sqrt(self._g * self._h0) - 3 * np.sqrt(self._g * hm)) * t
+
+
+    def xc(self, cm: float, t: int) -> float:
+        r"""
+        Position of the shock wave front (right-most wave):
+        
+        .. math::
+            x_C(t) = c_m t
+
+        Parameters
+        ----------
+        cm : float
+            Shock front speed.
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the shock front.
+        """
+        return cm * t
+
+
+    def compute_cm(self) -> float:
+        r"""Compute the shock front speed using Newton-Raphson's method to find the solution of:
+        
+        .. math::
+            c_m h_r - h_r \left( \sqrt{1 + \frac{8 c_m^2}{g h_r}} - 1 \right) \left( \frac{c_m}{2} - \sqrt{g h_0} + \sqrt{\frac{g h_r}{2} \left( \sqrt{1 + \frac{8 c_m^2}{g h_r}} - 1 \right)} \right) = 0
+        
+        Returns
+        -------
+        float
+            Speed of the shock front.
+        """
+        f_cm = 1
+        df_cm = 1
+        cm = 10 * self._h0
+        
+        while abs(f_cm / cm) > 1e-10:
+            root_term = np.sqrt(8 * cm**2 / np.sqrt(self._g * self._hr)**2 + 1)
+            inner_sqrt = np.sqrt(self._g * self._hr * (root_term - 1) / 2)
+            
+            f_cm = cm * self._hr - self._hr * (root_term - 1) * (cm / 2 - np.sqrt(self._g * self._h0) + inner_sqrt)
+            df_cm = (self._hr 
+                     - self._hr * ((2 * cm * self._g * self._hr) / (np.sqrt(self._g * self._hr)**2 * root_term * inner_sqrt) + 0.5) * (root_term - 1)
+                     - (8 * cm * self._hr * (cm / 2 - np.sqrt(self._g * self._h0) + inner_sqrt)) / (np.sqrt(self._g * self._hr)**2 * root_term))
+            
+            cm -= f_cm / df_cm
+
+        return cm
 
 
     def compute_h(self, 
                   x: int | np.ndarray, 
-                  T: int | np.ndarray):
+                  T: int | np.ndarray
+                  ) -> None:
         r"""Compute the flow height h(x, t) at given time and positions.
 
         .. math::
                 h(x, t) = 
                 \begin{cases}
-                    h_l & \text{if } x \leq x_A(t), \\\\
-                    \frac{4}{9g} \left( \sqrt{g h_l} - \frac{x - x_0}{2t} \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
-                    0 & \text{if } x_B(t) < x,
-                \end{cases}
-
-        Parameters
-        ----------
-        x : int or np.ndarray
-            Spatial positions.
-        T : int or nd.ndarray
-            Time instant.
-
-        Notes
-        -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
-        """
-        if isinstance(x, int):
-            x = [x]
-        self._x = x
-        self._t = T
-
-        if isinstance(T, int):
-            h = []
-            for i in x:
-                if i <= self.xa(T):
-                    h.append(self._hl)
-                elif self.xa(T) < i <= self.xb(T):
-                    h.append((4/(9*self._g)) *
-                            (np.sqrt(self._g*self._hl)-((i-self._x0)/(2*T)))**2)
-                else:
-                    h.append(self._hr)
-            self._h = np.array(h)
-        
-        else:  
-            h = []
-            for t in T:
-                sub_h = []
-                for i in x:
-                    if i <= self.xa(t):
-                        sub_h.append(self._hl)
-                    elif self.xa(t) < i <= self.xb(t):
-                        sub_h.append((4/(9*self._g)) *
-                                (np.sqrt(self._g*self._hl)-((i-self._x0)/(2*t)))**2)
-                    else:
-                        sub_h.append(self._hr)
-                h.append(sub_h)
-            self._h = np.array(h)
-
-
-    def compute_u(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray):
-        r"""Compute the flow velocity u(x, t) at given time and positions.
-
-        .. math::
-                u(x,t) = 
-                \begin{cases}
-                    0 & \text{if } x \leq x_A(t), \\\\
-                    \frac{2}{3} \left( \frac{x - x_0}{t} + \sqrt{g h_l} \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
-                    0 & \text{if } x_B(t) < x,
-                \end{cases}
-
-        Parameters
-        ----------
-        x : int or np.ndarray
-            Spatial positions.
-        T : int or np.ndarray
-            Time instant.
-
-        Notes
-        -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
-        """
-        if isinstance(x, int):
-            x = [x]
-        self._x = x
-        self._t = T
-
-        if isinstance(T, int):
-            u = []
-            for i in x:
-                if i <= self.xa(T):
-                    u.append(0)
-                elif i > self.xa(T) and i <= self.xb(T):
-                    u.append((2/3)*(((i-self._x0)/T) + np.sqrt(self._g*self._hl)))
-                else:
-                    u.append(0)
-            self._u = np.array(u)
-        
-        else:
-            u = []
-            for t in T:
-                sub_u = []
-                for i in x:
-                    if i <= self.xa(t):
-                        sub_u.append(0)
-                    elif i > self.xa(t) and i <= self.xb(t):
-                        sub_u.append((2/3)*(((i-self._x0)/t) + np.sqrt(self._g*self._hl)))
-                    else:
-                        sub_u.append(0)
-                u.append(sub_u)
-            self._u = np.array(u)
-
-
-class Dressler_dry(Depth_result):
-    r"""Dam-break solution on a dry domain with friction using shallow water theory.
-
-    This class implements the 1D analytical Dressler's solution of an ideal dam break on a dry domain with friction.
-    The dam break is instantaneous, over an horizontal and flat surface with friction.
-    It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
-    in SWASHES, based on Dressler's equation.
-    
-    Dressler RF. Hydraulic resistance effect upon the dam-break functions. Journal of Research of the National Bureau 
-    of Standards September 1952; 49(3): 217-225.
-
-    Attributes:
-    -----------
-        _x0 : int 
-            Initial dam location (position along x-axis).
-        _hl : int
-            Water depth to the left of the dam.
-        _hr : int
-            Water depth to the right of the dam, by default 0.
-        _c : int, optional
-            Chézy coefficient, by default 40.
-       
-    Parameters:
-    -----------
-        x_0 : int
-            Initial dam location (position along x-axis).
-        h_l : int
-            Water depth to the left of the dam.
-        h_r : int, optinal
-            Water depth to the right of the dam, by default 0.
-        C : int, optional
-            Chézy coefficient, by default 40.
-    """
-    def __init__(self, 
-                 x_0: int, 
-                 h_l: int, 
-                 h_r: int=0,
-                 C: int=40):
-        super().__init__()
-        self._x0 = x_0
-        self._hl = h_l
-        self._hr = h_r
-        self._c = C
-
-
-    def xa(self, t: int) -> float:
-        r"""
-        Position of the rarefaction wave front (left-most edge) :
-        
-        .. math::
-            x_A(t) = x_0 - t \sqrt{g h_l}
-
-        Parameters
-        ----------
-        t : int
-            Time instant.
-
-        Returns
-        -------
-        float
-            Position of the front edge of the rarefaction wave.
-        """
-        return self._x0 - (t * np.sqrt(self._g*self._hl))
-
-
-    def xb(self, t: int) -> float:
-        r"""
-        Position of the contact discontinuity:
-        
-        .. math::
-            x_B(t) = x_0 + 2 t \sqrt{g h_l}
-
-        Parameters
-        ----------
-        t : int
-            Time instant.
-
-        Returns
-        -------
-        float
-            Position of the contact wave (end of rarefaction).
-        """
-        return self._x0 + (2 * t * np.sqrt(self._g*self._hl))
-
-
-    def alpha1(self, x, t):
-        r"""
-        Correction coefficient for the height:
-        
-        .. math::
-            \alpha_1(\xi) = \frac{6}{5(2-\xi)} - \frac{2}{3} + \frac{4 \sqrt{3}}{135} (2-\xi)^{3/2}), \\\\
-            \xi = \frac{x-x_0}{t\sqrt{g h_l}}
-
-        Parameters
-        ----------
-        t : int
-            Time instant.
-
-        Returns
-        -------
-        float
-            Correction coefficient.
-        """
-        xi = (x-self._x0)/(t*np.sqrt(self._g*self._hl))
-        # return (6 / (5*(2 - (x/(t*np.sqrt(self._g*self._hl)))))) - (2/3) + (4*np.sqrt(3)/135)*((2 - (x/(t*np.sqrt(self._g*self._hl))))**(3/2))
-        return (6 / (5 * (2 - xi))) - (2 / 3) + (4 * np.sqrt(3) / 135) * (2 - xi) ** (3 / 2)
-
-
-    def alpha2(self, x, t):
-        r"""
-        Correction coefficient for the velocity:
-        
-        .. math::
-            \alpha_2(\xi) = \frac{12}{2-(2-\xi)} - \frac{8}{3} + \frac{8 \sqrt{3}}{189} (2-\xi)^{3/2}) - \frac{108}{7(2 - \xi)}, \\\\
-            \xi = \frac{x-x_0}{t\sqrt{g h_l}}
-
-        Parameters
-        ----------
-        t : int
-            Time instant.
-
-        Returns
-        -------
-        float
-            Correction coefficient.
-        """
-        return (12 / (2 - (x/(t*np.sqrt(self._g*self._hl))))) - (8/3) + (8*np.sqrt(3)/189)*((2 - (x/(t*np.sqrt(self._g*self._hl))))**(3/2)) - (108/(7*(2 - (x/(t*np.sqrt(self._g*self._hl))))))
-
-
-    def compute_h(self, x, T):
-        r"""Compute the flow height h(x, t) at given time and positions.
-
-        .. math::
-                h(x, t) = 
-                \begin{cases}
-                    h_l & \text{if } x \leq x_A(t), \\\\
-                    \frac{1}{g} \left( \frac{2}{3} \sqrt{g h_l} - \frac{x - x_0}{3t} + \frac{g^{2}}{C^2} \alpha_1 t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
-                    0 & \text{if } x_B(t) < x,
+                    h_0 & \text{if } x \leq x_A(t), \\\\
+                    \frac{\left( 2 \sqrt{g h_0} - \frac{x}{t} \right)^2}{9 g} & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    h_m = \frac{1}{2} h_r \left( \sqrt{1 + \frac{8 c_m^2}{g h_r}} - 1 \right) & \text{if } x_B(t) < x \leq x_C(t), \\\\
+                    h_r & \text{if } x_C(t) < x
                 \end{cases}
 
         Parameters
@@ -844,62 +840,51 @@ class Dressler_dry(Depth_result):
         """
         if isinstance(x, int):
             x = [x]
+        if isinstance(T, int):
+            T = [T]
+
         self._x = x
         self._t = T
         
-        if isinstance(T, int):
-            h = []
+        h = []
+        for t in T:
+            sub_h = []
             for i in x:
-                if i <= self.xa(T):
-                    h.append(self._hl)
-                elif self.xa(T) < i <= self.xb(T):
-                    # h.append( (1/self._g) * ( ((2/3)*np.sqrt(self._g*self._hl)) - ((i-self._x0)/(3*t)) + ((self._g**2)/(self._c**2))*self.alpha1(i-self._x0, t)*t ) )
-                    term = ((2/3)*np.sqrt(self._g*self._hl)) - ((i - self._x0) /
-                                                                (3*T)) + ((self._g**2)/(self._c**2)) * self.alpha1(i, T) * T
-                    h_val = (1/self._g) * term**2
-                    if h_val > h[-1]:
-                        term = ((2/3)*np.sqrt(self._g*self._hl)) - ((i - self._x0) /
-                                                                    (3*T)) + ((self._g**2)/(self._c**2)) * self.alpha1(i, T) * T
-                        h_val = (1/self._g) * term**2
-                    h.append(h_val)
+                if t == 0:
+                    h_val = (2 * np.sqrt(self._g * self._h0) - 1e18) ** 2 / (9 * self._g)
                 else:
-                    h.append(self._hr)
-            self._h = np.array(h)
-        
-        else:
-            h = []
-            for t in T:
-                sub_h = []
-                for i in x:
-                    if i <= self.xa(t):
-                        sub_h.append(self._hl)
-                    elif self.xa(t) < i <= self.xb(t):
-                        # h.append( (1/self._g) * ( ((2/3)*np.sqrt(self._g*self._hl)) - ((i-self._x0)/(3*t)) + ((self._g**2)/(self._c**2))*self.alpha1(i-self._x0, t)*t ) )
-                        term = ((2/3)*np.sqrt(self._g*self._hl)) - ((i - self._x0) /
-                                                                    (3*t)) + ((self._g**2)/(self._c**2)) * self.alpha1(i, t) * t
-                        h_val = (1/self._g) * term**2
-                        # if h_val > sub_h[-1]:
-                        #     term = ((2/3)*np.sqrt(self._g*self._hl)) - ((i - self._x0) /
-                        #                                                 (3*t)) + ((self._g**2)/(self._c**2)) * self.alpha1(i, t) * t
-                        #     h_val = (1/self._g) * term**2
-                        sub_h.append(h_val)
-                    else:
-                        sub_h.append(self._hr)
-                h.append(sub_h)
-            self._h = np.array(h)
-            
-    
+                    h_val = (2 * np.sqrt(self._g * self._h0) - (i/t)) ** 2 / (9 * self._g)
+                
+                if i < self.xa(t):
+                # if h_val >= self._h0:
+                    h_val = self._h0
+                
+                if self._hm == 0 and h_val > sub_h[-1]:
+                    h_val = 0
+                else:
+                    if (self.xb(self._hm, t) <  i <= self.xc(self._cm, t)) and h_val <= self._hm:
+                        h_val = self._hm
+                    elif i > self.xc(self._cm, t):
+                        h_val = self._hr
+                
+                sub_h.append(h_val)
+            h.append(sub_h)
+        self._h = np.array(h)
+
+
     def compute_u(self, 
                   x: int | np.ndarray, 
-                  T: int | np.ndarray):
+                  T: int | np.ndarray
+                  ) -> None:
         r"""Compute the flow velocity u(x, t) at given time and positions.
 
         .. math::
                 u(x,t) = 
                 \begin{cases}
                     0 & \text{if } x \leq x_A(t), \\\\
-                    \frac{2\sqrt{g h_l}}{3} + \frac{2(x - x_0)}{3t} + \frac{g^2}{C^2} \alpha_2 t & \text{if } x_A(t) < x \leq x_B(t), \\\\
-                    0 & \text{if } x_B(t) < x,
+                    \frac{2}{3} \left( \frac{x}{t} + \sqrt{g h_0} \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    2 \sqrt{g h_0} - 2 \sqrt{g h_m} & \text{if } x_B(t) < x \leq x_C(t), \\\\
+                    0 & \text{if } x_C(t) < x,
                 \end{cases}
 
         Parameters
@@ -915,35 +900,38 @@ class Dressler_dry(Depth_result):
         """
         if isinstance(x, int):
             x = [x]
+        if isinstance(T, int):
+            T = [T]
+
         self._x = x
         self._t = T
-
-        if isinstance(T, int):
-            u = []
-            for i in x:
-                if i <= self.xa(T):
-                    u.append(0)
-                elif self.xa(T) < i <= self.xb(T):
-                    u_val = ((2*np.sqrt(self._g*self._hl))/3) + ((2*(i-self._x0))/3*T) + ((self._g**2)/(self._c**2)) * self.alpha2(i, T) * T
-                    u.append(u_val)
-                else:
-                    u.append(0)
-            self._u = np.array(u)
         
-        else:
-            u = []
-            for t in T:
-                sub_u = []
-                for i in x:
-                    if i <= self.xa(t):
-                        sub_u.append(0)
-                    elif self.xa(t) < i <= self.xb(t):
-                        u_val = ((2*np.sqrt(self._g*self._hl))/3) + ((2*(i-self._x0))/3*t) + ((self._g**2)/(self._c**2)) * self.alpha2(i, t) * t
-                        sub_u.append(u_val)
-                    else:
-                        sub_u.append(0)
-                u.append(sub_u)
-            self._u = np.array(u)
+        um = 2 * np.sqrt(self._g * self._h0) - 2 * np.sqrt(self._g * self._hm)
+                
+        u = []
+        for t in T:
+            sub_u = []
+            for i in x:
+                if t == 0:
+                    u_val = 2 * (1e18 + np.sqrt(self._g * self._h0)) / 3
+                else:
+                    u_val = 2 * ((i/t) + np.sqrt(self._g * self._h0)) / 3
+                
+                if i < self.xa(t):
+                # if h_val >= self._h0:
+                    u_val = np.nan
+                
+                if self._hm == 0 and u_val > sub_u[-1]:
+                    u_val = np.nan
+                else:
+                    if (self.xb(self._hm, t) <  i <= self.xc(self._cm, t)):
+                        u_val = um
+                    elif i > self.xc(self._cm, t):
+                        u_val = np.nan
+                
+                sub_u.append(u_val)
+            u.append(sub_u)
+        self._u = np.array(u)
 
 
 class Mangeney_dry(Depth_result):
@@ -1062,7 +1050,7 @@ class Mangeney_dry(Depth_result):
 
     def compute_h(self, 
                   x: int | np.ndarray, 
-                  T: int | np.ndarray):
+                  T: int | np.ndarray) -> None:
         r"""Compute the flow height h(x, t) at given time and positions.
 
         .. math::
@@ -1086,50 +1074,36 @@ class Mangeney_dry(Depth_result):
         """
         if isinstance(x, int):
             x = [x]
-        self._t = T
-        self._x = x
-        
-        x = [-i for i in x[::-1]]
-
         if isinstance(T, int):
-            h = []
-            
-            for i in x:
-                if i <= self.xa(T):
-                    h.append(0)
-                elif self.xa(T) < i < self.xb(T):
-                    h.append( (1/(9*self._g*np.cos(self._theta))) * ( (i/T) + (2 * self._c0) - (0.5*T*self._m))**2 )
-                else:
-                    h.append(self._h0)
+            T = [T]
 
+        self._x = x
+        self._t = T
+        
+        x = [i - max(x) for i in x]
+        
+        h = []
+        for t in T:
+            sub_h = []
+            for i in x:
+                if i <= self.xa(t):
+                    sub_h.append(0)
+                elif self.xa(t) < i < self.xb(t):
+                    sub_h.append( (1/(9*self._g*np.cos(self._theta))) * ( (i/t) + (2 * self._c0) - (0.5*t*self._m))**2 )
+                else:
+                    sub_h.append(self._h0)
+                        
             if all(v == 0 for v in h):
-                h[-1] = self._h0
+                sub_h[-1] = self._h0
             
-            self._h = np.array(h[::-1])
+            h.append(sub_h[::-1])
             
-        else:
-            h = []
-            for t in T:
-                sub_h = []
-                for i in x:
-                    if i <= self.xa(t):
-                        sub_h.append(0)
-                    elif self.xa(t) < i < self.xb(t):
-                        sub_h.append( (1/(9*self._g*np.cos(self._theta))) * ( (i/t) + (2 * self._c0) - (0.5*t*self._m))**2 )
-                    else:
-                        sub_h.append(self._h0)
-                
-                if all(v == 0 for v in h):
-                    sub_h[-1] = self._h0
-                
-                h.append(sub_h[::-1])
-                
-            self._h = np.array(h)
+        self._h = np.array(h)
 
 
     def compute_u(self, 
                   x: int | np.ndarray, 
-                  T: int | np.ndarray):
+                  T: int | np.ndarray) -> None:
         r"""Compute the flow velocity u(x, t) at given time and positions.
 
         .. math::
@@ -1153,37 +1127,501 @@ class Mangeney_dry(Depth_result):
         """
         if isinstance(x, int):
             x = [x]
-        self._t = T
-        self._x = x
-        
-        x = [-i for i in x[::-1]]
-
         if isinstance(T, int):
-            u = []
+            T = [T]
+
+        self._x = x
+        self._t = T
+
+        x = [i - max(x) for i in x]
+
+        u = []
+        for t in T:
+            sub_u = []
             for i in x:
-                if i <= self.xa(T):
-                    u.append(0)
-                elif self.xa(T) < i <= self.xb(T):
-                    u_val = (2/3) * ( (x/T) - self._c0 + self._m * T )
-                    u.append(u_val)
+                if i <= self.xa(t):
+                    sub_u.append(np.nan)
+                elif self.xa(t) < i <= self.xb(t):
+                    u_val = (2/3) * ( (i/t) - self._c0 + self._m * t )
+                    sub_u.append(u_val*(-1))
                 else:
-                    u.append(0)
-            self._u = np.array(u[::-1])
+                    sub_u.append(np.nan)
+            u.append(sub_u[::-1])
+        self._u = np.array(u)
+
+
+class Dressler_dry(Depth_result):
+    r"""Dam-break solution on a dry domain with friction using shallow water theory.
+
+    This class implements the 1D analytical Dressler's solution of an ideal dam break on a dry domain with friction.
+    The dam break is instantaneous, over an horizontal and flat surface with friction.
+    It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
+    in SWASHES, based on Dressler's equation.
+    
+    Dressler RF. Hydraulic resistance effect upon the dam-break functions. Journal of Research of the National Bureau 
+    of Standards September 1952; 49(3): 217-225.
+
+    Attributes:
+    -----------
+        _x0 : int 
+            Initial dam location (position along x-axis).
+        _h0 : int
+            Water depth to the left of the dam.
+        _c : int, optional
+            Chézy coefficient, by default 40.
+        _xt : int
+            Position of the tip area, by default None.
+        _ht : int, optional
+            Depth of the tip area, by default None.
+        _ut : int, optional
+            Velocity of the tip area, by default None.
+       
+    Parameters:
+    -----------
+        x_0 : int
+            Initial dam location (position along x-axis).
+        h_0 : int
+            Water depth to the left of the dam.
+        C : int, optional
+            Chézy coefficient, by default 40.
+    """
+    def __init__(self, 
+                 x_0: int, 
+                 h_0: int, 
+                 C: int=40
+                 ):
+        super().__init__()
+        self._x0 = x_0
+        self._h0 = h_0
+        self._c = C
+        self._xt = None
+        self._ht = None
+        self._ut = None
         
+
+    def xa(self, t: int) -> float:
+        r"""
+        Position of the rarefaction wave front (left-most edge) :
+        
+        .. math::
+            x_A(t) = x_0 - t \sqrt{g h_0}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the rarefaction wave.
+        """
+        return self._x0 - (t * np.sqrt(self._g*self._h0))
+
+
+    def xb(self, t: int) -> float:
+        r"""
+        Position of the contact discontinuity:
+        
+        .. math::
+            x_B(t) = x_0 + 2 t \sqrt{g h_0}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the contact wave (end of rarefaction).
+        """
+        return self._x0 + (2 * t * np.sqrt(self._g*self._h0))
+        # return 1250
+
+
+    def alpha1(self, x: float, t: int) -> float:
+        r"""
+        Correction coefficient for the height:
+        
+        .. math::
+            \alpha_1(\xi) = \frac{6}{5(2-\xi)} - \frac{2}{3} + \frac{4 \sqrt{3}}{135} (2-\xi)^{3/2}), \\\\
+
+        with :math:`\xi = \frac{x-x_0}{t\sqrt{g h_0}}`
+
+        Parameters
+        ----------
+        x : float
+            Spatial position.
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Correction coefficient.
+        """
+        xi = (x-self._x0)/(t*np.sqrt(self._g*self._h0))
+        # return (6 / (5*(2 - (x/(t*np.sqrt(self._g*self._h0)))))) - (2/3) + (4*np.sqrt(3)/135)*((2 - (x/(t*np.sqrt(self._g*self._h0))))**(3/2))
+        # return (6 / (5 * (2 - xi))) - (2 / 3) + (4 * np.sqrt(3) / 135) * (2 - xi) ** (3 / 2)
+        if xi < 2:
+            return (6 / (5 * (2 - xi))) - (2 / 3) + (4 * np.sqrt(3) / 135) * (2 - xi) ** (3 / 2)
         else:
-            u = []
-            for t in T:
-                sub_u = []
-                for i in x:
-                    if i <= self.xa(t):
-                        sub_u.append(0)
-                    elif self.xa(t) < i <= self.xb(t):
-                        u_val = (2/3) * ( (i/t) - self._c0 + self._m * t )
-                        sub_u.append(u_val)
-                    else:
-                        sub_u.append(0)
-                u.append(sub_u[::-1])
-            self._u = np.array(u)
+            return 0
+        
+
+    def alpha2(self, x: float, t: int) -> float:
+        r"""
+        Correction coefficient for the velocity:
+        
+        .. math::
+            \alpha_2(\xi) = \frac{12}{2-(2-\xi)} - \frac{8}{3} + \frac{8 \sqrt{3}}{189} (2-\xi)^{3/2}) - \frac{108}{7(2 - \xi)}, \\\\
+        
+        with :math:`\xi = \frac{x-x_0}{t\sqrt{g h_0}}`
+
+        Parameters
+        ----------
+        x : float
+            Spatial position.
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Correction coefficient.
+        """
+        return (12 / (2 - (x/(t*np.sqrt(self._g*self._h0))))) - (8/3) + (8*np.sqrt(3)/189)*((2 - (x/(t*np.sqrt(self._g*self._h0))))**(3/2)) - (108/(7*(2 - (x/(t*np.sqrt(self._g*self._h0))))))
+
+
+    def compute_h(self, 
+                  x: int | np.ndarray, 
+                  T: int | np.ndarray,
+                  estimation: bool, 
+                  xt: int,
+                  a: float
+                  ) -> None:
+        r"""Compute the flow height h(x, t) at given time and positions.
+
+        .. math::
+                h(x, t) = 
+                \begin{cases}
+                    h_0 & \text{if } x \leq x_A(t), \\\\
+                    \frac{1}{g} \left( \frac{2}{3} \sqrt{g h_0} - \frac{x - x_0}{3t} + \frac{g^{2}}{C^2} \alpha_1 t \right)^2 & \text{if } x_A(t) < x \leq x_t(t), \\\\
+                    h_t \left( \frac{x_B(t)-x}{x_B(t)-x_t(t)} \right)^a & \text{if } x_t(t) < x \leq x_B(t), \\\\
+                    0 & \text{if } x_B(t) < x,
+                \end{cases}
+
+        Parameters
+        ----------
+        x : int or np.ndarray
+            Spatial positions.
+        T : int or np.ndarray
+            Time instant.
+        estimation : bool
+            If True, try to estimate the depths of the front tip using empirical parameters.
+        xt : int
+            Position of the tip area.
+        a : float
+            Empirical exposant.
+
+        Notes
+        -----        
+        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        """
+        if isinstance(x, int):
+            x = [x]
+        if isinstance(T, int):
+            T = [T]
+
+        self._x = x
+        self._t = T
+        
+        h = []
+        for t in T:
+            sub_h = []
+            for i in x:
+                if i <= self.xa(t):
+                    sub_h.append(self._h0)
+
+                elif self.xa(t) < i <= self.xb(t):
+                    term = ((2/3)*np.sqrt(self._g*self._h0)) - ((i - self._x0) / (3*t)) + ((self._g**2)/(self._c**2)) * self.alpha1(i, t) * t
+                    h_val = (1/self._g) * term**2
+                    
+                    if h_val >= sub_h[-1] or i > xt:
+                        if self._xt is None:
+                            self._xt = i
+                            self._ht = sub_h[-1]
+
+                        h_val = self._ht
+                        
+                        if estimation:
+                            s = self.xb(t) - i
+                            h_val = self._ht * (s / (self.xb(t)-self._xt)) ** a
+                        
+                    sub_h.append(h_val)
+                else:
+                    sub_h.append(0)
+
+            h.append(sub_h)
+        self._h = np.array(h)
+            
+    
+    def compute_u(self, 
+                  x: int | np.ndarray, 
+                  T: int | np.ndarray, 
+                  xt: int
+                  ) -> None:
+        r"""Compute the flow velocity u(x, t) at given time and positions.
+
+        .. math::
+                u(x,t) = 
+                \begin{cases}
+                    0 & \text{if } x \leq x_A(t), \\\\
+                    u_{co} = \frac{2\sqrt{g h_0}}{3} + \frac{2(x - x_0)}{3t} + \frac{g^2}{C^2} \alpha_2 t & \text{if } x_A(t) < x \leq x_t(t), \\\\
+                    \max_{x \in [x_A(t), x_t(t)]} u_{co}(x, t) & \text{if } x_t(t) < x \leq x_B(t), \\\\
+                    0 & \text{if } x_B(t) < x,
+                \end{cases}
+
+        Parameters
+        ----------
+        x : int or np.ndarray
+            Spatial positions.
+        T : int or np.ndarray
+            Time instant.
+        xt : int
+            Position of the tip area.
+
+        Notes
+        -----
+        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        """
+        if isinstance(x, int):
+            x = [x]
+        if isinstance(T, int):
+            T = [T]
+
+        self._x = x
+        self._t = T
+        
+        u = []
+        for t in T:
+            sub_u = []
+            for i in x:
+                if i <= self.xa(t):
+                    sub_u.append(np.nan)
+                elif self.xa(t) < i <= self.xb(t):
+                    u_val = ((2*np.sqrt(self._g*self._h0))/3) + ((2*(i-self._x0))/3*t) + ((self._g**2)/(self._c**2)) * self.alpha2(i, t) * t
+                    
+                    if  i > xt:
+                        if self._xt is None:
+                            self._xt = i
+                            self._ut = sub_u[-1]
+                        u_val = self._ut
+                    sub_u.append(u_val)
+                else:
+                    sub_u.append(np.nan)
+            u.append(sub_u)
+        self._u = np.array(u)
+
+
+class Chanson_dry(Depth_result):
+    r"""Dam-break solution on a dry domain with friction using shallow water theory.
+
+    This class implements the 1D analytical Chanson's solution of an ideal dam break on a dry domain with friction.
+    The dam break is instantaneous, over an horizontal and flat surface with friction.
+    It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
+    in SWASHES, based on Chanson's equation.
+    
+    Chanson, Hubert. (2005). Analytical Solution of Dam Break Wave with Flow Resistance: Application to Tsunami Surges. 137. 
+
+    Attributes:
+    -----------
+        _h0 : int
+            Water depth to the left of the dam.
+        _f : int, optional
+            Darcy friction factor.
+       
+    Parameters:
+    -----------
+        h_0 : int
+            Water depth to the left of the dam.
+        f : int
+            Darcy friction factor.
+    """
+    def __init__(self, 
+                 h_0: int, 
+                 f: int
+                 ):
+        super().__init__()
+        self._h0 = h_0
+        self._f = f
+        
+
+    def xa(self, t: int) -> float:
+        r"""
+        Position of the rarefaction wave front (left-most edge) :
+        
+        .. math::
+            x_A(t) = - t \sqrt{g h_0}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the rarefaction wave.
+        """
+        return - (t * np.sqrt(self._g*self._h0))
+
+
+    def xb(self, t: int) -> float:
+        r"""
+        Position of the tip of the flow:
+        
+        .. math::
+            x_B(t) = \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{g h_0}
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the flow tip.
+        """
+        cf = self.compute_cf(t)
+        return ((3*cf)/(2*np.sqrt(self._g*self._h0))-1) * (t*np.sqrt(self._g*self._h0))
+        # return ((3/2) * cf - np.sqrt(self._g * self._h0)) * t
+
+
+    def xc(self, t: int) -> float:
+        r"""
+        Position of the contact discontinuity:
+        
+        .. math::
+            x_C(t) = \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{\frac{g}{h_0}} + \frac{4}{f\frac{U(t)^2}{g h_0}} \left( 1 - \frac{U(t)}{2 \sqrt{g h_0}} \right)^4
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+
+        Returns
+        -------
+        float
+            Position of the contact wave (wave front).
+        """
+        cf = self.compute_cf(t)
+        
+        term1 = ((1.5 * (cf / np.sqrt(self._g * self._h0))) - 1) * np.sqrt(self._g / self._h0) * t
+        term2 = (4 / (self._f * ((cf**2) / (self._g * self._h0)))) * (1 - 0.5 *  (cf / np.sqrt(self._g * self._h0)))**4
+
+        x_s = self._h0 * (term1 + term2)
+        return x_s
+
+
+    def compute_cf(self, t: int) -> float:
+        r"""Compute the celerity of the wave front by resolving:
+        
+        .. math::
+            \left( \frac{U}{\sqrt{g h_0}}  \right)^3 - 8 \left( 0.75 - \frac{3 f t \sqrt{g}}{8 \sqrt{h_0}} \right) \left( \frac{U}{\sqrt{g h_0}}  \right)^2 + 12 \left( \frac{U}{\sqrt{g h_0}}  \right) - 8 = 0       
+
+        Parameters
+        ----------
+        t : int
+            Time instant
+
+        Returns
+        -------
+        float
+            Value of the front wave velocity.
+        """
+        coeffs = [1, (-8*(0.75 - ((3 * self._f * t * np.sqrt(self._g)) / (8 * np.sqrt(self._h0))))), 12, -8]
+        roots = np.roots(coeffs)
+                
+        real_root = roots[-1].real
+        return real_root * np.sqrt(self._g * self._h0)
+
+
+    def compute_h(self, 
+                  x: int | np.ndarray, 
+                  T: int | np.ndarray
+                  ) -> None:
+        r"""Compute the flow height h(x, t) at given time and positions.
+
+        .. math::
+                h(x, t) = 
+                \begin{cases}
+                    h_0 & \text{if } x \leq x_A(t), \\\\
+                    \frac{4}{9g} \left( \sqrt{g h_0} - \frac{x - x_0}{2t} \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    \sqrt{\frac{f}{4} \frac{U(t)^2}{g h_0} \frac{x_C(t)-x}{h_0}} & \text{if } x_B(t) < x \leq x_C(t), \\\\
+                    0 & \text{if } x_C(t) < x
+                \end{cases}
+
+        Parameters
+        ----------
+        x : int or np.ndarray
+            Spatial positions.
+        T : int or np.ndarray
+            Time instant.
+
+        Notes
+        -----        
+        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        """
+        if isinstance(x, int):
+            x = [x]
+        if isinstance(T, int):
+            T = [T]
+
+        self._x = x
+        self._t = T
+        
+        h = []
+        for t in T:
+            sub_h = []
+            cf = self.compute_cf(t)
+            
+            for i in x:
+                if i <= self.xa(t):
+                    sub_h.append(self._h0)
+
+                elif self.xa(t) < i <= self.xb(t):                    
+                    sub_h.append((4/(9*self._g)) * (np.sqrt(self._g*self._h0)-(i/(2*t)))**2)
+                    
+                elif self.xb(t) <= i <= self.xc(t):
+                    # h_left = (4/(9*self._g)) * (np.sqrt(self._g*self._h0) - (self.xb(t)/(2*t)))**2
+                    # K = (h_left / self._h0)**2 / ((self.xc(t) - self.xb(t)) / self._h0)
+                    # term = K * ((self.xc(t) - i) / self._h0)
+                    # val = np.sqrt(term) * self._h0
+                    
+                    # h_left = (4/(9*self._g)) * (np.sqrt(self._g*self._h0) - (self.xb(t)/(2*t)))**2
+                    # term_denominator = (self._f / 4) * ((cf**2) / (self._g * self._h0)) * ((self.xc(t)-self.xb(t)) / self._h0)    
+                    # val_term_at_xb = np.sqrt(term_denominator) * self._h0
+                    # C = h_left / val_term_at_xb
+                    # term = (self._f / 4) * ((cf**2) / (self._g * self._h0)) * ((self.xc(t)-i) / self._h0)
+                    # val = C * np.sqrt(term) * self._h0
+                    
+                    term = (self._f / 4) * ((cf**2) / (self._g * self._h0)) * ((self.xc(t)-i) / self._h0)                    
+                    val = np.sqrt(term) * self._h0
+                    sub_h.append(val)
+                    
+                else:
+                    sub_h.append(0)  
+            h.append(sub_h)
+        self._h = np.array(h)
+            
+            
+    def compute_u(self) -> None:
+        r"""Not implemented
+        """
+        self._u = None
 
 
 class Shape_result(ABC):
@@ -1618,7 +2056,7 @@ class Coussot_shape(Shape_result):
         self._x = self.X_to_x(self._X)
         
              
-    def compute_Xx_front_remaitre(self):
+    def compute_Xx_front_remaitre(self) -> None:
         r"""Compute the normalize x-coordinates (:math:`X_0 < X < L0`) from the fluid depth by following:
         
         .. math::
@@ -1834,12 +2272,12 @@ class Front_result:
         Stocker's equation for a dam-break solution over an infinite inclined wet domain without friction:
         
         .. math::
-            x_f(t) =t \cdot \frac{2 c_m^2 \left( \sqrt{g h_l} - c_m \right)}{c_m^2 - g h_r}
+            x_f(t) =t \cdot \frac{2 c_m^2 \left( \sqrt{g h_0} - c_m \right)}{c_m^2 - g h_r}
             
         with :math:`c_m` the critical velocity defined by:
 
         .. math::
-            -8.g.hr.cm^{2}.(g.hl - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0
+            -8.g.hr.cm^{2}.(g.h0 - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0
     
         Parameters
         ----------
@@ -2013,3 +2451,18 @@ class Front_result:
 
 # ax.plot([A.x[0], A.x[-1]], [0, 0], color='black', linewidth=2)
 # plt.show()
+
+# x = np.linspace(-500, 500, 100)
+# case = Stocker_wet(x_0=0, h_0=10, h_r=0.025)
+# case2 = Stocker_SWASHES_wet(0, 10, 0.025)
+# case.compute_h(x, 20)
+# case2.compute_h(x, 20)
+# case.show_res(show_h=True)
+# case2.show_res(show_h=True)
+
+# x = np.linspace(-500, 700, 1000)
+# case = Dressler_dry(0, 6, 40  )
+# # case.compute_h(x, 40, estimation= True, xt=200, a=0.7)
+# # case.show_res(show_h=True)
+# case.compute_u(x, T=40, xt=200)
+# case.show_res(show_u=True)

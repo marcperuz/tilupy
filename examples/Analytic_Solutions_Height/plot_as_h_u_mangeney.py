@@ -76,7 +76,8 @@ The following example replicates the case shown in Figure 3 of Mangeney et al. (
 # -------------------
 
 # %%
-# First import required packages and define the spatial domain: 1D space from 0 to 1000 m.
+# First import required packages and define the spatial domain.
+# For following examples we will use a 1D space from -5.5 to 6 m.
 import numpy as np
 from tilupy.analytic_sol import Mangeney_dry
 
@@ -92,14 +93,14 @@ case_1 = Mangeney_dry(theta=30, delta=0, h_0=20)
 
 
 # %%
-# Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15, 20} s`.
-case_1.compute_h(x, [0, 5, 10, 15, 20])
+# Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15} s`.
+case_1.compute_h(x, [0, 5, 10, 15])
 case_1.show_res(show_h=True)
 
 
 # %%
-# Compute and plot the fluid velocity at times :math:`t = {0, 5, 10, 15, 20} s`.
-case_1.compute_u(x, [0, 2, 4, 6, 8, 10])
+# Compute and plot the fluid velocity at times :math:`t = {0, 5, 10, 15} s`.
+case_1.compute_u(x, [0, 5, 10, 15])
 case_1.show_res(show_u=True)
 
 # %%
@@ -112,8 +113,8 @@ case_2 = Mangeney_dry(theta=30, delta=20, h_0=20)
 
 
 # %%
-# Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15, 20} s`.
-case_2.compute_h(x, [0, 5, 10, 15, 20])
+# Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15} s`.
+case_2.compute_h(x, [0, 5, 10, 15])
 case_2.show_res(show_h=True)
 
 
