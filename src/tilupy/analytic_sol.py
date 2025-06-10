@@ -8,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-from numpy.polynomial.polynomial import Polynomial
 from scipy.optimize import fsolve
 
 from abc import ABC, abstractmethod
