@@ -27,6 +27,7 @@ A.xf_mangeney(t, delta=25, theta=30)
 A.xf_dressler(t)
 A.xf_ritter(t)
 A.xf_stoker(t, hr=1)
+A.xf_chanson(t, f=0.05)
 
 A.show_fronts_over_time()
 
@@ -43,8 +44,12 @@ for t in T:
     A.xf_dressler(t)
     A.xf_ritter(t)
     A.xf_stoker(t, hr=1)
+    A.xf_chanson(t, f=0.05)
     
 A.show_fronts_over_time()
+
+# %%
+# Ritter and Dressler's solutions are the same'
 
 # %%
 # 
@@ -61,5 +66,9 @@ for t in T:
     A.xf_dressler(t)
     A.xf_ritter(t)
     A.xf_stoker(t, hr=1)
+    A.xf_chanson(t, f=0.05)
     
 A.show_fronts_over_time()
+
+# %%
+# Ritter and Dressler's solutions are the same'

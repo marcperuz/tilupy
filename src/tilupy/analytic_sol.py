@@ -2300,6 +2300,72 @@ class Front_result:
             self._xf[t] = [xf]
             
         return xf
+    
+    
+    def xf_chanson(self, 
+                   t: int,
+                   f: float
+                   ) -> float:
+        r"""
+        Chanson's equation for a dam-break solution over an infinite inclined dry domain with friction:
+        
+        .. math::
+            x_f(t) = \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{\frac{g}{h_0}} + \frac{4}{f\frac{U(t)^2}{g h_0}} \left( 1 - \frac{U(t)}{2 \sqrt{g h_0}} \right)^4
+
+        with :math:`U(t)` the front wave velocity solution of:
+
+        .. math::
+            \left( \frac{U}{\sqrt{g h_0}}  \right)^3 - 8 \left( 0.75 - \frac{3 f t \sqrt{g}}{8 \sqrt{h_0}} \right) \left( \frac{U}{\sqrt{g h_0}}  \right)^2 + 12 \left( \frac{U}{\sqrt{g h_0}}  \right) - 8 = 0       
+
+        Parameters
+        ----------
+        t : int
+            Time instant.
+        f : float
+            Darcy friction coefficient.
+
+        Returns
+        -------
+        float
+            Position of the front edge of the fluid.
+        """
+        coeffs = [1, (-8*(0.75 - ((3 * f * t * np.sqrt(self._g)) / (8 * np.sqrt(self._h0))))), 12, -8]
+        roots = np.roots(coeffs)
+                
+        real_root = roots[-1].real
+        cf = real_root * np.sqrt(self._g * self._h0)
+        
+        term1 = ((1.5 * (cf / np.sqrt(self._g * self._h0))) - 1) * np.sqrt(self._g / self._h0) * t
+        term2 = (4 / (f * ((cf**2) / (self._g * self._h0)))) * (1 - 0.5 *  (cf / np.sqrt(self._g * self._h0)))**4
+
+        xf = self._h0 * (term1 + term2)
+        
+        if t in self._labels:
+            if "Chanson" not in self._labels[t] :
+                self._labels[t].append("Chanson")
+                self._xf[t].append(xf)
+        else:
+            self._labels[t] = ["Chanson"]
+            self._xf[t] = [xf]
+            
+        return xf
+
+
+    def compute_cf(self, t: int) -> float:
+        r"""Compute the celerity of the wave front by resolving:
+        
+
+        Parameters
+        ----------
+        t : int
+            Time instant
+
+        Returns
+        -------
+        float
+            Value of the front wave velocity.
+        """
+
             
 
     def show_fronts_over_methods(self, x_unit: str="m") -> None:
@@ -2388,20 +2454,6 @@ class Front_result:
         plt.grid(which="major")
         plt.legend(loc='best')
         plt.show()
-
-
-# a = Front_result(30, 20)
-
-# for t in range(1, 10):
-#     a.xf_mangeney(t, 0)
-#     a.xf_mangeney(t, 25)
-
-#     a.xf_dressler(t)
-#     a.xf_ritter(t)
-#     a.xf_stoker(t, 0.01)
-
-# # a.show_fronts_over_time()
-# a.show_fronts_over_methods()
 
 # A = Coussot_shape(l0=16.11, rho=1000, tau=500, theta=10, hmax=0.5)
 # A.compute_Xx_front()

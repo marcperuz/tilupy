@@ -15,6 +15,7 @@ Notations:
  - :math:`\delta`: friction angle.
  - :math:`g`: gravitational acceleration.
  - :math:`t`: time instant.
+ - :math:`f`: Darcy friction coefficient.
 
 All references are present in the corresponding section in the API or in the flow height and velocity section.
 
@@ -40,6 +41,14 @@ and :math:`m` the constant horizontal acceleration of the front defined by:
     m = -g \sin{\theta} + g \cos{\theta} \tan{\delta}
 
 **Dressler's equation**: :math:`x_f(t) = 2 t \sqrt{g h_0}`
+
+**Chanson's equation**: :math:`x_f(t) = \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{\frac{g}{h_0}} + \frac{4}{f\frac{U(t)^2}{g h_0}} \left( 1 - \frac{U(t)}{2 \sqrt{g h_0}} \right)^4`
+
+with :math:`U(t)` the front wave velocity solution of:
+
+.. math::
+	\left( \frac{U}{\sqrt{g h_0}}  \right)^3 - 8 \left( 0.75 - \frac{3 f t \sqrt{g}}{8 \sqrt{h_0}} \right) \left( \frac{U}{\sqrt{g h_0}}  \right)^2 + 12 \left( \frac{U}{\sqrt{g h_0}}  \right) - 8 = 0       
+
 
 Plot examples
 -----------------
