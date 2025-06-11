@@ -49,7 +49,7 @@ for t in T:
 A.show_fronts_over_time()
 
 # %%
-# Ritter and Dressler's solutions are the same'
+# Ritter and Dressler's solutions are the same.
 
 # %%
 # 
@@ -71,4 +71,4 @@ for t in T:
 A.show_fronts_over_time()
 
 # %%
-# Ritter and Dressler's solutions are the same'
+# Ritter and Dressler's solutions are the same.
