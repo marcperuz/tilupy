@@ -133,9 +133,10 @@ class Depth_result(ABC):
 
 
     def show_res(self, 
-                 show_h=False, 
-                 show_u=False,
-                 show_slop=False,
+                 show_h: bool=False, 
+                 show_u: bool=False,
+                 show_slop: bool=False,
+                 show_surface: bool=False,
                  x_unit:str = "m",
                  h_unit:str = "m",
                  u_unit:str = "m/s"
@@ -149,6 +150,8 @@ class Depth_result(ABC):
         show_u : bool, optional
             If True, plot the flow velocity ('u') curve.
         show_slop : bool, optional
+            If True, plot the slop of the surface.
+        show_surface : bool, optional
             If True, plot the slop of the surface.
         x_unit: str
             Space unit.
@@ -181,7 +184,13 @@ class Depth_result(ABC):
                         plt.plot(self._x, h_inclined, color='black', linewidth=1, linestyle=l_style)
                     else:
                         plt.plot(self._x, self._h[h], color='black', linewidth=1, linestyle=l_style)
-            plt.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
+            
+            if show_surface:
+                plt.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
+            
+            plt.grid(which='major')
+            plt.grid(which='minor', alpha=0.5)
+            plt.xlim(left=min(self._x), right=max(self._x))
             
             plt.title(f"Flow height for t={self._t}")
             plt.xlabel(f"x [{x_unit}]")
@@ -199,11 +208,17 @@ class Depth_result(ABC):
                         l_style = ":"
                     plt.plot(self._x, self._u[u], color='black', linewidth=1, linestyle=l_style)
 
-            plt.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
+            plt.grid(which='major')
+            plt.grid(which='minor', alpha=0.5)
+            plt.xlim(left=min(self._x), right=max(self._x))
+            
             plt.title(f"Flow velocity for t={self._t}")
             plt.xlabel(f"x [{x_unit}]")
             plt.ylabel(f"u [{u_unit}]")
             plt.show()
+        
+        if self._h is None and self._u is None:
+            print("No solution computed")
 
 
 class Ritter_dry(Depth_result):
