@@ -78,7 +78,7 @@ Implementation
 # First import required packages and define the spatial domain for visualization.
 # For following examples we will use a 1D space from -5.5 to 6 m.
 import numpy as np
-from tilupy.analytic_sol import Stocker_SARKHOSH_wet
+from tilupy.analytic_sol import Stoker_SARKHOSH_wet
 
 x = np.linspace(-5.5, 6, 1000)
 
@@ -89,7 +89,7 @@ x = np.linspace(-5.5, 6, 1000)
 # %%
 # Case: Stocker's solution with dam at :math:`x_0 = 0 m`, initial fluid height :math:`h_0 = 0.5 m` and initial 
 # domain height :math:`h_r = 0.05 m`
-case = Stocker_SARKHOSH_wet(h_0=0.5, h_r=0.025)
+case = Stoker_SARKHOSH_wet(h_0=0.5, h_r=0.025)
 
 
 # %%
