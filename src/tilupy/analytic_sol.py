@@ -375,10 +375,10 @@ class Ritter_dry(Depth_result):
         self._u = np.array(u)
 
 
-class Stocker_SWASHES_wet(Depth_result):
+class Stoker_SWASHES_wet(Depth_result):
     r"""Dam-break solution on a wet domain using shallow water theory.
 
-    This class implements the 1D analytical Stocker's solution of an ideal dam break on a wet domain.
+    This class implements the 1D analytical Stoker's solution of an ideal dam break on a wet domain.
     The dam break is instantaneous, over an horizontal and flat surface with no friction.
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Stoker's equation.
@@ -671,10 +671,10 @@ class Stocker_SWASHES_wet(Depth_result):
             print("First define cm")
 
 
-class Stocker_SARKHOSH_wet(Depth_result):
+class Stoker_SARKHOSH_wet(Depth_result):
     r"""Dam-break solution on a wet domain using shallow water theory.
 
-    This class implements the 1D analytical Stocker's solution of an ideal dam break on a wet domain.
+    This class implements the 1D analytical Stoker's solution of an ideal dam break on a wet domain.
     The dam break is instantaneous, over an horizontal and flat surface with no friction.
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Stoker's equation.
@@ -936,7 +936,7 @@ class Stocker_SARKHOSH_wet(Depth_result):
 class Mangeney_dry(Depth_result):
     r"""Dam-break solution on an inclined dry domain with friction using shallow water theory.
 
-    This class implements the 1D analytical Stocker's solution of an ideal dam break on a dry domain.
+    This class implements the 1D analytical Stoker's solution of an ideal dam break on a dry domain.
     The dam break is instantaneous, over an inclined and flat surface with friction.
     It computes the flow height (took normal to the surface) and velocity over space and time with an 
     infinitely-long fluid mass on an infinite surface.
@@ -2095,27 +2095,22 @@ class Front_result:
     -----------
         _g : float 
             Gravitational constant.
-        _theta : float
-            Angle of the surface, in radian.
         _h0 : int
             Initial fluid depth.
-        _xf : int or np.ndarray
-            Spatial coordinates of the front flow.
-        _t : int #TODO
-            Time instant.
+        _xf : dictionnary
+            Dictionnary of spatial coordinates of the front flow for each time step (keys).
+        _labels : dictionnary
+            Dictionnary of spatial coordinates computation's method for each time step (keys).
     
     Parameters:
     -----------
-        theta : float, optional
-            Angle of the surface, in radian, by default 0.
         h0 : int
-            Initial fluid depth, by default 1.
+            Initial fluid depth.
     """
     def __init__(self,
-                 theta: float=0,
-                 h0: int=1):
+                 h0: int,
+                 ):
         self._g = 9.81
-        self._theta = np.radians(theta)
         
         self._h0 = h0
         
@@ -2125,14 +2120,15 @@ class Front_result:
 
     def xf_mangeney(self, 
                     t: int,
-                    delta: float
+                    delta: float,
+                    theta: float=0
                     ) -> float:
         r"""
         Mangeney's equation for a dam-break solution over an infinite inclined dry domain with friction
         and an infinitely-long fluid mass:
         
         .. math::
-            x_f(t) = \frac{1}{2}mt - 2 c_0 t
+            x_f(t) = 2 c_0 t - \frac{1}{2}mt
             
         with :math:`c_0` the initial wave propagation speed defined by:
         
@@ -2144,21 +2140,28 @@ class Front_result:
         .. math::
             m = -g \sin{\theta} + g \cos{\theta} \tan{\delta}
     
+        MANGENEY, A., HEINRICH, P., et ROCHE, R. Analytical solution for testing debris avalanche 
+        numerical models. Pure and Applied Geophysics, 2000, vol. 157, p. 1081-1096.
+
         Parameters
         ----------
         t : int
-            Time instant.
-            
+            Time instant.     
         delta : float
             Dynamic friction angle, in degree.        
+        theta : float
+            Slope angle, in degree.        
 
         Returns
         -------
         float
             Position of the front edge of the fluid.
         """
-        m = -1 * (self._g * np.cos(self._theta)) * (np.tan(self._theta)-np.tan(np.radians(delta)))
-        c0 = np.sqrt(self._g * self._h0 * np.cos(self._theta))
+        theta_rad = np.radians(theta)
+        delta_rad = np.radians(delta)
+
+        m = -1 * (self._g * np.cos(theta_rad)) * (np.tan(theta_rad)-np.tan(delta_rad))
+        c0 = np.sqrt(self._g * self._h0 * np.cos(theta_rad))
         xf = -1*(0.5*m*(t**2) - (2*c0*t))
         
         if t in self._labels:
@@ -2168,15 +2171,6 @@ class Front_result:
         else:
             self._labels[t] = [f"Mangeney d{delta}"]
             self._xf[t] = [xf]
-                
-        # if f"Mangeney d{delta}" not in self._labels :
-        #     if self._xf is None:
-        #         self._xf = [xf]
-        #     else:
-        #         self._xf.append(xf)
-
-        #     self._labels.append(f"Mangeney d{delta}")
-        #     self._t = t
             
         return xf
 
@@ -2210,26 +2204,20 @@ class Front_result:
             self._labels[t] = ["Dressler"]
             self._xf[t] = [xf]
             
-        # if "Dressler" not in self._labels:
-        #     if self._xf is None:
-        #         self._xf = [xf]
-        #     else:
-        #         self._xf.append(xf)
-
-        #     self._labels.append("Dressler")
-        #     self._t = t
-            
         return xf
 
 
-    def xf_ritter(self, 
-                    t: int,
-                    ) -> float:
+    def xf_ritter(self,
+                  t: int
+                  ) -> float:
         r"""
         Ritter's equation for a dam-break solution over an infinite inclined dry domain without friction:
         
         .. math::
             x_f(t) = 2 t \sqrt{g h_0}
+        
+        Ritter A. Die Fortpflanzung der Wasserwellen. Zeitschrift des Vereines Deuscher Ingenieure 
+        August 1892; 36(33): 947-954.
     
         Parameters
         ----------
@@ -2250,33 +2238,29 @@ class Front_result:
         else:
             self._labels[t] = ["Ritter"]
             self._xf[t] = [xf]
-        
-        # if "Ritter" not in self._labels:
-        #     if self._xf is None:
-        #         self._xf = [xf]
-        #     else:
-        #         self._xf.append(xf)
-
-        #     self._labels.append("Ritter")
-        #     self._t = t
             
         return xf
 
 
-    def xf_stocker(self, 
+    def xf_stoker(self, 
                     t: int,
                     hr: int
                     ) -> float:
         r"""
-        Stocker's equation for a dam-break solution over an infinite inclined wet domain without friction:
+        Stoker's equation for a dam-break solution over an infinite inclined wet domain without friction:
         
         .. math::
-            x_f(t) =t \cdot \frac{2 c_m^2 \left( \sqrt{g h_0} - c_m \right)}{c_m^2 - g h_r}
+            x_f(t) =t c_m
             
-        with :math:`c_m` the critical velocity defined by:
+        with :math:`c_m` the front wave velocity solution of:
 
         .. math::
-            -8.g.hr.cm^{2}.(g.h0 - cm^{2})^{2} + (cm^{2} - g.hr)^{2} . (cm^{2} + g.hr) = 0
+            c_m h_r - h_r \left( \sqrt{1 + \frac{8 c_m^2}{g h_r}} - 1 \right) \left( \frac{c_m}{2} - \sqrt{g h_0} + \sqrt{\frac{g h_r}{2} \left( \sqrt{1 + \frac{8 c_m^2}{g h_r}} - 1 \right)} \right) = 0
+           
+        Stoker JJ. Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, 
+        Vol. 4. Interscience Publishers: New York, USA, 1957.
+        
+        Sarkhosh, P. (2021). Stoker solution package (1.0.0). Zenodo. https://doi.org/10.5281/zenodo.5598374
     
         Parameters
         ----------
@@ -2290,91 +2274,42 @@ class Front_result:
         float
             Position of the front edge of the fluid.
         """
-        def equation_cm(cm) -> float:
-            return -8 * self._g * hr * cm**2 * (self._g * self._h0 - cm**2)**2 + (cm**2 - self._g * hr)**2 * (cm**2 + self._g * hr)
-
-        guesses = np.linspace(0.01, 1000, 1000)
-        solutions = []
-
-        for guess in guesses:
-            sol = fsolve(equation_cm, guess)[0]
-
-            if abs(equation_cm(sol)) < 1e-6 and not any(np.isclose(sol, s, atol=1e-6) for s in solutions):
-                solutions.append(sol)
-
-        for sol in solutions:
-            hm = sol**2 / self._g
-            if hm < self._h0 and hm > hr:
-                find = True
-                self._cm = sol
-                break
-            else:
-                find = False
-
-        if find:
-            xf = t * (((2*self._cm**2)*(np.sqrt(self._g*self._h0)-self._cm)) / ((self._cm**2) - (self._g*hr)))
+        f_cm = 1
+        df_cm = 1
+        cm = 10 * self._h0
+        
+        while abs(f_cm / cm) > 1e-10:
+            root_term = np.sqrt(8 * cm**2 / np.sqrt(self._g * hr)**2 + 1)
+            inner_sqrt = np.sqrt(self._g * hr * (root_term - 1) / 2)
             
-            if t in self._labels:
-                if "Stocker" not in self._labels[t] :
-                    self._labels[t].append("Stocker")
-                    self._xf[t].append(xf)
-            else:
-                self._labels[t] = ["Stocker"]
-                self._xf[t] = [xf]
+            f_cm = cm * hr - hr * (root_term - 1) * (cm / 2 - np.sqrt(self._g * self._h0) + inner_sqrt)
+            df_cm = (hr 
+                     - hr * ((2 * cm * self._g * hr) / (np.sqrt(self._g * hr)**2 * root_term * inner_sqrt) + 0.5) * (root_term - 1)
+                     - (8 * cm * hr * (cm / 2 - np.sqrt(self._g * self._h0) + inner_sqrt)) / (np.sqrt(self._g * hr)**2 * root_term))
             
-            # if "Stocker" not in self._labels:
-            #     if self._xf is None:
-            #         self._xf = [xf]
-            #     else:
-            #         self._xf.append(xf)
+            cm -= f_cm / df_cm
 
-            #     self._labels.append("Stocker")
-            #     self._t = t
-                
-            return xf
+        xf = cm * t
             
+        if t in self._labels:
+            if "Stoker" not in self._labels[t] :
+                self._labels[t].append("Stoker")
+                self._xf[t].append(xf)
         else:
-            print("Didn't find cm, try with greater range of value.")
-            return None
+            self._labels[t] = ["Stoker"]
+            self._xf[t] = [xf]
+            
+        return xf
+            
 
+    def show_fronts_over_methods(self, x_unit: str="m") -> None:
+        """Plot the front distance from the initial position for each method.
 
-    # def show_res(self, 
-    #              x_unit: str='m'):
-    #     """Plot the front position.
-
-    #     Parameters
-    #     ----------
-    #     x_unit: str
-    #         Space unit.
-    #     """
-    #     print(self._xf)
-    #     print(self._labels)
-    #     y_levels = np.arange(len(self._xf))[::-1]
-     
-    #     fig, ax = plt.subplots(figsize=(10, 5))
-        
-    #     for x, y, label in zip(self._xf, y_levels, self._labels):
-    #         ax.vlines(x, y - 0.3, y + 0.3, color='black', linewidth=2)
-    #         ax.text(x + 0.5, y, f"{x:.4f}", rotation=90, va='center')
-        
-    #     ax.set_yticks(y_levels)
-    #     ax.set_yticklabels(self._labels)
-    #     ax.invert_yaxis()
-
-    #     ax.set_xlim(left=0)
-    #     ax.set_xlim(right=max(self._xf)+5)
-
-
-    #     ax.set_xlabel(f"x [{x_unit}]")
-    #     ax.set_title(f"Flow front positions at t = {self._t}" if self._t else "Flow front positions")
-
-    #     ax.grid(True, axis='x')
-
-    #     plt.tight_layout()
-    #     plt.show()
-
-
-    def show_fronts_over_time(self, x_unit="m"):
+        Parameters
+        ----------
+        x_unit : str, optional
+            X-axis unit, by default "m"
+        """
         fig, ax = plt.subplots(figsize=(10, 5))
 
         label_order = []
@@ -2388,7 +2323,7 @@ class Front_result:
         yticklabels = list(reversed(label_order))
 
         sorted_times = sorted(self._xf.keys())
-        colors = cm.viridis(np.linspace(0, 1, len(sorted_times)))
+        colors = cm.copper(np.linspace(0, 1, len(sorted_times)))
 
         for color, t in zip(colors, sorted_times):
             x_list = self._xf[t]
@@ -2397,7 +2332,7 @@ class Front_result:
             for x, label in zip(x_list, label_list):
                 y = y_levels[label]
                 ax.vlines(x, y - 0.3, y + 0.3, color=color, linewidth=2)
-                ax.text(x + 0.5, y, f"{x:.2f}", rotation=90, va='center', fontsize=8, color=color)
+                ax.text(x + 1, y, f"{x:.2f}", rotation=90, va='center', fontsize=8, color=color)
 
         ax.set_yticks(yticks)
         ax.set_yticklabels(yticklabels)
@@ -2413,27 +2348,60 @@ class Front_result:
 
         from matplotlib.lines import Line2D
         legend_elements = [
-            Line2D([0], [0], color=color, lw=2, label=f"t = {t}")
+            Line2D([0], [0], color=color, lw=2, label=f"t = {t}s")
             for color, t in zip(colors, sorted_times)
         ]
-        ax.legend(handles=legend_elements, title="Time steps", loc="lower right")
+        ax.legend(handles=legend_elements, title="Time steps", loc="best")
 
         plt.tight_layout()
         plt.show()
 
 
+    def show_fronts_over_time(self, x_unit: str="m") -> None:
+        """Plot the front distance from the initial position over time for each method.
+
+        Parameters
+        ----------
+        x_unit : str, optional
+            X-axis unit, by default "m"
+        """
+        T = sorted(self._labels.keys())
+        
+        dico_xf = {}
+        dico_time = {}
+        for t in T:
+            for i in range(len(self._labels[t])):
+                if self._labels[t][i] not in dico_xf:
+                    dico_xf[self._labels[t][i]] = [self._xf[t][i]]
+                    dico_time[self._labels[t][i]] = [t]
+                else:
+                    dico_xf[self._labels[t][i]].append(self._xf[t][i])
+                    dico_time[self._labels[t][i]].append(t)
+        
+        for label in dico_xf.keys():
+            plt.scatter(dico_xf[label], dico_time[label], marker='x', label=label)
+        
+        plt.xlabel(f'Distance to the dam break [{x_unit}]')
+        plt.ylabel('Time [s]')
+        
+        
+        plt.grid(which="major")
+        plt.legend(loc='best')
+        plt.show()
+
+
 # a = Front_result(30, 20)
-# print(a.xf_mangeney(5, 0))
-# print(a.xf_mangeney(5, 25))
 
-# print(a.xf_mangeney(10, 0))
-# print(a.xf_mangeney(10, 25))
+# for t in range(1, 10):
+#     a.xf_mangeney(t, 0)
+#     a.xf_mangeney(t, 25)
 
-# print(a.xf_dressler(5))
-# print(a.xf_ritter(5))
-# print(a.xf_stocker(5, 0.01))
+#     a.xf_dressler(t)
+#     a.xf_ritter(t)
+#     a.xf_stoker(t, 0.01)
 
-# a.show_fronts_over_time()
+# # a.show_fronts_over_time()
+# a.show_fronts_over_methods()
 
 # A = Coussot_shape(l0=16.11, rho=1000, tau=500, theta=10, hmax=0.5)
 # A.compute_Xx_front()
@@ -2452,8 +2420,8 @@ class Front_result:
 # plt.show()
 
 # x = np.linspace(-500, 500, 100)
-# case = Stocker_wet(x_0=0, h_0=10, h_r=0.025)
-# case2 = Stocker_SWASHES_wet(0, 10, 0.025)
+# case = Stoker_wet(x_0=0, h_0=10, h_r=0.025)
+# case2 = Stoker_SWASHES_wet(0, 10, 0.025)
 # case.compute_h(x, 20)
 # case2.compute_h(x, 20)
 # case.show_res(show_h=True)
