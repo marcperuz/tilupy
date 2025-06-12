@@ -1,94 +1,60 @@
 r"""
-Coussot's shape solution of flow simulation without friction.
+Coussot's model example
 ===========================
 
-This example demonstrates the final shape of simulated flow of an ideal dam break on a dry domain.
+This example demonstrates the final shape of simulated flow using Coussot's equation.
 
-The dam break is instantaneous, over an inclined and flat surface without friction with a finite 
-flow volume.
-
-The shape of the simulated flow at the final step is given by
+The frontal lobe shape of the simulated flow at the final step is given by
 
     .. math::
-            X = 
-            \begin{cases}
-                H - \ln(1 + H) & \text{if } 0 < X \leq X_0, \\\\
-                H + L_0 + \ln(1 - H) & \text{if } X_0 < X \leq L_0
-            \end{cases}
+            X = H \ln(1 - H)
             
 where 
+ - :math:`H`: normalized fluid depth.
+ - :math:`X`: normalized spatial dimension.
+ 
+:math:`H` and :math:`X` are obtained with these expressions:
 
-    .. math::
-            \begin{cases}
-                \text{X : Normalized spatial coordinate}, \\\\
-                \text{H : Normalized fluid depth}, \\\\
-                \text{X_0 : Normalized spatial coordinate of the maximal fluid depth}, \\\\
-                \text{L_0 : Normalized flow lenght}
-            \end{cases}
+.. math::
+	X = \frac{\rho g x (\sin(\theta))^2}{\tau_c \cos(\theta)} \text{  and  } H = \frac{\rho g h \sin(\theta)}{\tau_c}
 
-For :math:`0 < X \leq X_0` the equation represent the back front of the flow and :math:`X_0 < X \leq L_0` 
-represents the front flow. 
+with:
+ - :math:`h`: fluid depth.
+ - :math:`x`: spatial dimension.
+ - :math:`g`: gravitational acceleration.
+ - :math:`\rho`: fluid density.
+ - :math:`\tau_c`: threshold constraint.
+ - :math:`\theta`: slope of the surface.
+
+Implementation
+---------------
 """
-
 # %%
-# Initialisation with :math:`l_0 = 10m`, :math:`h_{max} = 0.5m`, :math:`\rho = 1000kg/m^3`, :math:`\tau_c = 500Pa` and 
-# :math:`\theta = 10°`:
-import matplotlib.pyplot as plt
-
+# First import required packages and define the context. For this example we will use a fluid with a density of :math:`\rho = 1000 kg/m^3`: 
+# and :math:`\tau_c = 50 Pa`, with a slope of :math:`\theta = 10°`:
 from tilupy.analytic_sol import Coussot_shape
 
-A = Coussot_shape(l0=10, rho=1000, tau=500, theta=10, hmax=0.5)
-A.compute_Xx_front()
-A.show_res()
+case_1 = Coussot_shape(rho=1000, tau=50, theta=10)
+case_1.compute_rheological_test_morpho()
+case_1.show_res()
 
 # %%
-# An other way to compute the shape of the front flow is to compute this equation:
+# If :math:`\theta = 0°`, the equations are slightly different:
 # 
 # .. math::
-#       X = -H - \ln(1-H)
+# 	X^* = \frac{{H^*}^2}{2}
 # 
-# With the same parameters, we obtain:
+# with:
+# 
+# .. math::
+# 	X^* = \frac{\rho g x}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
 
-A = Coussot_shape(l0=10, rho=1000, tau=500, theta=10, hmax=0.5)
-A.compute_Xx_front_remaitre()
-A.show_res()
-
-# %%
-# The two solutions aren't exactly the same:
-A = Coussot_shape(l0=10, rho=1000, tau=500, theta=10, hmax=0.5)
-A.compute_Xx_front()
-
-B = Coussot_shape(l0=10, rho=1000, tau=500, theta=10, hmax=0.5)
-B.compute_Xx_front_remaitre()
-
-fig, ax = plt.subplots()
-ax.plot(A.x, A.h, label="First solution")
-ax.plot(B.x, B.h, label="Second solution")
-ax.legend()
-ax.set_xlabel('x [m]')
-ax.set_ylabel('h [m]')
-
-ax.plot([A.x[0], A.x[-1]], [0, 0], color='black', linewidth=2)
-fig.show()
-
+case_2 = Coussot_shape(rho=1000, tau=50, theta=0)
+case_2.compute_rheological_test_morpho()
+case_2.show_res()
 
 # %%
-# The result is different if we choose :math:`\theta = 0°`:
-A = Coussot_shape(l0=10, rho=1000, tau=500, theta=0, hmax=0.5)
-A.compute_Xx()
-# A.show_res()
-
-B = Coussot_shape(l0=10, rho=1000, tau=500, theta=0, hmax=0.5)
-B.compute_Xx_front_remaitre()
-# B.show_res()
-
-
-fig, ax = plt.subplots()
-ax.plot(A.x, A.h, label="First solution")
-ax.plot(B.x, B.h, label="Second solution")
-ax.legend()
-ax.set_xlabel('x [m]')
-ax.set_ylabel('h [m]')
-
-ax.plot([A.x[0], A.x[-1]], [0, 0], color='black', linewidth=2)
-fig.show()
+# Original reference:
+#  
+# Coussot, P., Proust, S., & Ancey, C., 1996, Rheological interpretation of deposits of yield stress fluids, 
+# Journal of Non-Newtonian Fluid Mechanics, v. 66(1), p. 55-70, doi:10.1016/0377-0257(96)01474-7.

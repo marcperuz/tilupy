@@ -229,8 +229,7 @@ class Ritter_dry(Depth_result):
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Ritter's equation.
     
-    Ritter A. Die Fortpflanzung der Wasserwellen. Zeitschrift des Vereines Deuscher Ingenieure 
-    August 1892; 36(33): 947-954.
+    Ritter, A., 1892, Die Fortpflanzung der Wasserwellen, Zeitschrift des Vereines Deutscher Ingenieure, vol. 36(33), p. 947-954.
 
     Attributes:
     -----------
@@ -398,8 +397,10 @@ class Stoker_SWASHES_wet(Depth_result):
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Stoker's equation.
     
-    Stoker JJ. Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, 
-    Vol. 4. Interscience Publishers: New York, USA, 1957.
+    Delestre, O., Lucas, C., Ksinant, P.-A., Darboux, F., Laguerre, C., Vo, T.-N.-T., James, F. & Cordier, S., 2013, SWASHES: a compilation of shallow water 
+    analytic solutions for hydraulic and environmental studies, International Journal for Numerical Methods in Fluids, v. 72(3), p. 269-300, doi:10.1002/fld.3741.
+
+    Stoker, J.J., 1957, Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, vol. 4, Interscience Publishers, New York, USA.
 
     Attributes:
     -----------
@@ -694,10 +695,9 @@ class Stoker_SARKHOSH_wet(Depth_result):
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Stoker's equation.
     
-    Stoker JJ. Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, 
-    Vol. 4. Interscience Publishers: New York, USA, 1957.
+    Sarkhosh, P., 2021, Stoker solution package, version 1.0.0, Zenodo. https://doi.org/10.5281/zenodo.5598374
     
-    Sarkhosh, P. (2021). Stoker solution package (1.0.0). Zenodo. https://doi.org/10.5281/zenodo.5598374
+    Stoker, J.J., 1957, Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, vol. 4, Interscience Publishers, New York, USA.
 
     Attributes:
     -----------
@@ -956,8 +956,8 @@ class Mangeney_dry(Depth_result):
     It computes the flow height (took normal to the surface) and velocity over space and time with an 
     infinitely-long fluid mass on an infinite surface.
     
-    MANGENEY, A., HEINRICH, P., et ROCHE, R. Analytical solution for testing debris avalanche 
-    numerical models. Pure and Applied Geophysics, 2000, vol. 157, p. 1081-1096.
+    Mangeney, A., Heinrich, P., & Roche, R., 2000, Analytical solution for testing debris avalanche numerical models, 
+    Pure and Applied Geophysics, vol. 157, p. 1081-1096.
 
     Attributes:
     -----------
@@ -1172,8 +1172,8 @@ class Dressler_dry(Depth_result):
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Dressler's equation.
     
-    Dressler RF. Hydraulic resistance effect upon the dam-break functions. Journal of Research of the National Bureau 
-    of Standards September 1952; 49(3): 217-225.
+    Dressler, R.F., 1952, Hydraulic resistance effect upon the dam‑break functions, Journal of Research of the National Bureau 
+    of Standards, vol. 49(3), p. 217-225.
 
     Attributes:
     -----------
@@ -1447,7 +1447,7 @@ class Chanson_dry(Depth_result):
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Chanson's equation.
     
-    Chanson, Hubert. (2005). Analytical Solution of Dam Break Wave with Flow Resistance: Application to Tsunami Surges. 137. 
+    Chanson, H., 2005, Applications of the Saint-Venant Equations and Method of Characteristics to the Dam Break Wave Problem.
 
     Attributes:
     -----------
@@ -1739,8 +1739,8 @@ class Coussot_shape(Shape_result):
     The flow is over an inclined and flat surface without friction with a finite volume of fluid.
     It computes the spatial coordinates from the flow lenght and height.
     
-    Coussot P., Proust S., Ancey C. Rheological interpretation of deposits of yield stress fluids, 
-    Journal of Non-Newtonian Fluid Mechanics, 1996, vol 66(1), p. 55-70, DOI:10.1016/0377-0257(96)01474-7.
+    Coussot, P., Proust, S., & Ancey, C., 1996, Rheological interpretation of deposits of yield stress fluids, 
+    Journal of Non-Newtonian Fluid Mechanics, v. 66(1), p. 55-70, doi:10.1016/0377-0257(96)01474-7.
 
     Attributes:
     -----------
@@ -1786,7 +1786,7 @@ class Coussot_shape(Shape_result):
         .. math::
             H = \frac{\rho g h \sin(\theta)}{\tau_c}
             
-        If :math:`\theta = 0`, the the expression is:
+        If :math:`\theta = 0`, the expression is:
         
         .. math::
             H = \frac{\rho g h}{\tau_c} 
@@ -1816,7 +1816,7 @@ class Coussot_shape(Shape_result):
         .. math::
             h = \frac{H \tau_c}{\rho g \sin(\theta)} 
 
-        If :math:`\theta = 0`, the the expression is:
+        If :math:`\theta = 0`, the expression is:
         
         .. math::
             h = \frac{H \tau_c}{\rho g} 
@@ -1845,7 +1845,7 @@ class Coussot_shape(Shape_result):
         .. math::
             X = \frac{\rho g x (\sin(\theta))^2}{\tau_c \cos(\theta)}
             
-        If :math:`\theta = 0`, the the expression is:
+        If :math:`\theta = 0`, the expression is:
         
         .. math::
             X = \frac{\rho g x}{\tau_c} 
@@ -1875,7 +1875,7 @@ class Coussot_shape(Shape_result):
         .. math::
             x = \frac{X \tau_c \cos(\theta)}{\rho g (\sin(\theta))^2} 
 
-        If :math:`\theta = 0`, the the expression is:
+        If :math:`\theta = 0`, the expression is:
         
         .. math::
             x = \frac{X \tau_c}{\rho g} 
@@ -1905,6 +1905,11 @@ class Coussot_shape(Shape_result):
         
         .. math::
                 X = H + \ln(1 - H)
+        
+        If :math:`\theta = 0`, the expression is:
+        
+        .. math::
+                X = \frac{H^2}{2} 
         """
         h = []
         for H_val in self._H:
@@ -2333,24 +2338,3 @@ class Front_result:
         plt.grid(which="major")
         plt.legend(loc='best')
         plt.show()
-
-
-A = Coussot_shape(rho=1000, tau=500, theta=20)
-A.compute_rheological_test_morpho()
-# A.compute_Hf(5)
-# A.translate_result(9)
-A.show_res()
-
-# B = Coussot_shape(rho=1000, tau=500, theta=10)
-# B.compute_Xx_form2()
-# B.show_res()
-
-# fig, ax = plt.subplots()
-# ax.plot(A.x, A.h, label="First solution")
-# ax.plot(B.x, B.h, label="Second solution")
-# ax.legend()
-# ax.set_xlabel('x [m]')
-# ax.set_ylabel('h [m]')
-
-# ax.plot([A.x[0], A.x[-1]], [0, 0], color='black', linewidth=2)
-# plt.show()

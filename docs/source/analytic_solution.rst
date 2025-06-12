@@ -1,7 +1,7 @@
 Analytic Solutions
 ==================
 
-Maybe some text.
+This section presents three types of analytic solution for simulated flow that can be used to compare with numerical solution for instance.
 
 .. toctree::
    :maxdepth: 1

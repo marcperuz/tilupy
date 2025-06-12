@@ -1,7 +1,57 @@
-Flow height and velocity example.
+Analytic solutions for height and velocity profile. 
 ======================
 
-Comparison of dam-break analytical solutions:
+This section demonstrates how to use the Depth_result class which allows to calculate the depth and velocity profile of the flow at a given time.
+
+To simplify the calculations, only 1D models will be taken into account. Under the assumptions of one-dimensional flow and an incompressible fluid, 
+it is possible to model the flow using the Saint-Venant equations, which form a system of partial differential equations derived from the principles 
+of mass conservation (continuity equation) and momentum conservation (momentum equation). In a case of a flat surface, the Saint-Venant's system can
+be expressed as:
+
+.. math::
+		\begin{cases}
+			\delta_t h + \delta_x (hu) = 0 \\\\
+			\delta_t (hu) + \delta_x (\alpha hu^2) + \delta_x (\frac{1}{2}kgh^2 \cos{\theta}) = gh\sin{\theta} - S
+		\end{cases}
+
+where
+
+ - :math:`h`: fluid depth.
+ - :math:`u`: fluid velocity.
+ - :math:`g`: gravitational acceleration.
+ - :math:`\alpha`: form factor associated with nonlinear velocity profiles.
+ - :math:`k`: coefficient introduced to take into account internal friction.
+ - :math:`\delta_t`: partial derivative with respect to time.
+ - :math:`\delta_x`: partial derivative with respect to space.
+ - :math:`\theta`: slope of the surface.
+ - :math:`S`: source term integrating the dissipative effects of energy which slows the flow.
+
+It is possible to rewrite this system in a more general form. For example, by taking :math:`\alpha = 1` and :math:`k = 1` (a very common thing), 
+and by developing the partial derivatives, we obtain this system which will serve as a basis for comparing the different models:
+
+.. math::
+		\begin{cases}
+			\delta_t h + \delta_x (hu) = 0 \\\\
+			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
+		\end{cases}
+
+----------------
+
+**References**
+
+Peruzzetto, M., Grandjean, G., Mangeney, A., Levy, C., Thiery, Y., Vittecoq, B., Bouchut, F., Fontaine, 
+F.R., & Komorowski, J.-C., 2023, Simulation des écoulements gravitaires avec les modèles d’écoulement en couche mince : 
+état de l’art et exemple d’application aux coulées de débris de la Rivière du Prêcheur (Martinique, Petites Antilles), 
+Revue Française de Géotechnique, vol. 176, p. 1, doi:10.1051/geotech/2023020.
+
+Savage, S.B., & Hutter, K., 1991, The dynamics of avalanches of granular materials from initiation to runout. Part I: Analysis, Acta Mechanica, v. 86(1), p. 201–223.
+
+
+Dam-break problem
+-----------------
+
+Below are grouped several analytical solutions for a dam-break problem under conditions varying from one model to another. The next table will 
+summarize the main differences between the models:
 
 .. list-table::
    :header-rows: 1
@@ -92,4 +142,4 @@ Comparison of dam-break analytical solutions:
      - Chanson (2005)
 
 
-Below is a gallery of example function of the package to show the class Depth_Result works:
+Below is a gallery of functions for each model type illustrating their specificity and how they work:
