@@ -999,7 +999,7 @@ class Mangeney_dry(Depth_result):
         Front of the flow:
         
         .. math::
-            x_A(t) = \frac{1}{2}mt - 2 c_0 t
+            x_A(t) = \frac{1}{2}mt^2 - 2 c_0 t
 
         Parameters
         ----------
@@ -1019,7 +1019,7 @@ class Mangeney_dry(Depth_result):
         Edge of the quiet area:
         
         .. math::
-            x_B(t) = \frac{1}{2}mt + c_0 t
+            x_B(t) = \frac{1}{2}mt^2 + c_0 t
 
         Parameters
         ----------
@@ -1744,20 +1744,10 @@ class Coussot_shape(Shape_result):
 
     Attributes:
     -----------
-        _l0 : int 
-            Length of the deposit.
-        _L0 : int 
-            Normalized length of the deposit.
-        _hmax : int 
-            Max fluid depth.
-        _Hmax : int 
-            Normalized max fluid depth.
         _rho : float
             Fluid density.
         _tau : float
             Threshold constraint.
-        _X0 : float
-            Normalized spatial coordinates of the maximal height.
         _X : float or np.ndarray
             Normalized spatial coordinates.
         _H : float or np.ndarray
@@ -1765,8 +1755,6 @@ class Coussot_shape(Shape_result):
     
     Parameters:
     -----------
-        l0 : int 
-            Length of the deposit.
         rho : float
             Fluid density.
         tau : float
@@ -1775,33 +1763,19 @@ class Coussot_shape(Shape_result):
             Angle of the surface, in degree, by default 0.
         H_size : int, optional
             Number of value wanted in the H array, by default 100.
-        hmax : float; optional
-            Max fluid depth.
     """   
     def __init__(self, 
-                 l0: int, #Longueur du dépôt ==> distance x0-xf (rupture barrage - front de l'écoulement)
                  rho: float,
                  tau: float,
                  theta: float=0,
-                 H_size: int=100,
-                 hmax: float=None):
+                 H_size: int=100
+                 ):
         super().__init__(np.radians(theta))
         self._rho = rho
         self._tau = tau
         
-        self._l0 = l0
-        self._L0 = self.x_to_X(l0)
-        self._X0 = self.compute_X0()
-        self._hmax = hmax
-        self._Hmax = self.compute_Hmax(hmax)
-        
         self._X = None
-        self._H = self.compute_H(H_size)
-        
-        print("X0: ", self._X0)
-        print("Hmax: ", self._Hmax)
-        print("l0: ", self._l0)
-        print("L0: ", self._L0)
+        self._H = np.linspace(0, 0.99, H_size)
 
 
     def h_to_H(self, 
@@ -1834,8 +1808,8 @@ class Coussot_shape(Shape_result):
 
 
     def H_to_h(self,
-               H: np.ndarray
-               ) -> np.ndarray:
+               H: float
+               ) -> float:
         r"""Find the original value of the fluid depth from the normalized one
         by following:
         
@@ -1849,21 +1823,18 @@ class Coussot_shape(Shape_result):
     
         Parameters
         ----------
-        H : np.ndarray
-            Normalized values of the fluid depth.
+        H : float
+            Normalized value of the fluid depth.
 
         Returns
         -------
-        np.ndarray
-            True values of the fluid depth.
+        float
+            True value of the fluid depth.
         """
-        h = []
-        for v in H:
-            if self._theta == 0:
-                h.append((v*self._tau)/(self._rho*self._g))
-            else:    
-                h.append((v*self._tau)/(self._rho*self._g*np.sin(self._theta)))
-        return np.array(h)
+        if self._theta == 0:
+            return ((H*self._tau)/(self._rho*self._g))
+        else:    
+            return ((H*self._tau)/(self._rho*self._g*np.sin(self._theta)))
 
 
     def x_to_X(self, 
@@ -1928,176 +1899,67 @@ class Coussot_shape(Shape_result):
         return x
 
 
-    def compute_X0(self) -> float:
-        r"""Compute the normalized coordinate of the maximal fluid depth:
+    def compute_rheological_test_morpho(self) -> None:
+        r"""Compute the shape of the frontal lobe from the normalized fluid depth for a rheological test on an inclined 
+        surface by following :
         
         .. math::
-            X_0 = \sqrt{1-exp(-L_0)} + \ln(1+\sqrt{1-exp(-L_0)})
-            
+                X = H + \ln(1 - H)
+        """
+        h = []
+        for H_val in self._H:
+            h.append(self.H_to_h(H_val))
+        
+        if self._theta == 0:
+            self._h = np.array(h)
+        else:
+            self._h = np.array(h)
+        X = []
+                
+        for H_val in self._H:
+            if self._theta == 0:
+                X.append(-1*(H_val*H_val)/2)
+            else:
+                X.append(H_val + np.log(1 - H_val))
+        
+        self._X = X
+        self._x = self.X_to_x(self._X)
+
+
+    def compute_slump_test_hf(self, h_init: float) -> float:
+        r"""Compute the final fluid depth for a cylindrical slump test following :
+        
+        .. math::
+                \frac{h_f}{h_i} = 1 - \frac{2 \tau_c}{\rho g h_i} \left( 1 - \ln{\frac{2 \tau_c}{\rho g h_i}} \right)
+        
+        N. Pashias, D. V. Boger, J. Summers, D. J. Glenister; A fifty cent rheometer for yield stress measurement. J. Rheol. 
+        1 November 1996; 40 (6): 1179–1189. https://doi.org/10.1122/1.550780
+        
+        Parameters
+        ----------
+        h_init : float
+            Initial fluid depth.
+
         Returns
         -------
         float
-            X-coordinate of the maximal fluid depth.
+            Final fluid depth
         """
-        return np.sqrt(1-np.exp(-self._l0)) + np.log(1+np.sqrt(1-np.exp(-self._l0)))
+        H_init = self.h_to_H(h_init)
+        val = 1 - ((2/H_init)*(1-np.log(2/H_init)))
+        return self.H_to_h(val*H_init)
         
     
-    def compute_Hmax(self, 
-                     hmax: float=None) -> float:
-        r"""Compute the normalized maximal fluid depth:
-        
-        .. math::
-            H_{max} = \sqrt{1-exp(-L_0)}
-            
-        Or if hmax is define: 
-        
-        .. math::
-            H_{max} = \frac{\rho g h_{max} \sin(\theta)}{\tau_c}
-              
-        Returns
-        -------
-        float
-            Maximal fluid depth (dimensionless).
-        """
-        return np.sqrt(1-np.exp(-self._l0))
-
-
-    def compute_H(self,
-                 size: int
-                 ) -> np.ndarray:
-        r"""Create an array of fluid depth from the normalized maximal fluid depth:
+    def translate_result(self, x_final: float) -> None:
+        """Translate the shape of the frontal lobe to the wanted x coordinate.
 
         Parameters
         ----------
-        size : int
-            Number of value wanted.      
-
-        Returns
-        -------
-        np.ndarray
-            Array of fluid depth (dimensionless).
+        x_final : float
+            Final wanted x coordinate.
         """
-        H = np.linspace(0, 0.99, size)        
-        
-        return H
-
-
-    def compute_Xx(self) -> None:
-        r"""Compute the normalize x-coordinates (:math:`0 < X < L_0`) from the fluid depth by following:
-        
-        .. math::
-                X = 
-                \begin{cases}
-                    H - \ln(1 + H) & \text{if } 0 \leq X \leq X_0, \\\\
-                    H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
-                \end{cases}     
-        """
-        self._h = self.H_to_h(np.concatenate((self._H, np.flip(self._H)), axis=None)) 
-        xr = []
-        xl = []        
-        
-        for H_val in self._H:
-            if self._theta == 0:
-                x_left = (H_val*H_val)/2
-                x_right = (H_val*H_val)/2
-            else:
-                x_left = H_val - np.log(1 + H_val)
-                if H_val < 1:
-                    x_right = H_val + self._l0 + np.log(1 - H_val)
-                else:
-                    x_right = self._X0
-
-            xl.append(x_left)
-            xr.append(x_right)
-        
-        if self._theta == 0:
-            xr = [(-1*(i-max(xr)))*(self._L0/max(xr)) for i in xr]
-            xl = [(i-max(xl))*(self._L0/max(xl)) for i in xl]
-
-        self._X = np.concatenate((xl, np.flip(xr)), axis=None)
-        self._x = self.X_to_x(self._X)
-
-
-    def compute_Xx_back(self) -> None:
-        r"""Compute the normalize x-coordinates (:math:`0 < X < X_0`) from the fluid depth by following the first equation of:
-        
-        .. math::
-                X = 
-                \begin{cases}
-                    H - \ln(1 + H) & \text{if } 0 \leq X \leq X_0, \\\\
-                    H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
-                \end{cases}     
-        """
-        self._h = self.H_to_h(self._H)
-        X = []
-        
-        for H_val in self._H:
-            if self._theta == 0:
-                X.append((H_val*H_val)/2)
-            else:
-                X.append(H_val - np.log(1 + H_val))
-
-        self._X = X
-        self._x = self.X_to_x(self._X)
-
-
-    def compute_Xx_front(self) -> None:
-        r"""Compute the normalize x-coordinates (:math:`X_0 < X < L0`) from the fluid depth by following the second equation of:
-        
-        .. math::
-                X = 
-                \begin{cases}
-                    H - \ln(1 + H) & \text{if } 0 \leq X \leq X_0, \\\\
-                    H + L_0 + \ln(1 - H) & \text{if } X_0 \leq X \leq L_0
-                \end{cases}     
-        """
-        self._h = self.H_to_h(self._H)
-        X = []
-        
-        for H_val in self._H:
-            if self._theta == 0:
-                X.append((H_val*H_val)/2)
-            else:
-                X.append(H_val + self._L0 + np.log(1 - H_val))
-        
-        X = np.array(X)
-        X[X<0] = 0
-        
-        if self._theta == 0:
-            X = [-1*(i-max(X)) for i in X]
-
-        self._X = X
-        self._x = self.X_to_x(self._X)
-        
-             
-    def compute_Xx_front_remaitre(self) -> None:
-        r"""Compute the normalize x-coordinates (:math:`X_0 < X < L0`) from the fluid depth by following:
-        
-        .. math::
-                X = -H - \ln(1-H) 
-        """
-        if self._theta == 0:
-            self._h = np.concatenate((self.H_to_h(self._H), np.flip(self.H_to_h(self._H))), axis=None) * (self._hmax/np.max(self.H_to_h(self._H)))
-        else:
-            self._h = self.H_to_h(self._H)
-
-        X = []
-        for H_val in self._H:
-            X.append(((-1*H_val) - np.log(1-(H_val))))
-
-        if self._theta == 0:
-            X_l = [(i - max(X))*(self._L0/max(X)) for i in X]
-            X_r = [(-1*(i - max(X)))*(self._L0/max(X)) for i in X]
-            self._X = np.concatenate((X_l, np.flip(X_r)), axis=None)
-        else:
-            self._X = [(-1*(i - max(X))) for i in X]
-        self._x = self.X_to_x(self._X)
-
-
-    def compute_Hf(self) -> float:
-        Hmax = self.compute_Hmax()
-        val = 1 - ((2/Hmax)*(1-np.log(2/Hmax)))
-        print(self.H_to_h([val*Hmax]))
+        new_x = [v+x_final for v in self._x]
+        self._x = new_x 
 
 
 class Front_result:
@@ -2332,6 +2194,8 @@ class Front_result:
         .. math::
             \left( \frac{U}{\sqrt{g h_0}}  \right)^3 - 8 \left( 0.75 - \frac{3 f t \sqrt{g}}{8 \sqrt{h_0}} \right) \left( \frac{U}{\sqrt{g h_0}}  \right)^2 + 12 \left( \frac{U}{\sqrt{g h_0}}  \right) - 8 = 0       
 
+        Chanson, Hubert. (2005). Analytical Solution of Dam Break Wave with Flow Resistance: Application to Tsunami Surges. 137. 
+        
         Parameters
         ----------
         t : int
@@ -2470,11 +2334,16 @@ class Front_result:
         plt.legend(loc='best')
         plt.show()
 
-# A = Coussot_shape(l0=16.11, rho=1000, tau=500, theta=10, hmax=0.5)
-# A.compute_Xx_front()
 
-# B = Coussot_shape(l0=10, rho=1000, tau=500, theta=10, hmax=0.5)
-# B.compute_Xx_front_remaitre()
+A = Coussot_shape(rho=1000, tau=500, theta=20)
+A.compute_rheological_test_morpho()
+# A.compute_Hf(5)
+# A.translate_result(9)
+A.show_res()
+
+# B = Coussot_shape(rho=1000, tau=500, theta=10)
+# B.compute_Xx_form2()
+# B.show_res()
 
 # fig, ax = plt.subplots()
 # ax.plot(A.x, A.h, label="First solution")
@@ -2485,18 +2354,3 @@ class Front_result:
 
 # ax.plot([A.x[0], A.x[-1]], [0, 0], color='black', linewidth=2)
 # plt.show()
-
-# x = np.linspace(-500, 500, 100)
-# case = Stoker_wet(x_0=0, h_0=10, h_r=0.025)
-# case2 = Stoker_SWASHES_wet(0, 10, 0.025)
-# case.compute_h(x, 20)
-# case2.compute_h(x, 20)
-# case.show_res(show_h=True)
-# case2.show_res(show_h=True)
-
-# x = np.linspace(-500, 700, 1000)
-# case = Dressler_dry(0, 6, 40  )
-# # case.compute_h(x, 40, estimation= True, xt=200, a=0.7)
-# # case.show_res(show_h=True)
-# case.compute_u(x, T=40, xt=200)
-# case.show_res(show_u=True)
