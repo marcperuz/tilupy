@@ -57,8 +57,8 @@ where
 
     .. math::
             \begin{cases}
-                x_A(t) = \frac{1}{2}mt - 2 c_0 t, \\\\
-                x_B(t) = \frac{1}{2}mt + c_0 t
+                x_A(t) = \frac{1}{2}mt^2 - 2 c_0 t, \\\\
+                x_B(t) = \frac{1}{2}mt^2 + c_0 t
             \end{cases}
             
 :math:`c_0` represent the initial wave propagation speed computed from :math:`\sqrt{g h_0 \cos{\theta}}` and 
