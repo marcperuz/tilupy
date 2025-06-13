@@ -44,7 +44,7 @@ For example, we can cite an equation combining the Darcy-Weisbach and Manning la
 
 where :math:`n` is Manning coefficient (in :math:`s.m^{-1/3}`).
 
-By replacing the Manning coefficient with Chezy coefficient with the relation: :math:`n = \frac{h^{1/3}{C}}`, we obtain :
+By replacing the Manning coefficient with Chezy coefficient with the relation: :math:`n = \frac{h^{1/3}}{C}}`, we obtain :
 
 .. math::
 		S = \frac{g}{C^2} u^2
