@@ -135,8 +135,8 @@ class Depth_result(ABC):
     def show_res(self, 
                  show_h: bool=False, 
                  show_u: bool=False,
-                 show_slop: bool=False,
                  show_surface: bool=False,
+                 linestyles: list[str]=None,
                  x_unit:str = "m",
                  h_unit:str = "m",
                  u_unit:str = "m/s"
@@ -149,10 +149,11 @@ class Depth_result(ABC):
             If True, plot the flow height ('h') curve.
         show_u : bool, optional
             If True, plot the flow velocity ('u') curve.
-        show_slop : bool, optional
-            If True, plot the slop of the surface.
         show_surface : bool, optional
             If True, plot the slop of the surface.
+        linestyles : list[str], optional
+            List of linestyle to applie to the graph, must have the same since as the numbre of curve to plot or it 
+            will not be taken into account (-1), by default None. If None, copper colormap will be applied.
         x_unit: str
             Space unit.
         h_unit: str
@@ -160,30 +161,25 @@ class Depth_result(ABC):
         u_unit: str
             Velocity unit.
         """
-        inclined_surf = None
         z_surf = [0, 0]
-        
-        if self._theta is not None and show_slop:
-            z_surf = [z_surf[0], -self._x[-1]*np.tan(self._theta)]
-            inclined_surf = np.linspace(z_surf[0], z_surf[1], len(self._x))
-        
+
         if show_h and self._h is not None:
             if self._h.ndim == 1:
-                if self._theta is not None and show_slop:
-                    h_inclined = [(self._h[i]/np.cos(self._theta)) + inclined_surf[i] for i in range(len(self._h))]
-                    plt.plot(self._x, h_inclined, color='black', linewidth=1)
-                else:
-                    plt.plot(self._x, self._h, color='black', linewidth=1)
+                plt.plot(self._x, self._h, color='black', linewidth=1)
             else:
-                for h in range(len(self._h)):
-                    l_style = "-"
-                    if self._t[h] == 0 :
-                        l_style = ":"
-                    if self._theta is not None and show_slop:
-                        h_inclined = [(self._h[h][i]/np.cos(self._theta)) + inclined_surf[i] for i in range(len(self._h[h]))]
-                        plt.plot(self._x, h_inclined, color='black', linewidth=1, linestyle=l_style)
+                if linestyles is None or len(linestyles)!=(len(self._t)-1):
+                    norm = plt.Normalize(vmin=min(self._t), vmax=max(self._t))
+                    cmap = plt.cm.copper
+                    
+                for h_idx, h_val in enumerate(self._h):
+                    t_val = self._t[h_idx]
+                    if linestyles is None or len(linestyles)!=(len(self._t)-1):
+                        color = cmap(norm(t_val)) if t_val != 0 else "red"
+                        l_style = "-" if t_val != 0 else (0, (1, 4))
                     else:
-                        plt.plot(self._x, self._h[h], color='black', linewidth=1, linestyle=l_style)
+                        color = "black" if t_val != 0 else "red"
+                        l_style = linestyles[h_idx-1] if t_val != 0 else (0, (1, 4))    
+                    plt.plot(self._x, h_val, color=color, linestyle=l_style, label=f"t={t_val}s")
             
             if show_surface:
                 plt.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
@@ -195,18 +191,30 @@ class Depth_result(ABC):
             plt.title(f"Flow height for t={self._t}")
             plt.xlabel(f"x [{x_unit}]")
             plt.ylabel(f"h [{h_unit}]")
+            plt.legend(loc='upper right')
             plt.show()
+
 
         if show_u and self._u is not None:
             if self._u.ndim == 1:
                 plt.plot(self._x, self._u, color='black', linewidth=1)
                 
             else:
-                for u in range(len(self._u)):
-                    l_style = "-"
-                    if self._t[u] == 0 :
-                        l_style = ":"
-                    plt.plot(self._x, self._u[u], color='black', linewidth=1, linestyle=l_style)
+                if linestyles is None or len(linestyles)!=(len(self._t)-1):
+                    norm = plt.Normalize(vmin=min(self._t), vmax=max(self._t))
+                    cmap = plt.cm.copper
+                    
+                for u_idx, u_val in enumerate(self._u):
+                    t_val = self._t[u_idx]
+                    if t_val == 0:
+                        continue
+                    if linestyles is None or len(linestyles)!=(len(self._t)-1):
+                        color = cmap(norm(t_val))
+                        l_style = "-"
+                    else:
+                        color = "black"
+                        l_style = linestyles[u_idx-1]
+                    plt.plot(self._x, u_val, color=color, linestyle=l_style, label=f"t={t_val}s")
 
             plt.grid(which='major')
             plt.grid(which='minor', alpha=0.5)
@@ -215,6 +223,7 @@ class Depth_result(ABC):
             plt.title(f"Flow velocity for t={self._t}")
             plt.xlabel(f"x [{x_unit}]")
             plt.ylabel(f"u [{u_unit}]")
+            plt.legend(loc='best')
             plt.show()
         
         if self._h is None and self._u is None:
@@ -1692,7 +1701,6 @@ class Shape_result(ABC):
 
 
     def show_res(self, 
-                 show_slop=False,
                  x_unit:str = "m",
                  h_unit:str = "m",
                 ):
@@ -1700,31 +1708,15 @@ class Shape_result(ABC):
 
         Parameters
         ----------
-        show_slop : bool, optional
-            If True, plot the slop of the surface.
         x_unit: str
             Space unit.
         h_unit: str
             Height unit.
         """
-        inclined_surf = None
-        z_surf = [0, 0]
-        
-        if self._theta is not None and show_slop:
-            z_surf = [z_surf[0], -self._x[-1]*np.tan(self._theta)]
-            inclined_surf = np.linspace(z_surf[0], z_surf[1], len(self._x))
-        
         if self._x is not None and self._h is not None:
-            if self._h.ndim == 1:
-                if self._theta is not None and show_slop:
-                    h_inclined = [(self._h[i]/np.cos(self._theta)) + inclined_surf[i] for i in range(len(self._h))]
-                    plt.plot(self._x, h_inclined, color='black', linewidth=1)
-                else:
-                    plt.plot(self._x, self._h, color='black', linewidth=1)
-
-            plt.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
+            plt.plot(self._x, self._h, color='black', linewidth=1)
             
-            plt.title("Flow height")
+            plt.title("Front flow shape")
             plt.xlabel(f"x [{x_unit}]")
             plt.ylabel(f"h [{h_unit}]")
             plt.show()
@@ -2335,3 +2327,20 @@ class Front_result:
         plt.grid(which="major")
         plt.legend(loc='best')
         plt.show()
+        
+x = np.linspace(-100, 1000, 1000)
+
+# %%
+# 
+# -------------------
+
+# %%
+# Case 1: No friction (:math:`\delta = 0°`), slope :math:`\theta = 30°`, initial height :math:`h_0 = 20 m`.
+case_1 = Mangeney_dry(theta=30, delta=0, h_0=20)
+
+
+# %%
+# Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15} s`.
+case_1.compute_u(x, [0, 5, 10, 15])
+case_1.show_res(show_u=True)
+
