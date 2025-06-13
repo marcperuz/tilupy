@@ -996,10 +996,10 @@ class Mangeney_dry(Depth_result):
 
     def xa(self, t: int) -> float:
         r"""
-        Front of the flow:
+        Edge of the quiet area:
         
         .. math::
-            x_A(t) = \frac{1}{2}mt^2 - 2 c_0 t
+            x_A(t) = \frac{1}{2}mt^2 - c_0 t
 
         Parameters
         ----------
@@ -1009,17 +1009,17 @@ class Mangeney_dry(Depth_result):
         Returns
         -------
         float
-            Position of the front edge of the fluid, in negative axis.
+            Position of the edge of the quiet region.
         """
-        return 0.5*self._m*t**2 - (2*self._c0*t)
+        return 0.5*self._m*t**2 - (self._c0*t)
     
     
     def xb(self, t: int) -> float:
         r"""
-        Edge of the quiet area:
+        Front of the flow:
         
         .. math::
-            x_B(t) = \frac{1}{2}mt^2 + c_0 t
+            x_B(t) = \frac{1}{2}mt^2 + 2 c_0 t
 
         Parameters
         ----------
@@ -1029,9 +1029,9 @@ class Mangeney_dry(Depth_result):
         Returns
         -------
         float
-            Position of the edge of the quiet region, in negative axis.
+            Position of the front edge of the fluid.
         """
-        return 0.5*self._m*t**2 + (self._c0*t)
+        return 0.5*self._m*t**2 + (2*self._c0*t)
 
 
     def compute_c0(self) -> float:
@@ -1052,14 +1052,14 @@ class Mangeney_dry(Depth_result):
         r"""Compute the constant horizontal acceleration of the front defined by:
         
         .. math::
-            m = -g \sin{\theta} + g \cos{\theta} \tan{\delta}
+            m = g \sin{\theta} - g \cos{\theta} \tan{\delta}
             
         Returns
         -------
         float
             Value of the constant horizontal acceleration of the front.
         """
-        return -1 * (self._g * np.cos(self._theta)) * (np.tan(self._theta)-np.tan(self._delta))
+        return (self._g * np.sin(self._theta)) - (self._g * np.cos(self._theta) * np.tan(self._delta))
 
 
     def compute_h(self, 
@@ -1070,9 +1070,9 @@ class Mangeney_dry(Depth_result):
         .. math::
                 h(x, t) = 
                 \begin{cases}
-                    0 & \text{if } x \leq x_A(t), \\\\
-                    \frac{1}{9g cos(\theta)} \left( \frac{x}{t} + 2 c_0 - \frac{1}{2} m t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
-                    h_0 & \text{if } x_B(t) < x,
+                    h_0 & \text{if } x \leq x_A(t), \\\\
+                    \frac{1}{9g cos(\theta)} \left(2 c_0 - \frac{x}{t}  + \frac{1}{2} m t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    0 & \text{if } x_B(t) < x,
                 \end{cases}
 
         Parameters
@@ -1093,24 +1093,22 @@ class Mangeney_dry(Depth_result):
 
         self._x = x
         self._t = T
-        
-        x = [i - max(x) for i in x]
-        
+                
         h = []
         for t in T:
             sub_h = []
+            print(f"xa: {self.xa(t)} | xb: {self.xb(t)} | t: {t}")
+            
             for i in x:
                 if i <= self.xa(t):
-                    sub_h.append(0)
-                elif self.xa(t) < i < self.xb(t):
-                    sub_h.append( (1/(9*self._g*np.cos(self._theta))) * ( (i/t) + (2 * self._c0) - (0.5*t*self._m))**2 )
-                else:
                     sub_h.append(self._h0)
-                        
-            if all(v == 0 for v in h):
-                sub_h[-1] = self._h0
-            
-            h.append(sub_h[::-1])
+                    
+                elif self.xa(t) < i < self.xb(t):
+                    sub_h.append( (1/(9*self._g*np.cos(self._theta))) * ( (-i/t) + (2 * self._c0) + (0.5*t*self._m))**2 )
+
+                else:
+                    sub_h.append(0)
+            h.append(sub_h)
             
         self._h = np.array(h)
 
@@ -1124,7 +1122,7 @@ class Mangeney_dry(Depth_result):
                 u(x,t) = 
                 \begin{cases}
                     0 & \text{if } x \leq x_A(t), \\\\
-                    \frac{2}{3} \left( \frac{x}{t} - c_0 + mt \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    \frac{2}{3} \left( \frac{x}{t} + c_0 + mt \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
                     0 & \text{if } x_B(t) < x,
                 \end{cases}
 
@@ -1147,7 +1145,7 @@ class Mangeney_dry(Depth_result):
         self._x = x
         self._t = T
 
-        x = [i - max(x) for i in x]
+        # x = [i - max(x) for i in x]
 
         u = []
         for t in T:
@@ -1156,11 +1154,11 @@ class Mangeney_dry(Depth_result):
                 if i <= self.xa(t):
                     sub_u.append(np.nan)
                 elif self.xa(t) < i <= self.xb(t):
-                    u_val = (2/3) * ( (i/t) - self._c0 + self._m * t )
-                    sub_u.append(u_val*(-1))
+                    u_val = (2/3) * ( (i/t) + self._c0 + self._m * t )
+                    sub_u.append(u_val)
                 else:
                     sub_u.append(np.nan)
-            u.append(sub_u[::-1])
+            u.append(sub_u)
         self._u = np.array(u)
 
 
@@ -2010,7 +2008,7 @@ class Front_result:
         and an infinitely-long fluid mass:
         
         .. math::
-            x_f(t) = 2 c_0 t - \frac{1}{2}mt
+            x_f(t) = \frac{1}{2}mt^2 + 2 c_0 t
             
         with :math:`c_0` the initial wave propagation speed defined by:
         
@@ -2020,10 +2018,10 @@ class Front_result:
         and :math:`m` the constant horizontal acceleration of the front defined by:
     
         .. math::
-            m = -g \sin{\theta} + g \cos{\theta} \tan{\delta}
+            m = g \sin{\theta} - g \cos{\theta} \tan{\delta}
     
-        MANGENEY, A., HEINRICH, P., et ROCHE, R. Analytical solution for testing debris avalanche 
-        numerical models. Pure and Applied Geophysics, 2000, vol. 157, p. 1081-1096.
+        Mangeney, A., Heinrich, P., & Roche, R., 2000, Analytical solution for testing debris avalanche numerical models, 
+        Pure and Applied Geophysics, vol. 157, p. 1081-1096.
 
         Parameters
         ----------
@@ -2042,9 +2040,9 @@ class Front_result:
         theta_rad = np.radians(theta)
         delta_rad = np.radians(delta)
 
-        m = -1 * (self._g * np.cos(theta_rad)) * (np.tan(theta_rad)-np.tan(delta_rad))
+        m = self._g * np.sin(theta_rad) - (self._g * np.cos(theta_rad) * np.tan(delta_rad))
         c0 = np.sqrt(self._g * self._h0 * np.cos(theta_rad))
-        xf = -1*(0.5*m*(t**2) - (2*c0*t))
+        xf = 0.5*m*(t**2) + (2*c0*t)
         
         if t in self._labels:
             if f"Mangeney d{delta}" not in self._labels[t] :
@@ -2249,8 +2247,7 @@ class Front_result:
         float
             Value of the front wave velocity.
         """
-
-            
+  
 
     def show_fronts_over_methods(self, x_unit: str="m") -> None:
         """Plot the front distance from the initial position for each method.

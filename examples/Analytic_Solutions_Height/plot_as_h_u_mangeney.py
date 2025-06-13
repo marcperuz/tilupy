@@ -40,16 +40,16 @@ The analytical expressions for fluid height and velocity at time t are given by:
     .. math::
             h(x, t) = 
             \begin{cases}
-                0 & \text{if } x \leq x_A(t), \\\\
-                \frac{1}{9g cos(\theta)} \left( \frac{x}{t} + 2 c_0 - \frac{1}{2} m t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
-                h_0 & \text{if } x_B(t) < x,
+                h_0 & \text{if } x \leq x_A(t), \\\\
+                \frac{1}{9g cos(\theta)} \left(2 c_0 - \frac{x}{t}  + \frac{1}{2} m t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                0 & \text{if } x_B(t) < x,
             \end{cases}
             
     .. math::
             u(x,t) = 
             \begin{cases}
                 0 & \text{if } x \leq x_A(t), \\\\
-                \frac{2}{3} \left( \frac{x}{t} - c_0 + mt \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                \frac{2}{3} \left( \frac{x}{t} + c_0 + mt \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
                 0 & \text{if } x_B(t) < x,
             \end{cases}
             
@@ -57,12 +57,19 @@ where
 
     .. math::
             \begin{cases}
-                x_A(t) = \frac{1}{2}mt^2 - 2 c_0 t, \\\\
-                x_B(t) = \frac{1}{2}mt^2 + c_0 t
+                x_A(t) = \frac{1}{2}mt^2 - c_0 t, \\\\
+                x_B(t) = \frac{1}{2}mt^2 + 2 c_0 t
             \end{cases}
             
-:math:`c_0` represent the initial wave propagation speed computed from :math:`\sqrt{g h_0 \cos{\theta}}` and 
-:math:`m` the constant horizontal acceleration of the front computed from :math:`-g \sin{\theta} + g \cos{\theta} \tan{\delta}`.
+with :math:`c_0` the initial wave propagation speed defined by: 
+
+.. math::
+    c_0 = \sqrt{g h_0 \cos{\theta}}
+
+and :math:`m` the constant horizontal acceleration of the front defined by:
+
+.. math::
+    m = g \sin{\theta} - g \cos{\theta} \tan{\delta}
 
 
 Implementation
@@ -77,11 +84,11 @@ The following example replicates the case shown in Figure 3 of Mangeney et al. (
 
 # %%
 # First import required packages and define the spatial domain.
-# For following examples we will use a 1D space from -5.5 to 6 m.
+# For following examples we will use a 1D space from -100 to 1000 m.
 import numpy as np
 from tilupy.analytic_sol import Mangeney_dry
 
-x = np.linspace(0, 1000, 1000)
+x = np.linspace(-100, 1000, 1000)
 
 # %%
 # 
@@ -121,5 +128,5 @@ case_2.show_res(show_h=True)
 # %%
 # Original reference:
 #  
-# Mangeney A., Heinrich P. and Roche R. Analytical solution for testing debris avalanche 
-# numerical models. Pure and Applied Geophysics, 2000, vol. 157, p. 1081-1096.
+# Mangeney, A., Heinrich, P., & Roche, R., 2000, Analytical solution for testing debris avalanche numerical models, 
+# Pure and Applied Geophysics, vol. 157, p. 1081-1096.

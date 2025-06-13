@@ -30,7 +30,7 @@ with :math:`c_m` the front wave velocity, solution of:
           
 -----------------
 
-**Mangeney's equation**: :math:`x_f(t) = \frac{1}{2}mt - 2 c_0 t`
+**Mangeney's equation**: :math:`x_f(t) = \frac{1}{2}mt^2 + 2 c_0 t`
 
 with :math:`c_0` the initial wave propagation speed defined by: 
 
@@ -40,7 +40,7 @@ with :math:`c_0` the initial wave propagation speed defined by:
 and :math:`m` the constant horizontal acceleration of the front defined by:
 
 .. math::
-    m = -g \sin{\theta} + g \cos{\theta} \tan{\delta}
+    m = g \sin{\theta} - g \cos{\theta} \tan{\delta}
 
 -----------------
 
