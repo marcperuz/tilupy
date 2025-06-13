@@ -2327,20 +2327,3 @@ class Front_result:
         plt.grid(which="major")
         plt.legend(loc='best')
         plt.show()
-        
-x = np.linspace(-100, 1000, 1000)
-
-# %%
-# 
-# -------------------
-
-# %%
-# Case 1: No friction (:math:`\delta = 0°`), slope :math:`\theta = 30°`, initial height :math:`h_0 = 20 m`.
-case_1 = Mangeney_dry(theta=30, delta=0, h_0=20)
-
-
-# %%
-# Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15} s`.
-case_1.compute_u(x, [0, 5, 10, 15])
-case_1.show_res(show_u=True)
-

@@ -16,6 +16,42 @@ Model Assumptions
 - The fluid is incompressible, homogeneous, and only subject to gravity and basal friction.
 
 
+Basic equations
+---------------
+As a reminder, the general formula of the Saint-Venant equation system is:
+
+.. math::
+		\begin{cases}
+			\delta_t h + \delta_x (hu) = 0 \\\\
+			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
+		\end{cases}
+
+It is possible to transform the equations visible in Chanson (2005) to find this form of the Saint-Venant equations, which gives us:
+
+.. math::
+		\begin{cases}
+			\delta_t h + \delta_x (hu) = 0 \\\\
+			h \delta_t u + hu \delta_x u + hg \delta_x h = - S
+		\end{cases}
+
+with :math:`S = R \frac{u^2}{g}` the source term integrating the dissipative effects due to friction. :math:`R` is a roughness coefficient.
+
+In fluid simulation, hydraulic models can be used to express the source term :math:`S`. 
+For example, we can cite an equation combining the Darcy-Weisbach and Manning laws:
+
+.. math::
+		S = g n^2 \frac{u^2}{h^{1/3}}
+
+where :math:`n` is Manning coefficient (in :math:`s.m^{-1/3}`).
+
+By replacing the Manning coefficient with Chezy coefficient with the relation: :math:`n = \frac{h^{1/3}{C}}`, we obtain :
+
+.. math::
+		S = \frac{g}{C^2} u^2
+  
+By identification, we can see that with :math:`R = \frac{g^2}{C^2}`, we have the correct form for this hydraulic source term model. 
+
+
 Initial Conditions
 ------------------
 
@@ -114,5 +150,5 @@ case.show_res(show_h=True)
 # %%
 # Original reference:
 # 
-# Dressler RF. Hydraulic resistance effect upon the dam-break functions. Journal of Research of the National Bureau 
-# of Standards September 1952; 49(3): 217-225.
+# Dressler, R.F., 1952, Hydraulic resistance effect upon the dam‑break functions, Journal of Research of the National Bureau of Standards, 
+# vol. 49(3), p. 217–225.
