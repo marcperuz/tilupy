@@ -9,12 +9,12 @@ Coussot's model
 Coussot et al proposed a formula in 1996 to approximate the geometry of the frontal lobe of a flow at a final instant for rheological test on an inclined surface:
 
 .. math::
-	X = H + \ln{(1 - H)}
+	D = - H - \ln{(1 - H)}
 	
-with :math:`X` and :math:`H` being the normalized version of the spatial dimension :math:`x` and the fluid depth :math:`h`, obtained by computing:
+with :math:`D` and :math:`H` being the normalized version of the distance of the front :math:`d` and the fluid depth :math:`h`, obtained by computing:
 
 .. math::
-	X = \frac{\rho g x (\sin(\theta))^2}{\tau_c \cos(\theta)} \text{  and  } H = \frac{\rho g h \sin(\theta)}{\tau_c}
+	D = \frac{\rho g d (\sin(\theta))^2}{\tau_c \cos(\theta)} \text{  and  } H = \frac{\rho g h \sin(\theta)}{\tau_c}
 	
 where
 
@@ -28,12 +28,12 @@ where
 In a case where :math:`\theta = 0`, the equations are slightly different:
 
 .. math::
-	X^* = \frac{{H^*}^2}{2}
+	D^* = \frac{{H^*}^2}{2}
 
 with:
 
 .. math::
-	X^* = \frac{\rho g x}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
+	D^* = \frac{\rho g x}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
 
 
 References
