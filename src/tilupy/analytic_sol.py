@@ -1215,9 +1215,7 @@ class Dressler_dry(Depth_result):
         self._x0 = x_0
         self._h0 = h_0
         self._c = C
-        self._xt = None
-        self._ht = None
-        self._ut = None
+        self._xt = []
         
 
     def xa(self, t: int) -> float:
@@ -1258,7 +1256,6 @@ class Dressler_dry(Depth_result):
             Position of the contact wave (end of rarefaction).
         """
         return self._x0 + (2 * t * np.sqrt(self._g*self._h0))
-        # return 1250
 
 
     def alpha1(self, x: float, t: int) -> float:
@@ -1312,40 +1309,56 @@ class Dressler_dry(Depth_result):
         float
             Correction coefficient.
         """
-        return (12 / (2 - (x/(t*np.sqrt(self._g*self._h0))))) - (8/3) + (8*np.sqrt(3)/189)*((2 - (x/(t*np.sqrt(self._g*self._h0))))**(3/2)) - (108/(7*(2 - (x/(t*np.sqrt(self._g*self._h0))))))
+        xi = (x-self._x0)/(t*np.sqrt(self._g*self._h0))
+
+        if xi < 2:
+            return 12./(2 - xi)- 8/3 + 8*np.sqrt(3)/189 * ((2 - xi)**(3/2)) - 108/(7*(2 - xi)**2)
+        else:
+            return 0
+
+    
+    def compute_h(self) -> None:
+        return None
+
+    
+    def compute_u(self) -> None:
+        return None
 
 
-    def compute_h(self, 
+    def compute_h_u(self, 
                   x: int | np.ndarray, 
-                  T: int | np.ndarray,
-                  estimation: bool, 
-                  xt: int,
-                  a: float
+                  T: int | np.ndarray
                   ) -> None:
-        r"""Compute the flow height h(x, t) at given time and positions.
-
+        r"""Compute the flow height h(x, t) and velocity u(x, t) at given time and positions.
+        
         .. math::
                 h(x, t) = 
                 \begin{cases}
                     h_0 & \text{if } x \leq x_A(t), \\\\
                     \frac{1}{g} \left( \frac{2}{3} \sqrt{g h_0} - \frac{x - x_0}{3t} + \frac{g^{2}}{C^2} \alpha_1 t \right)^2 & \text{if } x_A(t) < x \leq x_t(t), \\\\
-                    h_t \left( \frac{x_B(t)-x}{x_B(t)-x_t(t)} \right)^a & \text{if } x_t(t) < x \leq x_B(t), \\\\
+                    \frac{-b-\sqrt{b^2 - 4 a (c-x(t))}}{2 a}    & \text{if } x_t(t) < x \leq x_B(t), \\\\
                     0 & \text{if } x_B(t) < x,
                 \end{cases}
-
+                
+        with :math:`r = \frac{dx}{dh}`, :math:`c = x_B(t)`, :math:`a = \frac{r h_t + c - x_t}{h_t^2}`, :math:`b = r - 2 a h_t`. :math:`x_t` and :math:`h_t` being the position
+        and the flow depth at the beginning of the tip area.
+        
+        .. math::
+                u(x,t) = 
+                \begin{cases}
+                    0 & \text{if } x \leq x_A(t), \\\\
+                    u_{co} = \frac{2\sqrt{g h_0}}{3} + \frac{2(x - x_0)}{3t} + \frac{g^2}{C^2} \alpha_2 t & \text{if } x_A(t) < x \leq x_t(t), \\\\
+                    \max_{x \in [x_A(t), x_t(t)]} u_{co}(x, t) & \text{if } x_t(t) < x \leq x_B(t), \\\\
+                    0 & \text{if } x_B(t) < x,
+                \end{cases}
+        
         Parameters
         ----------
-        x : int or np.ndarray
+        x : int | np.ndarray
             Spatial positions.
-        T : int or np.ndarray
+        T : int | np.ndarray
             Time instant.
-        estimation : bool
-            If True, try to estimate the depths of the front tip using empirical parameters.
-        xt : int
-            Position of the tip area.
-        a : float
-            Empirical exposant.
-
+            
         Notes
         -----        
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
@@ -1359,91 +1372,64 @@ class Dressler_dry(Depth_result):
         self._t = T
         
         h = []
+        u = []
+        
+        xt = None
+        ht = None
+        ut = None
+        
         for t in T:
             sub_h = []
-            for i in x:
-                if i <= self.xa(t):
-                    sub_h.append(self._h0)
-
-                elif self.xa(t) < i <= self.xb(t):
-                    term = ((2/3)*np.sqrt(self._g*self._h0)) - ((i - self._x0) / (3*t)) + ((self._g**2)/(self._c**2)) * self.alpha1(i, t) * t
-                    h_val = (1/self._g) * term**2
-                    
-                    if h_val >= sub_h[-1] or i > xt:
-                        if self._xt is None:
-                            self._xt = i
-                            self._ht = sub_h[-1]
-
-                        h_val = self._ht
-                        
-                        if estimation:
-                            s = self.xb(t) - i
-                            h_val = self._ht * (s / (self.xb(t)-self._xt)) ** a
-                        
-                    sub_h.append(h_val)
-                else:
-                    sub_h.append(0)
-
-            h.append(sub_h)
-        self._h = np.array(h)
-            
-    
-    def compute_u(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray, 
-                  xt: int
-                  ) -> None:
-        r"""Compute the flow velocity u(x, t) at given time and positions.
-
-        .. math::
-                u(x,t) = 
-                \begin{cases}
-                    0 & \text{if } x \leq x_A(t), \\\\
-                    u_{co} = \frac{2\sqrt{g h_0}}{3} + \frac{2(x - x_0)}{3t} + \frac{g^2}{C^2} \alpha_2 t & \text{if } x_A(t) < x \leq x_t(t), \\\\
-                    \max_{x \in [x_A(t), x_t(t)]} u_{co}(x, t) & \text{if } x_t(t) < x \leq x_B(t), \\\\
-                    0 & \text{if } x_B(t) < x,
-                \end{cases}
-
-        Parameters
-        ----------
-        x : int or np.ndarray
-            Spatial positions.
-        T : int or np.ndarray
-            Time instant.
-        xt : int
-            Position of the tip area.
-
-        Notes
-        -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
-        """
-        if isinstance(x, int):
-            x = [x]
-        if isinstance(T, int):
-            T = [T]
-
-        self._x = x
-        self._t = T
-        
-        u = []
-        for t in T:
             sub_u = []
             for i in x:
                 if i <= self.xa(t):
+                    sub_h.append(self._h0)
                     sub_u.append(np.nan)
+
                 elif self.xa(t) < i <= self.xb(t):
-                    u_val = ((2*np.sqrt(self._g*self._h0))/3) + ((2*(i-self._x0))/3*t) + ((self._g**2)/(self._c**2)) * self.alpha2(i, t) * t
+                    if t == 0:
+                        t = 1e-18
+                    term = ((2/3)*np.sqrt(self._g*self._h0)) - ((i - self._x0) / (3*t)) + ((self._g**2)/(self._c**2)) * self.alpha1(i, t) * t
+                    h_val = (1/self._g) * term**2
                     
-                    if  i > xt:
-                        if self._xt is None:
-                            self._xt = i
-                            self._ut = sub_u[-1]
-                        u_val = self._ut
+                    if sub_u[-1] is np.nan:
+                        sub_u[-1] = 0
+                    u_val = (2/3)*np.sqrt(self._g*self._h0)*(1+(i-self._x0)/(np.sqrt(self._g*self._h0)*t)) + ((self._g**2)/(self._c**2))*self.alpha2(i, t)*t
+
+                    if  u_val < sub_u[-1] and xt is None:                            
+                        xt = i
+                        ht = sub_h[-1]
+                        ut = sub_u[-1]
+                        
+                        dx = x[1] - x[0]
+                        dh = sub_h[-1] - sub_h[-2]
+                        
+                        r = dx / dh
+                        c = self.xb(t)
+                        a = (r * ht + c - xt) / (ht ** 2)
+                        b = r - 2 * a * ht
+                        
+                    if xt is not None:
+                        u_val = ut           
+                        h_val = (-b-np.sqrt((b**2) - 4.*a*(c-i))) / (2*a)
+
+                    sub_h.append(h_val)
                     sub_u.append(u_val)
+                    
                 else:
+                    sub_h.append(0)
                     sub_u.append(np.nan)
+            h.append(sub_h)
             u.append(sub_u)
+            
+            self._xt.append(xt)
+            xt = None
+            ht = None
+            ut = None
+            
+        self._h = np.array(h)
         self._u = np.array(u)
+        print(self._xt)
 
 
 class Chanson_dry(Depth_result):

@@ -94,16 +94,21 @@ The water height and velocity profiles for :math:`t > 0` are given by:
     .. math::
             h(x, t) = 
             \begin{cases}
-                h_l & \text{if } x \leq x_A(t), \\\\
-                \frac{1}{g} \left( \frac{2}{3} \sqrt{g h_l} - \frac{x - x_0}{3t} + \frac{g^{2}}{C^2} \alpha_1 t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                h_0 & \text{if } x \leq x_A(t), \\\\
+                \frac{1}{g} \left( \frac{2}{3} \sqrt{g h_0} - \frac{x - x_0}{3t} + \frac{g^{2}}{C^2} \alpha_1 t \right)^2 & \text{if } x_A(t) < x \leq x_t(t), \\\\
+                \frac{-b-\sqrt{b^2 - 4 a (c-x(t))}}{2 a}    & \text{if } x_t(t) < x \leq x_B(t), \\\\
                 0 & \text{if } x_B(t) < x,
             \end{cases}
-            
+        
+with :math:`r = \frac{dx}{dh}`, :math:`c = x_B(t)`, :math:`a = \frac{r h_t + c - x_t}{h_t^2}`, :math:`b = r - 2 a h_t`. :math:`x_t` and :math:`h_t` being the position
+and the flow depth at the beginning of the tip area.
+
     .. math::
             u(x,t) = 
             \begin{cases}
                 0 & \text{if } x \leq x_A(t), \\\\
-                \frac{2\sqrt{g h_l}}{3} + \frac{2(x - x_0)}{3t} + \frac{g^2}{C^2} \alpha_2 t & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                u_{co} = \frac{2\sqrt{g h_0}}{3} + \frac{2(x - x_0)}{3t} + \frac{g^2}{C^2} \alpha_2 t & \text{if } x_A(t) < x \leq x_t(t), \\\\
+                \max_{x \in [x_A(t), x_t(t)]} u_{co}(x, t) & \text{if } x_t(t) < x \leq x_B(t), \\\\
                 0 & \text{if } x_B(t) < x,
             \end{cases}
 
@@ -115,13 +120,16 @@ where the positions of the rarefaction wave front and the dry front are:
                 x_B(t) = x_0 + 2 t \sqrt{g h_l}
             \end{cases}
 
-with the correction functions :math:`\alpha_1` and :math:`\alpha_2`:
+The position of the tip area :math:`x_t(t)` is define by the position where the velocity :math:`u(x, t)` reaches the maximum. In the tip region, the velocity is uniform, 
+but there is no information concerning the flow depth. In order to have an idea of the water height, a second order interpolation is used between :math:`x_t(t)` and :math:`x_B(t)`.
+
+To take into account the Chézy coefficient in the flow simulation, corrective terms :math:`\alpha_1` and :math:`\alpha_2`are added to the equations:
 
     .. math::
             \begin{cases}
+                \xi = \frac{x-x_0}{t\sqrt{g h_l}}
                 \alpha_1(\xi) = \frac{6}{5(2-\xi)} - \frac{2}{3} + \frac{4 \sqrt{3}}{135} (2-\xi)^{3/2}), \\\\
                 \alpha_2(\xi) = \frac{12}{2-(2-\xi)} - \frac{8}{3} + \frac{8 \sqrt{3}}{189} (2-\xi)^{3/2}) - \frac{108}{7(2 - \xi)}, \\\\
-                \xi = \frac{x-x_0}{t\sqrt{g h_l}}
             \end{cases}
             
 
@@ -129,7 +137,8 @@ Implementation
 --------------
 """
 # %%
-# First import required packages and define the spatial domain for visualization: 1D space from -5 to 15 m.
+# First import required packages and define the spatial domain for visualization. 
+# For following examples we will use a 1D space from -500 to 700 m.
 import numpy as np
 from tilupy.analytic_sol import Dressler_dry
 
@@ -140,30 +149,21 @@ x = np.linspace(-500, 700, 1000)
 # -------------------
 
 # %%
-# Case: Dressler's solution with dam at :math:`x_0 = 0 m`, initial height :math:`h_l = 0.5 m` and Chézy 
+# Case: Dressler's solution with dam at :math:`x_0 = 0 m`, initial height :math:`h_l = 6 m` and Chézy 
 # coefficient :math:`C = 40`. 
 case = Dressler_dry(x_0=0, h_0=6, C=40)
 
 
 # %%
-# Compute and plot fluid height at times :math:`t = 40 s`.
-case.compute_h(x, T=40, estimation= False, xt=200, a=0.7)
-case.show_res(show_h=True)
+# Compute and plot fluid height at times :math:`t = {0, 10, 20, 30, 40} s`.
+case.compute_h_u(x, T=[0, 10, 20, 30, 40])
+case.show_res(show_h=True, linestyles=["", ":", "-.", "--", "-"])
 
 
 # %%
-# Compute and plot fluid velocity at times :math:`t = 40 s`.
-case.compute_u(x, T=40, xt=200)
-case.show_res(show_u=True)
+# Plot fluid velocity at times :math:`t = {0, 10, 20, 30, 40} s`.
+case.show_res(show_u=True, linestyles=["", ":", "-.", "--", "-"])
 
-# %%
-# 
-# -------------------
-
-# %%
-# We can try to estimate the tip solution by giving the tip position :math:`x_t = 200 m` and an empirical parameter :math:`a = 0.7`.
-case.compute_h(x, T=40, estimation= True, xt=200, a=0.7)
-case.show_res(show_h=True)
 
 # %%
 # Original reference:
