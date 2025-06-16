@@ -26,7 +26,25 @@ As a reminder, the general formula of the Saint-Venant equation system is:
 			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
 		\end{cases}
 
-It is possible to transform the equations visible in Chanson (2005) to find this form of the Saint-Venant equations, which gives us:
+with:
+
+ - :math:`h` the fluid depth
+ - :math:`u` the fluid velocity
+ - :math:`g` the gravitational acceleration
+ - :math:`\theta` the surface slope
+ - :math:`S` source term
+
+Here is equation 1 from Chanson (2005) with the same notation and in 1D:
+
+.. math::
+		\begin{cases}
+			\delta_t h + h \delta_x (u) + u \delta_x (h) = 0 \\\\
+			\delta_t u + u \delta_x u + g \delta_x h + g S_f = 0
+		\end{cases}
+
+with :math:`S_f = \frac{f}{2} \frac{u^2}{g D_H}`, :math:`f` being Darcy friction factor and :math:`D_H` the hydraulic diameter. 
+
+By transforming these equations, we find the general expression of the Saint-Venant equations:
 
 .. math::
 		\begin{cases}
@@ -34,20 +52,23 @@ It is possible to transform the equations visible in Chanson (2005) to find this
 			h \delta_t u + hu \delta_x u + hg \delta_x h = - S
 		\end{cases}
 
-with :math:`S = \frac{f u^2}{6}` the source term integrating the dissipative effects due to friction. 
+with :math:`S = \frac{h f u^2}{2 D_H}` the source term integrating the dissipative effects due to friction. 
+In those conditions (approximate to a wide rectangular channel), the hydraulic diameter can be expressed :math:`D_H = 4 h`. 
 
-In fluid simulation, hydraulic models can be used to express the source term :math:`S`. 
+With this we have finally the source term :math:`S = \frac{f u^2}{8}`.
+
+In fluid simulation, hydraulic models can be used to express the source term :math:`S`.
 For example, we can cite an equation combining the Darcy-Weisbach and Manning laws:
 
 .. math::
-		S = g n^2 \frac{u^2}{h^{1/3}}
+		S_g = g n^2 \frac{u^2}{h^{1/3}}
 
 where :math:`n` is Manning coefficient (in :math:`s.m^{-1/3}`).
 
-A more general way to write this expression is :math:`S = k \frac{u^2}{h^p}` with :math:`k` a constant containing the effects of friction :math:`p`
+A more general way to write this expression is :math:`S_g = k \frac{u^2}{h^p}` with :math:`k` a constant containing the effects of friction and :math:`p`
 a coefficient to homogenize the equation.
 
-Darcy friction factor being dimensionless, we have :math:`p = 0` and :math:`k = \frac{f}{6}` for this hydraulic source term model.
+Darcy friction factor being dimensionless, we have :math:`p = 0`, which leaves us :math:`k = \frac{f}{8}` to find the expression of Chanson.
 
 
 Initial Conditions

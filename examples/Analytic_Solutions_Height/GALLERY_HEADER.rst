@@ -38,7 +38,14 @@ and by developing the partial derivatives, we obtain this system which will serv
 As already said, the source term :math:`S` contains all dissipative effects of energy which slows the flow (due to friction or viscosity). A large number of 
 models exist to express this term as a function of flow conditions.
 
-For example, we can cite an equation combining the Darcy-Weisbach and Manning laws:
+For example, we can cite the general formulation for a Coulomb-type friction law:
+
+.. math::
+		S = h \mu \left( g \cos{\theta} + \gamma u^2 \right)
+
+where :math:`\gamma = \frac{1}{R}`, :math:`R` being the radius of curvature, :math:`\theta` the surface slope and :math:`\mu` the coefficient of basal friction.
+
+We can also cite an equation combining the Darcy-Weisbach and Manning laws for hydraulic models:
 
 .. math::
 		S = g n^2 \frac{u^2}{h^{1/3}}

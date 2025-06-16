@@ -26,7 +26,25 @@ As a reminder, the general formula of the Saint-Venant equation system is:
 			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
 		\end{cases}
 
-It is possible to transform the equations visible in Chanson (2005) to find this form of the Saint-Venant equations, which gives us:
+with:
+
+ - :math:`h` the fluid depth
+ - :math:`u` the fluid velocity
+ - :math:`g` the gravitational acceleration
+ - :math:`\theta` the surface slope
+ - :math:`S` source term
+
+Here is equation 1 from Dressler (1952) with the same notation and in 1D:
+
+.. math::
+		\begin{cases}
+			2 \delta_t c + c \delta_x (u) + 2u \delta_x (c) = 0 \\\\
+			\delta_t u + u \delta_x u + 2c \delta_x c + R \left( \frac{u^2}{c^2} \right)^2 = 0
+		\end{cases}
+
+with :math:`c = \sqrt{gh}` and :math:`R` being roughness coefficient. 
+
+By transforming these equations, we find the general expression of the Saint-Venant equations:
 
 .. math::
 		\begin{cases}
@@ -34,22 +52,22 @@ It is possible to transform the equations visible in Chanson (2005) to find this
 			h \delta_t u + hu \delta_x u + hg \delta_x h = - S
 		\end{cases}
 
-with :math:`S = R \frac{u^2}{g}` the source term integrating the dissipative effects due to friction. :math:`R` is a roughness coefficient.
+with :math:`S = R \frac{u^2}{g}` the source term integrating the dissipative effects due to friction.
 
 In fluid simulation, hydraulic models can be used to express the source term :math:`S`. 
 For example, we can cite an equation combining the Darcy-Weisbach and Manning laws:
 
 .. math::
-		S = g n^2 \frac{u^2}{h^{1/3}}
+		S_g = g n^2 \frac{u^2}{h^{1/3}}
 
 where :math:`n` is Manning coefficient (in :math:`s.m^{-1/3}`).
 
 By replacing the Manning coefficient with Chezy coefficient with the relation: :math:`n = \frac{h^{1/6}}{C}`, we obtain :
 
 .. math::
-		S = \frac{g}{C^2} u^2
+		S_g = \frac{g}{C^2} u^2
   
-By identification, we can see that with :math:`R = \frac{g^2}{C^2}`, we have the correct form for this hydraulic source term model. 
+By identification, we can match the two expressions of the source term by applying :math:`R = \frac{g^2}{C^2}`. 
 
 
 Initial Conditions

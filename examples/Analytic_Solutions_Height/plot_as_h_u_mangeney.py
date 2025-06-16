@@ -28,25 +28,34 @@ As a reminder, the general formula of the Saint-Venant equation system is:
 			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
 		\end{cases}
 
-It is possible to transform the equations visible in Chanson (2005) to find this form of the Saint-Venant equations, which gives us:
+with:
+
+ - :math:`h` the fluid depth
+ - :math:`u` the fluid velocity
+ - :math:`g` the gravitational acceleration
+ - :math:`\theta` the surface slope
+ - :math:`S` source term
+ 
+Here is equation 1 and 2 from Mangeney (2000) with the same notation and in 1D:
 
 .. math::
 		\begin{cases}
 			\delta_t h + \delta_x (hu) = 0 \\\\
-			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
+			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - F
 		\end{cases}
 
-with :math:`S = h g \cos{\theta} \tan{\delta}` the source term integrating the dissipative effects due to friction. 
+with :math:`F = g \cos{\theta} \tan{\delta}`, the source term integrating the dissipative effects due to friction for a 
+Coulomb-type friction law.
 
-In fluid simulation, hydrostatic model with basal friction can be used to express the source term :math:`S`. 
-For instance, the general formulation of this kind of model is:
+The general form for an hydrostatic model with basal friction (Coulomb-type friction law) can be expressed:
 
 .. math::
 		S = h \mu \left( g \cos{\theta} + \gamma u^2 \right) 
   
-with :math:`\gamma = \frac{1}{R}`, :math:`R` being the radius of curvature, and :math:`\mu = \tan{\delta}`.
+with :math:`\gamma = \frac{1}{R}`, :math:`R` being the radius of curvature.
 
-Since we are on a flat surface, :math:`\gamma = 0` and by replacing :math:`\mu` with :math:`\tan{\delta}` we obtain Mangeney's relation.
+Since we are on a flat surface and with a flow restricted only by internal friction, we have :math:`\gamma = 0` and :math:`\mu = \tan{\delta}`,
+allowing to obtain Mangeney's relation.
 
 
 Initial Conditions
