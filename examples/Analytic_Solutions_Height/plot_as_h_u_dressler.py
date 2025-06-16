@@ -123,7 +123,7 @@ where the positions of the rarefaction wave front and the dry front are:
 The position of the tip area :math:`x_t(t)` is define by the position where the velocity :math:`u(x, t)` reaches the maximum. In the tip region, the velocity is uniform, 
 but there is no information concerning the flow depth. In order to have an idea of the water height, a second order interpolation is used between :math:`x_t(t)` and :math:`x_B(t)`.
 
-To take into account the Chézy coefficient in the flow simulation, corrective terms :math:`\alpha_1` and :math:`\alpha_2`are added to the equations:
+To take into account the Chézy coefficient in the flow simulation, corrective terms :math:`\alpha_1` and :math:`\alpha_2` are added to the equations:
 
     .. math::
             \begin{cases}
