@@ -95,13 +95,13 @@ case = Stoker_SARKHOSH_wet(h_0=0.5, h_r=0.025)
 # %%
 # Compute and plot fluid height at times :math:`t = {0, 0.5, 1, 1.5, 2} s`.
 case.compute_h(x, [0, 0.5, 1, 1.5, 2])
-case.show_res(show_h=True)
+case.show_res(show_h=True,  linestyles=["", ":", "-.", "--", "-"])
 
 
 # %%
 # Compute and plot fluid velocity at times :math:`t = {0, 0.5, 1, 1.5, 2} s`.
 case.compute_u(x, [0, 0.5, 1, 1.5, 2])
-case.show_res(show_u=True)
+case.show_res(show_u=True,  linestyles=["", ":", "-.", "--", "-"])
 
 # %%
 # 
@@ -110,8 +110,8 @@ case.show_res(show_u=True)
 # %%
 # Original reference:
 # 
-# Stoker JJ. Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, 
-# Vol. 4. Interscience Publishers: New York, USA, 1957.
+# Stoker, J.J., 1957, Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, 
+# vol. 4, Interscience Publishers, New York, USA.
 
 
 # %%

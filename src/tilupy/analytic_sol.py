@@ -167,18 +167,18 @@ class Depth_result(ABC):
             if self._h.ndim == 1:
                 plt.plot(self._x, self._h, color='black', linewidth=1)
             else:
-                if linestyles is None or len(linestyles)!=(len(self._t)-1):
+                if linestyles is None or len(linestyles)!=(len(self._t)):
                     norm = plt.Normalize(vmin=min(self._t), vmax=max(self._t))
                     cmap = plt.cm.copper
                     
                 for h_idx, h_val in enumerate(self._h):
                     t_val = self._t[h_idx]
-                    if linestyles is None or len(linestyles)!=(len(self._t)-1):
+                    if linestyles is None or len(linestyles)!=(len(self._t)):
                         color = cmap(norm(t_val)) if t_val != 0 else "red"
                         l_style = "-" if t_val != 0 else (0, (1, 4))
                     else:
                         color = "black" if t_val != 0 else "red"
-                        l_style = linestyles[h_idx-1] if t_val != 0 else (0, (1, 4))    
+                        l_style = linestyles[h_idx] if t_val != 0 else (0, (1, 4))    
                     plt.plot(self._x, h_val, color=color, linestyle=l_style, label=f"t={t_val}s")
             
             if show_surface:
@@ -200,7 +200,7 @@ class Depth_result(ABC):
                 plt.plot(self._x, self._u, color='black', linewidth=1)
                 
             else:
-                if linestyles is None or len(linestyles)!=(len(self._t)-1):
+                if linestyles is None or len(linestyles)!=(len(self._t)):
                     norm = plt.Normalize(vmin=min(self._t), vmax=max(self._t))
                     cmap = plt.cm.copper
                     
@@ -208,12 +208,12 @@ class Depth_result(ABC):
                     t_val = self._t[u_idx]
                     if t_val == 0:
                         continue
-                    if linestyles is None or len(linestyles)!=(len(self._t)-1):
+                    if linestyles is None or len(linestyles)!=(len(self._t)):
                         color = cmap(norm(t_val))
                         l_style = "-"
                     else:
                         color = "black"
-                        l_style = linestyles[u_idx-1]
+                        l_style = linestyles[u_idx]
                     plt.plot(self._x, u_val, color=color, linestyle=l_style, label=f"t={t_val}s")
 
             plt.grid(which='major')

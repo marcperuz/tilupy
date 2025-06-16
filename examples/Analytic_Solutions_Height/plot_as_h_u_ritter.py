@@ -85,14 +85,14 @@ case_1 = Ritter_dry(x_0=0, h_0=0.5)
 
 # %%
 # Compute and plot fluid height at times :math:`t = {0, 2, 4, 6, 8, 10} s`.
-case_1.compute_h(x, [0, 2, 4, 6, 8, 10])
-case_1.show_res(show_h=True)
+case_1.compute_h(x, [0, 2, 4, 6, 8])
+case_1.show_res(show_h=True, linestyles=["", ":", "-.", "--", "-"])
 
 
 # %%
 # Compute and plot fluid velocity at times :math:`t = {0, 2, 4, 6, 8, 10} s`.
-case_1.compute_u(x, [0, 2, 4, 6, 8, 10])
-case_1.show_res(show_u=True)
+case_1.compute_u(x, [0, 2, 4, 6, 8])
+case_1.show_res(show_u=True, linestyles=["", ":", "-.", "--", "-"])
 
 # %%
 # 
@@ -105,7 +105,7 @@ x = np.linspace(0, 10, 1000)
 
 case_2 = Ritter_dry(x_0=5, h_0=0.005)
 case_2.compute_h(x, 6)
-case_2.show_res(show_h=True)
+case_2.show_res(show_h=True, linestyles=["-"])
 
 # %%
 # 
@@ -116,5 +116,4 @@ case_2.show_res(show_h=True)
 # 
 # ID Poisson. Swashes. ID Poisson, [online]. Available at: https://www.idpoisson.fr/swashes/ ; accessed June 2025.
 # 
-# Ritter A. Die Fortpflanzung der Wasserwellen. Zeitschrift des Vereines Deuscher Ingenieure 
-# August 1892; 36(33): 947-954.
+# Ritter, A., 1892, Die Fortpflanzung der Wasserwellen, Zeitschrift des Vereines Deutscher Ingenieure, vol. 36(33), p. 947–954.
