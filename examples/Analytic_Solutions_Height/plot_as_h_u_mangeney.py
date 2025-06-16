@@ -18,6 +18,37 @@ Model Assumptions
 - The initial fluid volume is considered infinite.
 
 
+Basic equations
+---------------
+As a reminder, the general formula of the Saint-Venant equation system is:
+
+.. math::
+		\begin{cases}
+			\delta_t h + \delta_x (hu) = 0 \\\\
+			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
+		\end{cases}
+
+It is possible to transform the equations visible in Chanson (2005) to find this form of the Saint-Venant equations, which gives us:
+
+.. math::
+		\begin{cases}
+			\delta_t h + \delta_x (hu) = 0 \\\\
+			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
+		\end{cases}
+
+with :math:`S = h g \cos{\theta} \tan{\delta}` the source term integrating the dissipative effects due to friction. 
+
+In fluid simulation, hydrostatic model with basal friction can be used to express the source term :math:`S`. 
+For instance, the general formulation of this kind of model is:
+
+.. math::
+		S = h \mu \left( g \cos{\theta} + \gamma u^2 \right) 
+  
+with :math:`\gamma = \frac{1}{R}`, :math:`R` being the radius of curvature, and :math:`\mu = \tan{\delta}`.
+
+Since we are on a flat surface, :math:`\gamma = 0` and by replacing :math:`\mu` with :math:`\tan{\delta}` we obtain Mangeney's relation.
+
+
 Initial Conditions
 ------------------
 

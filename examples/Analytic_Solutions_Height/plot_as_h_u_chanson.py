@@ -36,7 +36,7 @@ It is possible to transform the equations visible in Chanson (2005) to find this
 
 with :math:`S = \frac{f u^2}{6}` the source term integrating the dissipative effects due to friction. 
 
-In fluid simulation, hydraulic models can be used to express the source term S. 
+In fluid simulation, hydraulic models can be used to express the source term :math:`S`. 
 For example, we can cite an equation combining the Darcy-Weisbach and Manning laws:
 
 .. math::
