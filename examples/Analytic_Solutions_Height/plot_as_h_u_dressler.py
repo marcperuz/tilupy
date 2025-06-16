@@ -127,9 +127,9 @@ To take into account the Chézy coefficient in the flow simulation, corrective t
 
     .. math::
             \begin{cases}
-                \xi = \frac{x-x_0}{t\sqrt{g h_l}}
+                \xi = \frac{x-x_0}{t\sqrt{g h_l}}, \\\\
                 \alpha_1(\xi) = \frac{6}{5(2-\xi)} - \frac{2}{3} + \frac{4 \sqrt{3}}{135} (2-\xi)^{3/2}), \\\\
-                \alpha_2(\xi) = \frac{12}{2-(2-\xi)} - \frac{8}{3} + \frac{8 \sqrt{3}}{189} (2-\xi)^{3/2}) - \frac{108}{7(2 - \xi)}, \\\\
+                \alpha_2(\xi) = \frac{12}{2-(2-\xi)} - \frac{8}{3} + \frac{8 \sqrt{3}}{189} (2-\xi)^{3/2}) - \frac{108}{7(2 - \xi)}
             \end{cases}
             
 
