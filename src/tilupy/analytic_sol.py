@@ -1738,8 +1738,8 @@ class Coussot_shape(Shape_result):
             Fluid density.
         _tau : float
             Threshold constraint.
-        _X : float or np.ndarray
-            Normalized spatial coordinates.
+        _D : float or np.ndarray
+            Normalized distance of the front from the origin.
         _H : float or np.ndarray
             Normalized fluid depth.
     
@@ -1764,7 +1764,7 @@ class Coussot_shape(Shape_result):
         self._rho = rho
         self._tau = tau
         
-        self._X = None
+        self._D = None
         self._H = np.linspace(0, 0.99, H_size)
 
 
@@ -1894,12 +1894,12 @@ class Coussot_shape(Shape_result):
         surface by following :
         
         .. math::
-                X = H + \ln(1 - H)
+                D = - H - \ln(1 - H)
         
         If :math:`\theta = 0`, the expression is:
         
         .. math::
-                X = \frac{H^2}{2} 
+                D = \frac{H^2}{2} 
         """
         h = []
         for H_val in self._H:
@@ -1909,16 +1909,16 @@ class Coussot_shape(Shape_result):
             self._h = np.array(h)
         else:
             self._h = np.array(h)
-        X = []
+        D = []
                 
         for H_val in self._H:
             if self._theta == 0:
-                X.append(-1*(H_val*H_val)/2)
+                D.append((H_val*H_val)/2)
             else:
-                X.append(H_val + np.log(1 - H_val))
+                D.append(- H_val - np.log(1 - H_val))
         
-        self._X = X
-        self._x = self.X_to_x(self._X)
+        self._D = D
+        self._x = self.X_to_x(self._D)
 
 
     def compute_slump_test_hf(self, h_init: float) -> float:
@@ -1928,7 +1928,7 @@ class Coussot_shape(Shape_result):
                 \frac{h_f}{h_i} = 1 - \frac{2 \tau_c}{\rho g h_i} \left( 1 - \ln{\frac{2 \tau_c}{\rho g h_i}} \right)
         
         N. Pashias, D. V. Boger, J. Summers, D. J. Glenister; A fifty cent rheometer for yield stress measurement. J. Rheol. 
-        1 November 1996; 40 (6): 1179–1189. https://doi.org/10.1122/1.550780
+        1 November 1996; 40 (6): 1179-1189. https://doi.org/10.1122/1.550780
         
         Parameters
         ----------
@@ -1954,6 +1954,17 @@ class Coussot_shape(Shape_result):
             Final wanted x coordinate.
         """
         new_x = [v+x_final for v in self._x]
+        self._x = new_x 
+        
+    
+    def change_orientation_result(self) -> None:
+        """Swap the direction of the result.
+        
+        Notes
+        ------
+        There must not have been any prior translation to use this method.
+        """
+        new_x = [-1*v for v in self._x]
         self._x = new_x 
 
 

@@ -7,20 +7,20 @@ This example demonstrates the final shape of simulated flow using Coussot's equa
 The frontal lobe shape of the simulated flow at the final step is given by
 
     .. math::
-            X = H \ln(1 - H)
+            D = - H - \ln(1 - H)
             
 where 
  - :math:`H`: normalized fluid depth.
- - :math:`X`: normalized spatial dimension.
+ - :math:`D`: normalized distance of the front from the origin.
  
-:math:`H` and :math:`X` are obtained with these expressions:
+:math:`H` and :math:`D` are obtained with these expressions:
 
 .. math::
-	X = \frac{\rho g x (\sin(\theta))^2}{\tau_c \cos(\theta)} \text{  and  } H = \frac{\rho g h \sin(\theta)}{\tau_c}
+	D = \frac{\rho g d (\sin(\theta))^2}{\tau_c \cos(\theta)} \text{  and  } H = \frac{\rho g h \sin(\theta)}{\tau_c}
 
 with:
  - :math:`h`: fluid depth.
- - :math:`x`: spatial dimension.
+ - :math:`x`: distance of the front from the origin.
  - :math:`g`: gravitational acceleration.
  - :math:`\rho`: fluid density.
  - :math:`\tau_c`: threshold constraint.
@@ -42,12 +42,12 @@ case_1.show_res()
 # If :math:`\theta = 0°`, the equations are slightly different:
 # 
 # .. math::
-# 	X^* = \frac{{H^*}^2}{2}
+# 	D^* = \frac{{H^*}^2}{2}
 # 
 # with:
 # 
 # .. math::
-# 	X^* = \frac{\rho g x}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
+# 	D^* = \frac{\rho g d}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
 
 case_2 = Coussot_shape(rho=1000, tau=50, theta=0)
 case_2.compute_rheological_test_morpho()
