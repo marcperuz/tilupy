@@ -33,7 +33,7 @@ In a case where :math:`\theta = 0`, the equations are slightly different:
 with:
 
 .. math::
-	D^* = \frac{\rho g x}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
+	D^* = \frac{\rho g d}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
 
 
 References
