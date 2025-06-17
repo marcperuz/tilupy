@@ -64,13 +64,14 @@ Initial Conditions
     .. math::
             h(x, 0) = 
             \begin{cases}
-                h_0 > 0 & \text{for } x < 0, \\\\
-                0 & \text{for } 0 < x,
+                h_0 > 0 & \text{for } x < x_0, \\\\
+                0 & \text{for } x_0 < x,
             \end{cases}
 
     .. math::
             u(x, 0) = 0
 
+where :math:`x_0` is the initial dam location and :math:`h_0` is the height of the water column.
 
 Analytical Solution
 -------------------
@@ -81,7 +82,7 @@ The analytical expressions for fluid height and velocity at time t are given by:
             h(x, t) = 
             \begin{cases}
                 h_0 & \text{if } x \leq x_A(t), \\\\
-                \frac{1}{9g cos(\theta)} \left(2 c_0 - \frac{x}{t}  + \frac{1}{2} m t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                \frac{1}{9g cos(\theta)} \left(2 c_0 - \frac{x-x_0}{t}  + \frac{1}{2} m t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
                 0 & \text{if } x_B(t) < x,
             \end{cases}
             
@@ -89,7 +90,7 @@ The analytical expressions for fluid height and velocity at time t are given by:
             u(x,t) = 
             \begin{cases}
                 0 & \text{if } x \leq x_A(t), \\\\
-                \frac{2}{3} \left( \frac{x}{t} + c_0 + mt \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                \frac{2}{3} \left( \frac{x-x_0}{t} + c_0 + mt \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
                 0 & \text{if } x_B(t) < x,
             \end{cases}
             
@@ -97,8 +98,8 @@ where
 
     .. math::
             \begin{cases}
-                x_A(t) = \frac{1}{2}mt^2 - c_0 t, \\\\
-                x_B(t) = \frac{1}{2}mt^2 + 2 c_0 t
+                x_A(t) = x_0 + \frac{1}{2}mt^2 - c_0 t, \\\\
+                x_B(t) = x_0 + \frac{1}{2}mt^2 + 2 c_0 t
             \end{cases}
             
 with :math:`c_0` the initial wave propagation speed defined by: 

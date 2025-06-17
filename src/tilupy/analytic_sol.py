@@ -974,6 +974,8 @@ class Mangeney_dry(Depth_result):
             Dynamic friction angle, in radian.
         _h0 : int
             Initial water depth.
+        _x0 : int 
+            Initial dam location (position along x-axis).
         _c0 : float
             Initial wave propagation speed.
         _m : float
@@ -987,15 +989,19 @@ class Mangeney_dry(Depth_result):
             Dynamic friction angle (20°-40° for debris avalanche), in degree.
         h_0 : int
             Initial water depth.
+        x_0 : int, optional
+            Initial dam location (position along x-axis), by default 0.
     """    
     def __init__(self,
                  theta: float,
                  delta: float,
-                 h_0: int,  
+                 h_0: int,
+                 x_0: int = 0,
                  ):
         super().__init__(theta=np.radians(theta))
         self._delta = np.radians(delta)
         self._h0 = h_0
+        self._x0 = x_0
         self._c0 = self.compute_c0()
         self._m = self.compute_m()
         
@@ -1008,7 +1014,7 @@ class Mangeney_dry(Depth_result):
         Edge of the quiet area:
         
         .. math::
-            x_A(t) = \frac{1}{2}mt^2 - c_0 t
+            x_A(t) = x_0 + \frac{1}{2}mt^2 - c_0 t
 
         Parameters
         ----------
@@ -1020,7 +1026,7 @@ class Mangeney_dry(Depth_result):
         float
             Position of the edge of the quiet region.
         """
-        return 0.5*self._m*t**2 - (self._c0*t)
+        return self._x0 + 0.5*self._m*t**2 - (self._c0*t)
     
     
     def xb(self, t: int) -> float:
@@ -1028,7 +1034,7 @@ class Mangeney_dry(Depth_result):
         Front of the flow:
         
         .. math::
-            x_B(t) = \frac{1}{2}mt^2 + 2 c_0 t
+            x_B(t) = x_0 + \frac{1}{2}mt^2 + 2 c_0 t
 
         Parameters
         ----------
@@ -1040,7 +1046,7 @@ class Mangeney_dry(Depth_result):
         float
             Position of the front edge of the fluid.
         """
-        return 0.5*self._m*t**2 + (2*self._c0*t)
+        return self._x0 + 0.5*self._m*t**2 + (2*self._c0*t)
 
 
     def compute_c0(self) -> float:
@@ -1080,7 +1086,7 @@ class Mangeney_dry(Depth_result):
                 h(x, t) = 
                 \begin{cases}
                     h_0 & \text{if } x \leq x_A(t), \\\\
-                    \frac{1}{9g cos(\theta)} \left(2 c_0 - \frac{x}{t}  + \frac{1}{2} m t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    \frac{1}{9g cos(\theta)} \left(2 c_0 - \frac{x-x_0}{t}  + \frac{1}{2} m t \right)^2 & \text{if } x_A(t) < x \leq x_B(t), \\\\
                     0 & \text{if } x_B(t) < x,
                 \end{cases}
 
@@ -1113,7 +1119,7 @@ class Mangeney_dry(Depth_result):
                     sub_h.append(self._h0)
                     
                 elif self.xa(t) < i < self.xb(t):
-                    sub_h.append( (1/(9*self._g*np.cos(self._theta))) * ( (-i/t) + (2 * self._c0) + (0.5*t*self._m))**2 )
+                    sub_h.append( (1/(9*self._g*np.cos(self._theta))) * ( (-(i-self._x0)/t) + (2 * self._c0) + (0.5*t*self._m))**2 )
 
                 else:
                     sub_h.append(0)
@@ -1131,7 +1137,7 @@ class Mangeney_dry(Depth_result):
                 u(x,t) = 
                 \begin{cases}
                     0 & \text{if } x \leq x_A(t), \\\\
-                    \frac{2}{3} \left( \frac{x}{t} + c_0 + mt \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
+                    \frac{2}{3} \left( \frac{x-x_0}{t} + c_0 + mt \right) & \text{if } x_A(t) < x \leq x_B(t), \\\\
                     0 & \text{if } x_B(t) < x,
                 \end{cases}
 
@@ -1163,7 +1169,7 @@ class Mangeney_dry(Depth_result):
                 if i <= self.xa(t):
                     sub_u.append(np.nan)
                 elif self.xa(t) < i <= self.xb(t):
-                    u_val = (2/3) * ( (i/t) + self._c0 + self._m * t )
+                    u_val = (2/3) * ( ((i-self._x0)/t) + self._c0 + self._m * t )
                     sub_u.append(u_val)
                 else:
                     sub_u.append(np.nan)
