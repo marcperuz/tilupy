@@ -22,8 +22,8 @@ As a reminder, the general formula of the Saint-Venant equation system is:
 
 .. math::
 		\begin{cases}
-			\delta_t h + \delta_x (hu) = 0 \\\\
-			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
+			\partial_t h + \partial_x (hu) = 0 \\\\
+			\partial_t (hu) + \partial_x (hu^2) + \frac{1}{2}g\cos{\theta} \partial_x (h^2) = gh\sin{\theta} - S
 		\end{cases}
 
 with:
@@ -38,18 +38,18 @@ Here is equation 1 from Dressler (1952) with the same notation and in 1D:
 
 .. math::
 		\begin{cases}
-			2 \delta_t c + c \delta_x (u) + 2u \delta_x (c) = 0 \\\\
-			\delta_t u + u \delta_x u + 2c \delta_x c + R \left( \frac{u^2}{c^2} \right)^2 = 0
+			2 \partial_t c + c \partial_x (u) + 2u \partial_x (c) = 0 \\\\
+			\partial_t u + u \partial_x u + 2c \partial_x c + R \left( \frac{u^2}{c^2} \right)^2 = 0
 		\end{cases}
 
 with :math:`c = \sqrt{gh}` and :math:`R` being roughness coefficient. 
 
-By transforming these equations, we find the general expression of the Saint-Venant equations:
+By transforming these equations, we find the Saint-Venant equations:
 
 .. math::
 		\begin{cases}
-			\delta_t h + \delta_x (hu) = 0 \\\\
-			h \delta_t u + hu \delta_x u + hg \delta_x h = - S
+			\partial_t h + \partial_x (hu) = 0 \\\\
+			h \partial_t u + hu \partial_x u + hg \partial_x h = - S
 		\end{cases}
 
 with :math:`S = R \frac{u^2}{g}` the source term integrating the dissipative effects due to friction.
@@ -120,8 +120,9 @@ where the positions of the rarefaction wave front and the dry front are:
                 x_B(t) = x_0 + 2 t \sqrt{g h_l}
             \end{cases}
 
-The position of the tip area :math:`x_t(t)` is define by the position where the velocity :math:`u(x, t)` reaches the maximum. In the tip region, the velocity is uniform, 
-but there is no information concerning the flow depth. In order to have an idea of the water height, a second order interpolation is used between :math:`x_t(t)` and :math:`x_B(t)`.
+The position of the tip area :math:`x_t(t)` is defined by following the method proposed in SWASHES, i.e. by taking the position where the velocity :math:`u(x, t)` reaches the maximum. 
+In the tip region, the velocity is uniform, but there is no information concerning the flow depth. In order to have an idea of the water height, a second order interpolation is used 
+between :math:`x_t(t)` and :math:`x_B(t)`.
 
 To take into account the Chézy coefficient in the flow simulation, corrective terms :math:`\alpha_1` and :math:`\alpha_2` are added to the equations:
 
@@ -167,6 +168,8 @@ case.show_res(show_u=True, linestyles=["", ":", "-.", "--", "-"])
 
 # %%
 # Original reference:
+# 
+# Delestre, O., Lucas, C., Ksinant, P.‑A., Darboux, F., Laguerre, C., Vo, T.‑N.‑T., James, F. & Cordier, S., 2013, SWASHES: a compilation of shallow water analytic solutions for hydraulic and environmental studies, International Journal for Numerical Methods in Fluids, v. 72(3), p. 269–300, doi:10.1002/fld.3741.
 # 
 # Dressler, R.F., 1952, Hydraulic resistance effect upon the dam‑break functions, Journal of Research of the National Bureau of Standards, 
 # vol. 49(3), p. 217–225.

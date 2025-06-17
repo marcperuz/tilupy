@@ -24,8 +24,8 @@ As a reminder, the general formula of the Saint-Venant equation system is:
 
 .. math::
 		\begin{cases}
-			\delta_t h + \delta_x (hu) = 0 \\\\
-			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
+			\partial_t h + \partial_x (hu) = 0 \\\\
+			\partial_t (hu) + \partial_x (hu^2) + \frac{1}{2}g\cos{\theta} \partial_x (h^2) = gh\sin{\theta} - S
 		\end{cases}
 
 with:
@@ -40,8 +40,8 @@ Here is equation 1 and 2 from Mangeney (2000) with the same notation and in 1D:
 
 .. math::
 		\begin{cases}
-			\delta_t h + \delta_x (hu) = 0 \\\\
-			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - F
+			\partial_t h + \partial_x (hu) = 0 \\\\
+			h \partial_t u + hu \partial_x u + hg\cos{\theta} \partial_x h = gh\sin{\theta} - F
 		\end{cases}
 
 with :math:`F = g \cos{\theta} \tan{\delta}`, the source term integrating the dissipative effects due to friction for a 

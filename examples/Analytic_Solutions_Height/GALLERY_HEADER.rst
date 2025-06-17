@@ -10,8 +10,8 @@ be expressed as:
 
 .. math::
 		\begin{cases}
-			\delta_t h + \delta_x (hu) = 0 \\\\
-			\delta_t (hu) + \delta_x (\alpha hu^2) + \delta_x (\frac{1}{2}kgh^2 \cos{\theta}) = gh\sin{\theta} - S
+			\partial_t h + \partial_x (hu) = 0 \\\\
+			\partial_t (hu) + \partial_x (\alpha hu^2) + \partial_x (\frac{1}{2}kgh^2 \cos{\theta}) = gh\sin{\theta} - S
 		\end{cases}
 
 where
@@ -21,18 +21,17 @@ where
  - :math:`g`: gravitational acceleration.
  - :math:`\alpha`: form factor associated with nonlinear velocity profiles.
  - :math:`k`: coefficient introduced to take into account internal friction.
- - :math:`\delta_t`: partial derivative with respect to time.
- - :math:`\delta_x`: partial derivative with respect to space.
+ - :math:`\partial_t`: partial derivative with respect to time.
+ - :math:`\partial_x`: partial derivative with respect to space.
  - :math:`\theta`: slope of the surface.
  - :math:`S`: source term integrating the dissipative effects of energy which slows the flow.
 
-It is possible to rewrite this system in a more general form. For example, by taking :math:`\alpha = 1` and :math:`k = 1` (a very common thing), 
-and by developing the partial derivatives, we obtain this system which will serve as a basis for comparing the different models:
+In the most common cases, :math:`\alpha = 1` and :math:`k = 1`, which leads to the following equations which will be reused subsequently:
 
 .. math::
 		\begin{cases}
-			\delta_t h + \delta_x (hu) = 0 \\\\
-			h \delta_t u + hu \delta_x u + hg\cos{\theta} \delta_x h = gh\sin{\theta} - S
+			\partial_t h + \partial_x (hu) = 0 \\\\
+			\partial_t (hu) + \partial_x (hu^2) + \frac{1}{2}g\cos{\theta} \partial_x (h^2) = gh\sin{\theta} - S
 		\end{cases}
 
 As already said, the source term :math:`S` contains all dissipative effects of energy which slows the flow (due to friction or viscosity). A large number of 
@@ -44,6 +43,7 @@ For example, we can cite the general formulation for a Coulomb-type friction law
 		S = h \mu \left( g \cos{\theta} + \gamma u^2 \right)
 
 where :math:`\gamma = \frac{1}{R}`, :math:`R` being the radius of curvature, :math:`\theta` the surface slope and :math:`\mu` the coefficient of basal friction.
+The coefficient of friction :math:`\mu` has multiple expressions, it can be either a constant or a function of :math:`h` and :math:`u`.
 
 We can also cite an equation combining the Darcy-Weisbach and Manning laws for hydraulic models:
 
@@ -51,6 +51,26 @@ We can also cite an equation combining the Darcy-Weisbach and Manning laws for h
 		S = g n^2 \frac{u^2}{h^{1/3}}
 
 where :math:`n` is Manning coefficient (in :math:`s.m^{-1/3}`).
+
+For viscoplastic models, it is possible to use the Herschel-Bulkley formula:
+
+.. math::
+		S = \frac{\tau_y}{\rho} \left[ 1 + 1.93 \left( \frac{\tau_y}{k} \left( \frac{h}{u} \right)^{1/3} \right)^{-0.9} \right]
+		
+Or Bingham fomrula:
+
+.. math::
+		S = \frac{3}{2} \frac{\tau_y}{\rho} + 3 \frac{\nu u}{\rho h}
+
+where :math:`\tau_y` and :math:`\rho` are the yield stress and the density, :math:`\nu` the dynamic viscosity and :math:`k` consistency factor.
+
+Finally for empiric models, we can use Voellmy's formula:
+
+.. math::
+		S = h \mu \left( g \cos{\theta} + \gamma u^2 \right) + \frac{u^2}{\xi}
+		
+with :math:`\gamma = \frac{1}{R}`, :math:`R` being the radius of curvature, :math:`\theta` the surface slope, :math:`\mu` the coefficient of basal friction and
+:math:`\xi` an empirical parameter called the turbulence coefficient.
 
 ----------------
 
@@ -109,7 +129,7 @@ summarize the main differences between the models:
      - :math:`h_0 > 0`
      - :math:`h_0 > 0`
 
-   * - **Initial Domain Fluid Height**
+   * - **Domain Height If Wet**
      - :math:`0`
      - :math:`0 < h_r < h_0`
      - :math:`0`
