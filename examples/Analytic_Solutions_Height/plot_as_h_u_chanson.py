@@ -148,4 +148,4 @@ case.show_res(show_h=True, linestyles=["", ":", "-.", "--", "-"])
 # %%
 # Original reference:
 # 
-# Chanson, H., 2005, Applications of the Saint‑Venant Equations and Method of Characteristics to the Dam Break Wave Problem.
+# Chanson, H., 2005, Applications of the Saint‑Venant Equations and Method of Characteristics to the Dam Break Wave Problem. https://espace.library.uq.edu.au/view/UQ:9438

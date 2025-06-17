@@ -1440,7 +1440,7 @@ class Chanson_dry(Depth_result):
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Chanson's equation.
     
-    Chanson, H., 2005, Applications of the Saint-Venant Equations and Method of Characteristics to the Dam Break Wave Problem.
+    Chanson, H., 2005, Applications of the Saint-Venant Equations and Method of Characteristics to the Dam Break Wave Problem. https://espace.library.uq.edu.au/view/UQ:9438
 
     Attributes:
     -----------
