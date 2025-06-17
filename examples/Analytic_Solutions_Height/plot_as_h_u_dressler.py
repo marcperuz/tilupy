@@ -100,7 +100,7 @@ The water height and velocity profiles for :math:`t > 0` are given by:
                 0 & \text{if } x_B(t) < x,
             \end{cases}
         
-with :math:`r = \frac{dx}{dh}`, :math:`c = x_B(t)`, :math:`a = \frac{r h_t + c - x_t}{h_t^2}`, :math:`b = r - 2 a h_t`. :math:`x_t` and :math:`h_t` being the position
+with :math:`r = \left. \frac{dx}{dh} \right|_{h = h_t}`, :math:`c = x_B(t)`, :math:`a = \frac{r h_t + c - x_t}{h_t^2}`, :math:`b = r - 2 a h_t`. :math:`x_t` and :math:`h_t` being the position
 and the flow depth at the beginning of the tip area.
 
     .. math::
