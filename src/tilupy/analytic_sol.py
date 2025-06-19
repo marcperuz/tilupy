@@ -328,9 +328,9 @@ class Ritter_dry(Depth_result):
         -----
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, int):
+        if isinstance(x, (int, float)):
             x = [x]
-        if isinstance(T, int):
+        if isinstance(T, (int, float)):
             T = [T]
 
         self._x = x
@@ -376,9 +376,9 @@ class Ritter_dry(Depth_result):
         -----
         Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
         """
-        if isinstance(x, int):
+        if isinstance(x, (int, float)):
             x = [x]
-        if isinstance(T, int):
+        if isinstance(T, (int, float)):
             T = [T]
 
         self._x = x
@@ -861,9 +861,9 @@ class Stoker_SARKHOSH_wet(Depth_result):
         -----
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, int):
+        if isinstance(x, (int, float)):
             x = [x]
-        if isinstance(T, int):
+        if isinstance(T, (int, float)):
             T = [T]
 
         self._x = x
@@ -1005,7 +1005,6 @@ class Mangeney_dry(Depth_result):
         self._c0 = self.compute_c0()
         self._m = self.compute_m()
         
-        
         print(f"delta: {self._delta}, theta: {self._theta}, m: {self._m}, c0: {self._c0}")
 
 
@@ -1101,9 +1100,9 @@ class Mangeney_dry(Depth_result):
         -----
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, int):
+        if isinstance(x, (int, float)):
             x = [x]
-        if isinstance(T, int):
+        if isinstance(T, (int, float)):
             T = [T]
 
         self._x = x
@@ -1112,7 +1111,6 @@ class Mangeney_dry(Depth_result):
         h = []
         for t in T:
             sub_h = []
-            print(f"xa: {self.xa(t)} | xb: {self.xb(t)} | t: {t}")
             
             for i in x:
                 if i <= self.xa(t):
@@ -1152,9 +1150,9 @@ class Mangeney_dry(Depth_result):
         -----
         Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
         """
-        if isinstance(x, int):
+        if isinstance(x, (int, float)):
             x = [x]
-        if isinstance(T, int):
+        if isinstance(T, (int, float)):
             T = [T]
 
         self._x = x
@@ -1369,9 +1367,9 @@ class Dressler_dry(Depth_result):
         -----        
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, int):
+        if isinstance(x, (int, float)):
             x = [x]
-        if isinstance(T, int):
+        if isinstance(T, (int, float)):
             T = [T]
 
         self._x = x
@@ -1588,9 +1586,9 @@ class Chanson_dry(Depth_result):
         -----        
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, int):
+        if isinstance(x, (int, float)):
             x = [x]
-        if isinstance(T, int):
+        if isinstance(T, (int, float)):
             T = [T]
 
         self._x = x
@@ -1901,13 +1899,34 @@ class Coussot_shape(Shape_result):
             self._h = np.array(h)
         else:
             self._h = np.array(h)
-        D = []
-                
+        
+        D = [] 
         for H_val in self._H:
             if self._theta == 0:
                 D.append((H_val*H_val)/2)
             else:
                 D.append(- H_val - np.log(1 - H_val))
+        
+        self._D = D
+        self._x = self.X_to_x(self._D)
+
+
+    def compute_rheological_test_lateral_morpho(self) -> None:
+        r"""Compute the shape of the lateral lobe from the normalized fluid depth for a rheological test on an inclined 
+        surface by following :
+        
+        .. math::
+                D = 1 - \sqrt{1 - H^2}
+        """
+        h = []
+        for H_val in self._H:
+            h.append(self.H_to_h(H_val))
+        
+        self._h = np.array(h)
+
+        D = []                
+        for H_val in self._H:
+            D.append(1 - np.sqrt(1 - (H_val**2)))
         
         self._D = D
         self._x = self.X_to_x(self._D)
