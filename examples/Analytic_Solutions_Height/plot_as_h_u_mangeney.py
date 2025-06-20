@@ -137,7 +137,7 @@ x = np.linspace(-100, 1000, 1000)
 
 # %%
 # Case 1: No friction (:math:`\delta = 0°`), slope :math:`\theta = 30°`, initial height :math:`h_0 = 20 m`.
-case_1 = Mangeney_dry(theta=30, delta=0, h_0=20)
+case_1 = Mangeney_dry(h_0=20, x0= 0, theta=30, delta=0)
 
 
 # %%
@@ -157,7 +157,7 @@ case_1.show_res(show_u=True, linestyles=["", ":", "--", "-"])
 
 # %%
 # Case 2: Add basal friction (:math:`\delta = 20°`), same slope and initial height.
-case_2 = Mangeney_dry(theta=30, delta=20, h_0=20)
+case_2 = Mangeney_dry(h_0=20, x0= 0, theta=30, delta=20)
 
 
 # %%

@@ -993,10 +993,10 @@ class Mangeney_dry(Depth_result):
             Initial dam location (position along x-axis), by default 0.
     """    
     def __init__(self,
+                 h_0: int,
+                 x_0: int,
                  theta: float,
                  delta: float,
-                 h_0: int,
-                 x_0: int = 0,
                  ):
         super().__init__(theta=np.radians(theta))
         self._delta = np.radians(delta)
@@ -1450,6 +1450,8 @@ class Chanson_dry(Depth_result):
     -----------
         _h0 : int
             Water depth to the left of the dam.
+        _x0 : int 
+            Initial dam location (position along x-axis).        
         _f : int, optional
             Darcy friction factor.
        
@@ -1457,15 +1459,19 @@ class Chanson_dry(Depth_result):
     -----------
         h_0 : int
             Water depth to the left of the dam.
+        x_0 : int 
+            Initial dam location (position along x-axis).            
         f : int
             Darcy friction factor.
     """
     def __init__(self, 
-                 h_0: int, 
+                 h_0: int,
+                 x_0: int,
                  f: int
                  ):
         super().__init__()
         self._h0 = h_0
+        self._x0 = x_0
         self._f = f
         
 
@@ -1474,7 +1480,7 @@ class Chanson_dry(Depth_result):
         Position of the rarefaction wave front (left-most edge) :
         
         .. math::
-            x_A(t) = - t \sqrt{g h_0}
+            x_A(t) = x_0 - t \sqrt{g h_0}
 
         Parameters
         ----------
@@ -1486,7 +1492,7 @@ class Chanson_dry(Depth_result):
         float
             Position of the front edge of the rarefaction wave.
         """
-        return - (t * np.sqrt(self._g*self._h0))
+        return self._x0 - (t * np.sqrt(self._g*self._h0))
 
 
     def xb(self, t: int) -> float:
@@ -1494,7 +1500,7 @@ class Chanson_dry(Depth_result):
         Position of the tip of the flow:
         
         .. math::
-            x_B(t) = \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{g h_0}
+            x_B(t) = x_0 + \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{g h_0}
 
         Parameters
         ----------
@@ -1507,7 +1513,7 @@ class Chanson_dry(Depth_result):
             Position of the flow tip.
         """
         cf = self.compute_cf(t)
-        return ((3*cf)/(2*np.sqrt(self._g*self._h0))-1) * (t*np.sqrt(self._g*self._h0))
+        return self._x0 + ((3*cf)/(2*np.sqrt(self._g*self._h0))-1) * (t*np.sqrt(self._g*self._h0))
         # return ((3/2) * cf - np.sqrt(self._g * self._h0)) * t
 
 
@@ -1516,7 +1522,7 @@ class Chanson_dry(Depth_result):
         Position of the contact discontinuity:
         
         .. math::
-            x_C(t) = \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{\frac{g}{h_0}} + \frac{4}{f\frac{U(t)^2}{g h_0}} \left( 1 - \frac{U(t)}{2 \sqrt{g h_0}} \right)^4
+            x_C(t) = x_0 + \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{\frac{g}{h_0}} + \frac{4}{f\frac{U(t)^2}{g h_0}} \left( 1 - \frac{U(t)}{2 \sqrt{g h_0}} \right)^4
 
         Parameters
         ----------
@@ -1533,7 +1539,7 @@ class Chanson_dry(Depth_result):
         term1 = ((1.5 * (cf / np.sqrt(self._g * self._h0))) - 1) * np.sqrt(self._g / self._h0) * t
         term2 = (4 / (self._f * ((cf**2) / (self._g * self._h0)))) * (1 - 0.5 *  (cf / np.sqrt(self._g * self._h0)))**4
 
-        x_s = self._h0 * (term1 + term2)
+        x_s = self._x0 + self._h0 * (term1 + term2)
         return x_s
 
 
@@ -1604,7 +1610,7 @@ class Chanson_dry(Depth_result):
                     sub_h.append(self._h0)
 
                 elif self.xa(t) < i <= self.xb(t):                    
-                    sub_h.append((4/(9*self._g)) * (np.sqrt(self._g*self._h0)-(i/(2*t)))**2)
+                    sub_h.append((4/(9*self._g)) * (np.sqrt(self._g*self._h0)-((i-self._x0)/(2*t)))**2)
                     
                 elif self.xb(t) <= i <= self.xc(t):
                     # h_left = (4/(9*self._g)) * (np.sqrt(self._g*self._h0) - (self.xb(t)/(2*t)))**2
@@ -1619,7 +1625,7 @@ class Chanson_dry(Depth_result):
                     # term = (self._f / 4) * ((cf**2) / (self._g * self._h0)) * ((self.xc(t)-i) / self._h0)
                     # val = C * np.sqrt(term) * self._h0
                     
-                    term = (self._f / 4) * ((cf**2) / (self._g * self._h0)) * ((self.xc(t)-i) / self._h0)                    
+                    term = (self._f / 4) * ((cf**2) / (self._g * self._h0)) * ((self.xc(t)-(i)) / self._h0)                    
                     val = np.sqrt(term) * self._h0
                     sub_h.append(val)
                     

@@ -103,9 +103,9 @@ where the positions of the rarefaction wave front, the tip position and the dry 
 
     .. math::
             \begin{cases}
-                x_A(t) = - t \sqrt{g h_0}, \\\\
-                x_B(t) = \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{g h_0}, \\\\
-                x_C(t) = \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{\frac{g}{h_0}} + \frac{4}{f\frac{U(t)^2}{g h_0}} \left( 1 - \frac{U(t)}{2 \sqrt{g h_0}} \right)^4
+                x_A(t) = x_0 - t \sqrt{g h_0}, \\\\
+                x_B(t) = x_0 + \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{g h_0}, \\\\
+                x_C(t) = x_0 + \left( \frac{3}{2} \frac{U(t)}{\sqrt{g h_0}} - 1 \right) t \sqrt{\frac{g}{h_0}} + \frac{4}{f\frac{U(t)^2}{g h_0}} \left( 1 - \frac{U(t)}{2 \sqrt{g h_0}} \right)^4
             \end{cases}
 
 with the celerity of the wave front :math:`U(t)` solution of:
@@ -132,7 +132,7 @@ x = np.linspace(-600, 600, 1000)
 # %%
 # Case: Chanson's solution with dam at :math:`x_0 = 0 m`, initial height :math:`h_0 = 10 m` and friction coefficient
 # :math:`f = 0.05`
-case = Chanson_dry(h_0=10, f=0.05)
+case = Chanson_dry(h_0=10, x_0 = 0, f=0.05)
 
 
 # %%
