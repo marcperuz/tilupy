@@ -157,7 +157,7 @@ case = Dressler_dry(x_0=0, h_0=6, C=40)
 
 # %%
 # Compute and plot fluid height at times :math:`t = {0, 10, 20, 30, 40} s`.
-case.compute_h_u(x, T=[0, 10, 20, 30, 40])
+case.compute_h(x, T=[0, 10, 20, 30, 40])
 case.show_res(show_h=True, linestyles=["", ":", "-.", "--", "-"])
 
 

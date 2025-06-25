@@ -1188,10 +1188,10 @@ class Dressler_dry(Depth_result):
 
     Attributes:
     -----------
-        _x0 : int 
-            Initial dam location (position along x-axis).
         _h0 : int
             Water depth to the left of the dam.
+        _x0 : int 
+            Initial dam location (position along x-axis).
         _c : int, optional
             Chézy coefficient, by default 40.
         _xt : int
@@ -1203,16 +1203,16 @@ class Dressler_dry(Depth_result):
        
     Parameters:
     -----------
-        x_0 : int
-            Initial dam location (position along x-axis).
         h_0 : int
             Water depth to the left of the dam.
+        x_0 : int
+            Initial dam location (position along x-axis).
         C : int, optional
             Chézy coefficient, by default 40.
     """
-    def __init__(self, 
-                 x_0: int, 
+    def __init__(self,
                  h_0: int, 
+                 x_0: int, 
                  C: int=40
                  ):
         super().__init__()
@@ -1321,15 +1321,24 @@ class Dressler_dry(Depth_result):
             return 0
 
     
-    def compute_h(self) -> None:
-        return None
-
+    # def compute_h(self,
+    #               x: int | np.ndarray, 
+    #               T: int | np.ndarray
+    #               ) -> None:
+    #     print(self._h)
+    #     if self._h is None:
+    #         self.compute_h_u(x, T)
+        
     
-    def compute_u(self) -> None:
-        return None
+    def compute_u(self,
+                  x: int | np.ndarray, 
+                  T: int | np.ndarray
+                  ) -> None:
+        if self._u is None:
+            self.compute_h_u(x, T)
 
 
-    def compute_h_u(self, 
+    def compute_h(self, 
                   x: int | np.ndarray, 
                   T: int | np.ndarray
                   ) -> None:
@@ -1433,7 +1442,6 @@ class Dressler_dry(Depth_result):
             
         self._h = np.array(h)
         self._u = np.array(u)
-        print(self._xt)
 
 
 class Chanson_dry(Depth_result):
@@ -1885,7 +1893,7 @@ class Coussot_shape(Shape_result):
         return x
 
 
-    def compute_rheological_test_morpho(self) -> None:
+    def compute_rheological_test_morpho(self, h_init: float=None, h_final: float=None, H_size: int=100) -> None:
         r"""Compute the shape of the frontal lobe from the normalized fluid depth for a rheological test on an inclined 
         surface by following :
         
@@ -1895,24 +1903,39 @@ class Coussot_shape(Shape_result):
         If :math:`\theta = 0`, the expression is:
         
         .. math::
-                D = \frac{H^2}{2} 
+                D = \frac{H^2}{2}
+                
+        Parameters
+        ----------
+        h_init : float, optional
+            The initial flow depth, necessary if `\theta = 0`, by default None (replace by 1).
+        h_final : float, optional
+            The final flow depth, necessary if `\theta = 0`. If None, estimated using compute_slump_test_hf, by default None.
+        H_size : int, optional
+            Number of value wanted in the H array, by default 100.
         """
-        h = []
-        for H_val in self._H:
-            h.append(self.H_to_h(H_val))
-        
         if self._theta == 0:
+            if h_final is None:
+                h_final = self.compute_slump_test_hf(h_init) if h_init is not None else self.compute_slump_test_hf(1)
+            H_max = self.h_to_H(h_final)
+            H_list = np.linspace(0, H_max, H_size)
+            h = np.linspace(0, h_final, H_size)
             self._h = np.array(h)
-        else:
-            self._h = np.array(h)
-        
-        D = [] 
-        for H_val in self._H:
-            if self._theta == 0:
+
+            D = []
+            for H_val in H_list:
                 D.append((H_val*H_val)/2)
-            else:
-                D.append(- H_val - np.log(1 - H_val))
+                
+        else:
+            h = []
+            for H_val in self._H:
+                h.append(self.H_to_h(H_val))
+            self._h = np.array(h)
         
+            D = [] 
+            for H_val in self._H:
+                D.append(- H_val - np.log(1 - H_val))
+            
         self._D = D
         self._x = self.X_to_x(self._D)
 
