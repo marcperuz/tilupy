@@ -25,9 +25,9 @@ class Depth_result(ABC):
             Gravitational constant.
         _theta : float
             Angle of the surface, in radian.
-        _x : int or np.ndarray
+        _x : float or np.ndarray
             Spatial coordinates.
-        _t : int or np.ndarray
+        _t : float or np.ndarray
             Time instant.
         _h : np.ndarray
             Flow height depending on space at a moment.
@@ -52,16 +52,16 @@ class Depth_result(ABC):
 
     @abstractmethod
     def compute_h(self,
-                  x: int | np.ndarray, 
-                  t: int | np.ndarray
+                  x: float | np.ndarray, 
+                  t: float | np.ndarray
                   ) -> None:
         """Virtual function that compute the flow height 'h' at given space and time.
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial coordinates.
-        t : int or np.ndarray
+        t : float or np.ndarray
             Time instant.
         """
         pass
@@ -69,16 +69,16 @@ class Depth_result(ABC):
 
     @abstractmethod
     def compute_u(self,
-                  x: int | np.ndarray,
-                  t: int | np.ndarray
+                  x: float | np.ndarray,
+                  t: float | np.ndarray
                   ) -> None:
         """Virtual function that compute the flow velocity 'u' at given space and time.
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial coordinates.
-        t : int or np.ndarray
+        t : float or np.ndarray
             Time instant.
         """
         pass
@@ -126,7 +126,7 @@ class Depth_result(ABC):
         
         Returns
         -------
-        self._t : int or float
+        self._t : float or np.ndarray
             Time instant of the computed solution. If None, no solution computed.
         """
         return self._t
@@ -242,28 +242,28 @@ class Ritter_dry(Depth_result):
 
     Attributes:
     -----------
-        _h0 : int
+        _h0 : float
             Initial water depth to the left of the dam.
-        _x0 : int 
+        _x0 : float 
             Initial dam location (position along x-axis).
         
     Parameters:
     -----------
-        h_0 : int
+        h_0 : float
             Initial water depth to the left of the dam.
-        x_0 : int, optional
+        x_0 : float, optional
             Initial dam location (position along x-axis), by default 0.
     """
     def __init__(self,
-                 h_0: int,  
-                 x_0: int=0, 
+                 h_0: float,  
+                 x_0: float=0, 
                  ):
         super().__init__()
         self._x0 = x_0
         self._h0 = h_0
 
 
-    def xa(self, t: int) -> float:
+    def xa(self, t: float) -> float:
         r"""
         Position of the rarefaction wave front (left-most edge) :
         
@@ -272,7 +272,7 @@ class Ritter_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -283,7 +283,7 @@ class Ritter_dry(Depth_result):
         return self._x0 - (t * np.sqrt(self._g*self._h0))
 
 
-    def xb(self, t: int) -> float:
+    def xb(self, t: float) -> float:
         r"""
         Position of the contact discontinuity:
         
@@ -292,7 +292,7 @@ class Ritter_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -304,8 +304,8 @@ class Ritter_dry(Depth_result):
 
 
     def compute_h(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
                   ) -> None:
         r"""Compute the flow height h(x, t) at given time and positions.
 
@@ -319,18 +319,18 @@ class Ritter_dry(Depth_result):
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial positions.
-        T : int or nd.ndarray
+        T : float or nd.ndarray
             Time instant.
 
         Notes
         -----
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, (int, float)):
+        if isinstance(x, float):
             x = [x]
-        if isinstance(T, (int, float)):
+        if isinstance(T, float):
             T = [T]
 
         self._x = x
@@ -352,8 +352,8 @@ class Ritter_dry(Depth_result):
 
 
     def compute_u(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
                   ) -> None:
         r"""Compute the flow velocity u(x, t) at given time and positions.
 
@@ -367,18 +367,18 @@ class Ritter_dry(Depth_result):
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial positions.
-        T : int or np.ndarray
+        T : float or np.ndarray
             Time instant.
 
         Notes
         -----
         Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
         """
-        if isinstance(x, (int, float)):
+        if isinstance(x, float):
             x = [x]
-        if isinstance(T, (int, float)):
+        if isinstance(T, float):
             T = [T]
 
         self._x = x
@@ -413,7 +413,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
     Attributes:
     -----------
-        _x0 : int 
+        _x0 : float 
             Initial dam location (position along x-axis).
         _h0 : float
             Water depth to the left of the dam.
@@ -424,7 +424,7 @@ class Stoker_SWASHES_wet(Depth_result):
        
     Parameters:
     -----------
-        x_0 : int
+        x_0 : float
             Initial dam location (position along x-axis).
         h_0 : float
             Water depth to the left of the dam.
@@ -435,10 +435,10 @@ class Stoker_SWASHES_wet(Depth_result):
             it will be computed numerically via the 'compute_cm()' method.
     """
     def __init__(self, 
-                 x_0: int, 
-                 h_0: int, 
-                 h_r: int, 
-                 h_m: int=None
+                 x_0: float, 
+                 h_0: float, 
+                 h_r: float, 
+                 h_m: float=None
                  ):
         super().__init__()
         self._x0 = x_0
@@ -451,7 +451,7 @@ class Stoker_SWASHES_wet(Depth_result):
             self._cm = np.sqrt(self._g * h_m)
 
 
-    def xa(self, t: int) -> float:
+    def xa(self, t: float) -> float:
         r"""
         Position of the rarefaction wave front (left-most edge) :
         
@@ -460,7 +460,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -471,7 +471,7 @@ class Stoker_SWASHES_wet(Depth_result):
         return self._x0 - (t * np.sqrt(self._g*self._h0))
 
 
-    def xb(self, t: int) -> float:
+    def xb(self, t: float) -> float:
         r"""
         Position of the contact discontinuity:
         
@@ -480,7 +480,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -491,7 +491,7 @@ class Stoker_SWASHES_wet(Depth_result):
         return self._x0 + (t * ((2 * np.sqrt(self._g*self._h0)) - (3*self._cm)))
 
 
-    def xc(self, t: int) -> float:
+    def xc(self, t: float) -> float:
         r"""
         Position of the shock wave front (right-most wave):
         
@@ -500,7 +500,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -562,8 +562,8 @@ class Stoker_SWASHES_wet(Depth_result):
 
 
     def compute_h(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
                   ) -> None:
         r"""Compute the flow height h(x, t) at given time and positions.
 
@@ -578,9 +578,9 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial positions.
-        T : int or np.ndarray
+        T : float or np.ndarray
             Time instant.
 
         Notes
@@ -588,13 +588,12 @@ class Stoker_SWASHES_wet(Depth_result):
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
         if self._cm is not None:
-            if isinstance(x, int):
+            if isinstance(x, float):
                 x = [x]
             self._x = x
             self._t = T
 
-            if isinstance(T, int):
-                print(self.xc(T))
+            if isinstance(T, float):
                 h = []
                 for i in x:
                     if i <= self.xa(T):
@@ -630,8 +629,8 @@ class Stoker_SWASHES_wet(Depth_result):
 
 
     def compute_u(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
                   ) -> None:
         r"""Compute the flow velocity u(x, t) at given time and positions.
 
@@ -646,9 +645,9 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial positions.
-        T : int or np.ndarray
+        T : float or np.ndarray
             Time instant.
 
         Notes
@@ -656,12 +655,12 @@ class Stoker_SWASHES_wet(Depth_result):
         Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
         """
         if self._cm is not None:
-            if isinstance(x, int):
+            if isinstance(x, float):
                 x = [x]
             self._x = x
             self._t = T
 
-            if isinstance(T, int):
+            if isinstance(T, float):
                 u = []
                 for i in x:
                     if i <= self.xa(T):
@@ -727,8 +726,8 @@ class Stoker_SARKHOSH_wet(Depth_result):
             Initial water depth to the right of the dam.
     """
     def __init__(self, 
-                 h_0: int, 
-                 h_r: int, 
+                 h_0: float, 
+                 h_r: float, 
                  ):
         super().__init__()
         self._h0 = h_0
@@ -742,7 +741,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
             self._hm = 0.5 * self._hr * (np.sqrt(1 + 8 * self._cm**2 / np.sqrt(self._g * self._hr)**2) - 1)
 
 
-    def xa(self, t: int) -> float:
+    def xa(self, t: float) -> float:
         r"""
         Position of the rarefaction wave front (left-most edge) :
         
@@ -751,7 +750,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -762,7 +761,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
         return -(t * np.sqrt(self._g*self._h0))
 
 
-    def xb(self, hm: float, t: int) -> float:
+    def xb(self, hm: float, t: float) -> float:
         r"""
         Position of the contact discontinuity:
         
@@ -773,7 +772,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
         ----------
         hm : float
             Height of the shock front.
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -784,7 +783,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
         return (2 * np.sqrt(self._g * self._h0) - 3 * np.sqrt(self._g * hm)) * t
 
 
-    def xc(self, cm: float, t: int) -> float:
+    def xc(self, cm: float, t: float) -> float:
         r"""
         Position of the shock wave front (right-most wave):
         
@@ -795,7 +794,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
         ----------
         cm : float
             Shock front speed.
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -836,8 +835,8 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
 
     def compute_h(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
                   ) -> None:
         r"""Compute the flow height h(x, t) at given time and positions.
 
@@ -852,18 +851,18 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial positions.
-        T : int or np.ndarray
+        T : float or np.ndarray
             Time instant.
 
         Notes
         -----
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, (int, float)):
+        if isinstance(x, float):
             x = [x]
-        if isinstance(T, (int, float)):
+        if isinstance(T, float):
             T = [T]
 
         self._x = x
@@ -896,8 +895,8 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
 
     def compute_u(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
                   ) -> None:
         r"""Compute the flow velocity u(x, t) at given time and positions.
 
@@ -912,18 +911,18 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial positions.
-        T : int or np.ndarray
+        T : float or np.ndarray
             Time instant.
 
         Notes
         -----
         Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
         """
-        if isinstance(x, int):
+        if isinstance(x, float):
             x = [x]
-        if isinstance(T, int):
+        if isinstance(T, float):
             T = [T]
 
         self._x = x
@@ -972,9 +971,9 @@ class Mangeney_dry(Depth_result):
     -----------
         _delta : float 
             Dynamic friction angle, in radian.
-        _h0 : int
+        _h0 : float
             Initial water depth.
-        _x0 : int 
+        _x0 : float 
             Initial dam location (position along x-axis).
         _c0 : float
             Initial wave propagation speed.
@@ -987,14 +986,14 @@ class Mangeney_dry(Depth_result):
             Angle of the surface, in degree.
         delta : float
             Dynamic friction angle (20°-40° for debris avalanche), in degree.
-        h_0 : int
+        h_0 : float
             Initial water depth.
-        x_0 : int, optional
+        x_0 : float, optional
             Initial dam location (position along x-axis), by default 0.
     """    
     def __init__(self,
-                 h_0: int,
-                 x_0: int,
+                 h_0: float,
+                 x_0: float,
                  theta: float,
                  delta: float,
                  ):
@@ -1005,10 +1004,10 @@ class Mangeney_dry(Depth_result):
         self._c0 = self.compute_c0()
         self._m = self.compute_m()
         
-        print(f"delta: {self._delta}, theta: {self._theta}, m: {self._m}, c0: {self._c0}")
+        # print(f"delta: {self._delta}, theta: {self._theta}, m: {self._m}, c0: {self._c0}")
 
 
-    def xa(self, t: int) -> float:
+    def xa(self, t: float) -> float:
         r"""
         Edge of the quiet area:
         
@@ -1017,7 +1016,7 @@ class Mangeney_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -1028,7 +1027,7 @@ class Mangeney_dry(Depth_result):
         return self._x0 + 0.5*self._m*t**2 - (self._c0*t)
     
     
-    def xb(self, t: int) -> float:
+    def xb(self, t: float) -> float:
         r"""
         Front of the flow:
         
@@ -1037,7 +1036,7 @@ class Mangeney_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -1077,8 +1076,8 @@ class Mangeney_dry(Depth_result):
 
 
     def compute_h(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray) -> None:
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray) -> None:
         r"""Compute the flow height h(x, t) at given time and positions.
 
         .. math::
@@ -1091,18 +1090,18 @@ class Mangeney_dry(Depth_result):
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial positions.
-        T : int or np.ndarray
+        T : float or np.ndarray
             Time instant.
 
         Notes
         -----
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, (int, float)):
+        if isinstance(x, float):
             x = [x]
-        if isinstance(T, (int, float)):
+        if isinstance(T, float):
             T = [T]
 
         self._x = x
@@ -1127,8 +1126,8 @@ class Mangeney_dry(Depth_result):
 
 
     def compute_u(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray) -> None:
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray) -> None:
         r"""Compute the flow velocity u(x, t) at given time and positions.
 
         .. math::
@@ -1141,18 +1140,18 @@ class Mangeney_dry(Depth_result):
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial positions.
-        T : int or np.ndarray
+        T : float or np.ndarray
             Time instant.
 
         Notes
         -----
         Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
         """
-        if isinstance(x, (int, float)):
+        if isinstance(x, float):
             x = [x]
-        if isinstance(T, (int, float)):
+        if isinstance(T, float):
             T = [T]
 
         self._x = x
@@ -1188,32 +1187,32 @@ class Dressler_dry(Depth_result):
 
     Attributes:
     -----------
-        _h0 : int
+        _h0 : float
             Water depth to the left of the dam.
-        _x0 : int 
+        _x0 : float 
             Initial dam location (position along x-axis).
-        _c : int, optional
+        _c : float, optional
             Chézy coefficient, by default 40.
-        _xt : int
+        _xt : float
             Position of the tip area, by default None.
-        _ht : int, optional
+        _ht : float, optional
             Depth of the tip area, by default None.
-        _ut : int, optional
+        _ut : float, optional
             Velocity of the tip area, by default None.
        
     Parameters:
     -----------
-        h_0 : int
+        h_0 : float
             Water depth to the left of the dam.
-        x_0 : int
+        x_0 : float
             Initial dam location (position along x-axis).
-        C : int, optional
+        C : float, optional
             Chézy coefficient, by default 40.
     """
     def __init__(self,
-                 h_0: int, 
-                 x_0: int, 
-                 C: int=40
+                 h_0: float, 
+                 x_0: float, 
+                 C: float=40
                  ):
         super().__init__()
         self._x0 = x_0
@@ -1222,7 +1221,7 @@ class Dressler_dry(Depth_result):
         self._xt = []
         
 
-    def xa(self, t: int) -> float:
+    def xa(self, t: float) -> float:
         r"""
         Position of the rarefaction wave front (left-most edge) :
         
@@ -1231,7 +1230,7 @@ class Dressler_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -1242,7 +1241,7 @@ class Dressler_dry(Depth_result):
         return self._x0 - (t * np.sqrt(self._g*self._h0))
 
 
-    def xb(self, t: int) -> float:
+    def xb(self, t: float) -> float:
         r"""
         Position of the contact discontinuity:
         
@@ -1251,7 +1250,7 @@ class Dressler_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -1262,7 +1261,7 @@ class Dressler_dry(Depth_result):
         return self._x0 + (2 * t * np.sqrt(self._g*self._h0))
 
 
-    def alpha1(self, x: float, t: int) -> float:
+    def alpha1(self, x: float, t: float) -> float:
         r"""
         Correction coefficient for the height:
         
@@ -1275,7 +1274,7 @@ class Dressler_dry(Depth_result):
         ----------
         x : float
             Spatial position.
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -1292,7 +1291,7 @@ class Dressler_dry(Depth_result):
             return 0
         
 
-    def alpha2(self, x: float, t: int) -> float:
+    def alpha2(self, x: float, t: float) -> float:
         r"""
         Correction coefficient for the velocity:
         
@@ -1305,7 +1304,7 @@ class Dressler_dry(Depth_result):
         ----------
         x : float
             Spatial position.
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -1322,8 +1321,8 @@ class Dressler_dry(Depth_result):
 
     
     # def compute_h(self,
-    #               x: int | np.ndarray, 
-    #               T: int | np.ndarray
+    #               x: float | np.ndarray, 
+    #               T: float | np.ndarray
     #               ) -> None:
     #     print(self._h)
     #     if self._h is None:
@@ -1331,16 +1330,16 @@ class Dressler_dry(Depth_result):
         
     
     def compute_u(self,
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
                   ) -> None:
         if self._u is None:
             self.compute_h_u(x, T)
 
 
     def compute_h(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
                   ) -> None:
         r"""Compute the flow height h(x, t) and velocity u(x, t) at given time and positions.
         
@@ -1367,18 +1366,18 @@ class Dressler_dry(Depth_result):
         
         Parameters
         ----------
-        x : int | np.ndarray
+        x : float | np.ndarray
             Spatial positions.
-        T : int | np.ndarray
+        T : float | np.ndarray
             Time instant.
             
         Notes
         -----        
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, (int, float)):
+        if isinstance(x, float):
             x = [x]
-        if isinstance(T, (int, float)):
+        if isinstance(T, float):
             T = [T]
 
         self._x = x
@@ -1456,26 +1455,26 @@ class Chanson_dry(Depth_result):
 
     Attributes:
     -----------
-        _h0 : int
+        _h0 : float
             Water depth to the left of the dam.
-        _x0 : int 
+        _x0 : float 
             Initial dam location (position along x-axis).        
-        _f : int, optional
+        _f : float, optional
             Darcy friction factor.
        
     Parameters:
     -----------
-        h_0 : int
+        h_0 : float
             Water depth to the left of the dam.
-        x_0 : int 
+        x_0 : float 
             Initial dam location (position along x-axis).            
-        f : int
+        f : float
             Darcy friction factor.
     """
     def __init__(self, 
-                 h_0: int,
-                 x_0: int,
-                 f: int
+                 h_0: float,
+                 x_0: float,
+                 f: float
                  ):
         super().__init__()
         self._h0 = h_0
@@ -1483,7 +1482,7 @@ class Chanson_dry(Depth_result):
         self._f = f
         
 
-    def xa(self, t: int) -> float:
+    def xa(self, t: float) -> float:
         r"""
         Position of the rarefaction wave front (left-most edge) :
         
@@ -1492,7 +1491,7 @@ class Chanson_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -1503,7 +1502,7 @@ class Chanson_dry(Depth_result):
         return self._x0 - (t * np.sqrt(self._g*self._h0))
 
 
-    def xb(self, t: int) -> float:
+    def xb(self, t: float) -> float:
         r"""
         Position of the tip of the flow:
         
@@ -1512,7 +1511,7 @@ class Chanson_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -1525,7 +1524,7 @@ class Chanson_dry(Depth_result):
         # return ((3/2) * cf - np.sqrt(self._g * self._h0)) * t
 
 
-    def xc(self, t: int) -> float:
+    def xc(self, t: float) -> float:
         r"""
         Position of the contact discontinuity:
         
@@ -1534,7 +1533,7 @@ class Chanson_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -1551,7 +1550,7 @@ class Chanson_dry(Depth_result):
         return x_s
 
 
-    def compute_cf(self, t: int) -> float:
+    def compute_cf(self, t: float) -> float:
         r"""Compute the celerity of the wave front by resolving:
         
         .. math::
@@ -1559,7 +1558,7 @@ class Chanson_dry(Depth_result):
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant
 
         Returns
@@ -1575,8 +1574,8 @@ class Chanson_dry(Depth_result):
 
 
     def compute_h(self, 
-                  x: int | np.ndarray, 
-                  T: int | np.ndarray
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
                   ) -> None:
         r"""Compute the flow height h(x, t) at given time and positions.
 
@@ -1591,18 +1590,18 @@ class Chanson_dry(Depth_result):
 
         Parameters
         ----------
-        x : int or np.ndarray
+        x : float or np.ndarray
             Spatial positions.
-        T : int or np.ndarray
+        T : float or np.ndarray
             Time instant.
 
         Notes
         -----        
         Updates the internal '_h', '_x', '_t' attributes with the computed result.
         """
-        if isinstance(x, (int, float)):
+        if isinstance(x, float):
             x = [x]
-        if isinstance(T, (int, float)):
+        if isinstance(T, float):
             T = [T]
 
         self._x = x
@@ -1661,7 +1660,7 @@ class Shape_result(ABC):
             Gravitational constant.
         _theta : float
             Angle of the surface, in radian.
-        _x : int or np.ndarray
+        _x : float or np.ndarray
             Spatial coordinates.
         _h : np.ndarray
             Flow height depending on space.
@@ -2018,7 +2017,7 @@ class Front_result:
     -----------
         _g : float 
             Gravitational constant.
-        _h0 : int
+        _h0 : float
             Initial fluid depth.
         _xf : dictionnary
             Dictionnary of spatial coordinates of the front flow for each time step (keys).
@@ -2027,11 +2026,11 @@ class Front_result:
     
     Parameters:
     -----------
-        h0 : int
+        h0 : float
             Initial fluid depth.
     """
     def __init__(self,
-                 h0: int,
+                 h0: float,
                  ):
         self._g = 9.81
         
@@ -2042,7 +2041,7 @@ class Front_result:
     
 
     def xf_mangeney(self, 
-                    t: int,
+                    t: float,
                     delta: float,
                     theta: float=0
                     ) -> float:
@@ -2068,7 +2067,7 @@ class Front_result:
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.     
         delta : float
             Dynamic friction angle, in degree.        
@@ -2099,7 +2098,7 @@ class Front_result:
 
 
     def xf_dressler(self, 
-                    t: int,
+                    t: float,
                     ) -> float:
         r"""
         Dressler's equation for a dam-break solution over an infinite inclined dry domain with friction:
@@ -2109,7 +2108,7 @@ class Front_result:
     
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -2131,7 +2130,7 @@ class Front_result:
 
 
     def xf_ritter(self,
-                  t: int
+                  t: float
                   ) -> float:
         r"""
         Ritter's equation for a dam-break solution over an infinite inclined dry domain without friction:
@@ -2144,7 +2143,7 @@ class Front_result:
     
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
 
         Returns
@@ -2166,8 +2165,8 @@ class Front_result:
 
 
     def xf_stoker(self, 
-                    t: int,
-                    hr: int
+                    t: float,
+                    hr: float
                     ) -> float:
         r"""
         Stoker's equation for a dam-break solution over an infinite inclined wet domain without friction:
@@ -2187,9 +2186,9 @@ class Front_result:
     
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
-        hr : int
+        hr : float
             Fluid depth at the right of the dam.
 
         Returns
@@ -2226,7 +2225,7 @@ class Front_result:
     
     
     def xf_chanson(self, 
-                   t: int,
+                   t: float,
                    f: float
                    ) -> float:
         r"""
@@ -2244,7 +2243,7 @@ class Front_result:
         
         Parameters
         ----------
-        t : int
+        t : float
             Time instant.
         f : float
             Darcy friction coefficient.
@@ -2276,13 +2275,13 @@ class Front_result:
         return xf
 
 
-    def compute_cf(self, t: int) -> float:
+    def compute_cf(self, t: float) -> float:
         r"""Compute the celerity of the wave front by resolving:
         
 
         Parameters
         ----------
-        t : int
+        t : float
             Time instant
 
         Returns
