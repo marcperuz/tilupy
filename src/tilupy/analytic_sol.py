@@ -1676,6 +1676,7 @@ class Shape_result(ABC):
         self._theta = theta
         
         self._x = None
+        self._y = None
         self._h = None
     
     
@@ -1701,6 +1702,17 @@ class Shape_result(ABC):
             Spatial distribution of the computed solution. If None, no solution computed.
         """
         return self._x
+    
+    @property
+    def y(self):
+        """Accessor of the lateral spatial distribution of the computed solution.
+        
+        Returns
+        -------
+        self._y : np.ndarray
+            Lateral spatial distribution of the computed solution. If None, no solution computed.
+        """
+        return self._y
 
 
     def show_res(self, 
@@ -1892,7 +1904,7 @@ class Coussot_shape(Shape_result):
         return x
 
 
-    def compute_rheological_test_morpho(self, h_init: float=None, h_final: float=None, H_size: int=100) -> None:
+    def compute_rheological_test_front_morpho(self, h_init: float=None, h_final: float=None, H_size: int=100) -> None:
         r"""Compute the shape of the frontal lobe from the normalized fluid depth for a rheological test on an inclined 
         surface by following :
         
@@ -1957,7 +1969,7 @@ class Coussot_shape(Shape_result):
             D.append(1 - np.sqrt(1 - (H_val**2)))
         
         self._D = D
-        self._x = self.X_to_x(self._D)
+        self._y = self.X_to_x(self._D)
 
 
     def compute_slump_test_hf(self, h_init: float) -> float:
@@ -1984,7 +1996,7 @@ class Coussot_shape(Shape_result):
         return self.H_to_h(val*H_init)
         
     
-    def translate_result(self, x_final: float) -> None:
+    def translate_front(self, x_final: float) -> None:
         """Translate the shape of the frontal lobe to the wanted x coordinate.
 
         Parameters
@@ -1993,10 +2005,10 @@ class Coussot_shape(Shape_result):
             Final wanted x coordinate.
         """
         new_x = [v+x_final for v in self._x]
-        self._x = new_x 
-        
+        self._x = new_x
     
-    def change_orientation_result(self) -> None:
+    
+    def change_orientation_flow(self) -> None:
         """Swap the direction of the result.
         
         Notes

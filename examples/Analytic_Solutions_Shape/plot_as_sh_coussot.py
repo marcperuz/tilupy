@@ -35,7 +35,7 @@ Implementation
 from tilupy.analytic_sol import Coussot_shape
 
 case_1 = Coussot_shape(rho=1000, tau=50, theta=10)
-case_1.compute_rheological_test_morpho()
+case_1.compute_rheological_test_front_morpho()
 case_1.show_res()
 
 # %%
@@ -50,7 +50,7 @@ case_1.show_res()
 # 	D^* = \frac{\rho g d}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
 
 case_2 = Coussot_shape(rho=1000, tau=50, theta=0)
-case_2.compute_rheological_test_morpho(h_final=1)
+case_2.compute_rheological_test_front_morpho(h_final=1)
 case_2.show_res()
 
 # %%
