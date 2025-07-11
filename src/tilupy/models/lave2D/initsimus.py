@@ -8,6 +8,7 @@ Created on Fri May 31 11:23:25 2024
 import warnings
 import numpy as np
 import os
+import shutil
 
 from scipy.interpolate import RegularGridInterpolator
 
@@ -77,10 +78,6 @@ def make_edges_matrices(nx, ny):
     h_edges = np.flip(h_edges, axis=0).astype(int)
     v_edges = np.flip(v_edges, axis=0).astype(int)
     return h_edges, v_edges
-
-
-if __name__ == "__main__":
-    h_edges, v_edges = make_edges_matrices(1, 1)
 
 
 class ModellingDomain:
@@ -405,7 +402,93 @@ class Simu:
         )
 
 
+def write_simu(raster_topo: str, 
+               raster_mass: str, 
+               tmax: float, 
+               dt_im: float,
+               simulation_name: str,
+               lave2D_exe_folder: str,
+               rheology_type: str,
+               rheology_params: dict,
+               folder_out: str = None,
+               ) -> None:
+    """
+    Prepares all input files required for a Lave2D simulation and saves them in a dedicated folder.
+
+    Parameters
+    ----------
+    raster_topo : str
+        Name of the ASCII topography file.
+    raster_mass : str
+        Name of the ASCII initial mass file.
+    tmax : float
+        Maximum simulation time.
+    dt_im : float
+        Output image interval (in time steps).
+    simulation_name : str
+        Simulation/project name.
+    lave2D_exe_folder : str
+        Path to the folder containing "Lave2_Arc.exe" and "vf2marc.exe".
+    rheology_type : str
+        Rheology to use for the simulation. 
+    rheology_params : dict
+        Necessary parameters for the rheology. For this case:
+            - tau_rho
+            - K_tau
+    folder_out : str, optional
+        Output folder where simulation inputs will be stored.
+    
+    Raises
+    ------
+    ValueError
+        If the rheology isn't Herschel_Bulkley.
+    """
+    if folder_out is None:
+        folder_out = "."
+    
+    if rheology_type != "Herschel_Bulkley":
+        raise ValueError("Rheology type must be 'Herschel_Bulkley'.")
+    
+    output_file = os.path.join(folder_out, "lave2D")
+
+    if not os.path.isdir(output_file):
+        os.mkdir(output_file)
+    
+    shutil.copy2(
+        os.path.join(lave2D_exe_folder, "Lave2_Arc.exe"),
+        output_file,
+    )
+    shutil.copy2(
+        os.path.join(lave2D_exe_folder, "vf2marc.exe"), 
+        output_file,
+    )
+    simu_lave2D = Simu(output_file, simulation_name)
+    simu_lave2D.set_topography(raster_topo)
+    simu_lave2D.set_init_mass(raster_mass)
+    simu_lave2D.set_rheology(rheology_params["tau_rho"], rheology_params["K_tau"])
+    simu_lave2D.set_numeric_params(tmax, dt_im)
+
+    ## Not used in simulation, but the .cli file is needed 
+    simu_lave2D.set_boundary_conditions(
+        [0, 0],  # X min and max coords for input flux
+        [1, 2],  # Y min and max coord for input flux
+        "W",  # Cardinal direction (Flow from East to West)
+        [0, 0],  # Discharge hydrogram
+        times=[0, tmax + 1],  # Corresponding times
+        thicknesses=[0, 0],  # Thickness hydrogramm
+    )
+
+
+"""
+
+if __name__ == "__main__":
+    h_edges, v_edges = make_edges_matrices(1, 1)
+
+
 if __name__ == "__main__":
     domain = ModellingDomain(xmin=0, ymin=0, nx=4, ny=3, dx=1, dy=1)
     domain.set_edges()
     res = domain.get_edges([1.5, 2.5], [0, 0], "S")
+
+
+"""

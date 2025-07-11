@@ -15,12 +15,27 @@ from tilupy.utils import format_path_linux
 import tilupy.notations
 import tilupy.raster
 
+README_PARAM_MATCH = dict(tmax="tmax", CFL="cflhyp", h_min="eps0", dt_im_output="dt_im")
 
-README_PARAM_MATCH = dict(
-    tmax="tmax", CFL="cflhyp", h_min="eps0", dt_im_output="dt_im"
-)
+SHALTOP_LAW_ID = dict(No_Friction=1, Herschel_Bulkley=61, Voellmy=8, Bingham=6, Coulomb=1, Coulomb_muI=7)
 
-SHALTOP_LAW_ID = dict(coulomb=1, voellmy=8, bingham=6, muI=7)
+
+def raster_to_shaltop_txtfile(file_in, file_out, folder_out=None):
+    if folder_out is not None:
+        file_out = os.path.join(folder_out, file_out)
+
+    x, y, rast = tilupy.raster.read_raster(file_in)
+    np.savetxt(
+        file_out,
+        np.reshape(np.flip(rast, axis=0), (rast.size, 1)),
+        fmt="%.12G",
+    )
+
+    res = dict(
+        x0=x[0], y0=y[0], dx=x[1] - x[0], dy=y[1] - y[0], nx=len(x), ny=len(y)
+    )
+
+    return res
 
 
 def write_params_file(params, directory=None, file_name="params.txt"):
@@ -65,22 +80,76 @@ def write_params_file(params, directory=None, file_name="params.txt"):
                 file_params.write("{:s} {:s}\n".format(name, val))
 
 
-def raster_to_shaltop_txtfile(file_in, file_out, folder_out=None):
-    if folder_out is not None:
-        file_out = os.path.join(folder_out, file_out)
+def write_simu(raster_topo: str, 
+               raster_mass: str,
+               tmax : float,
+               dt_im : float,
+               rheology_type: str,
+               rheology_params: dict,
+               folder_out: str=None,
+               ) -> None:
+    """
+    Prepares the input files required for a SHALTOP simulation and saves them in a dedicated folder.
 
-    x, y, rast = tilupy.raster.read_raster(file_in)
-    np.savetxt(
-        file_out,
-        np.reshape(np.flip(rast, axis=0), (rast.size, 1)),
-        fmt="%.12G",
+    Parameters
+    ----------
+    raster_topo : str
+        Name of the ASCII topography file.
+    raster_mass : str
+        Name of the ASCII initial mass file.
+    tmax : float
+        Maximum simulation time.
+    dt_im : float
+        Output image interval (in time steps).
+    rheology_type : str
+        Rheology to use for the simulation. 
+    rheology_params : dict
+        Necessary parameters for the rheology. For instance:
+            - delta1
+            - ksi
+            - tau_density
+            etc.
+    folder_out : str, optional
+        Output folder where simulation inputs will be saved.
+    
+    Raises
+    ------
+    ValueError
+        If the rheology is wrong.
+    """
+    if folder_out is None:
+        folder_out = "."
+    
+    output_file = os.path.join(folder_out, "shaltop")
+    
+    if not os.path.isdir(output_file):
+        os.mkdir(output_file)
+
+    x, y, z = tilupy.raster.read_raster(raster_topo)
+    raster_to_shaltop_txtfile(raster_topo, os.path.join(output_file, "z.d"))
+    raster_to_shaltop_txtfile(raster_mass, os.path.join(output_file, "m.d"))
+    folder_output = "data2"
+    os.makedirs(os.path.join(output_file, folder_output), exist_ok=True)
+
+    if rheology_type not in SHALTOP_LAW_ID:
+        raise ValueError(f"Wrong law, choose in: {SHALTOP_LAW_ID}")
+    
+    params = dict(
+        nx=len(x),
+        ny=len(y),
+        per=x[-1],
+        pery=y[-1],
+        tmax=tmax,
+        dt_im=dt_im,
+        initz=0,
+        file_z_init="z.d",
+        ipr=0,
+        file_m_init="m.d",
+        folder_output="data2",
+        icomp=SHALTOP_LAW_ID[rheology_type],
+        **rheology_params,
     )
-
-    res = dict(
-        x0=x[0], y0=y[0], dx=x[1] - x[0], dy=y[1] - y[0], nx=len(x), ny=len(y)
-    )
-
-    return res
+    write_params_file(params, directory=output_file, file_name="params.txt")
 
 
 def write_job_files(
@@ -267,3 +336,4 @@ def make_simus(law, rheol_params, folder_data, folder_out, readme_file):
 
     with open(run_shaltop_file, "w") as fid:
         fid.write(file_txt)
+
