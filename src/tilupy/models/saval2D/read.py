@@ -10,8 +10,6 @@ import os
 import numpy as np
 import tilupy.read
 
-from scipy.interpolate import RegularGridInterpolator
-
 
 class Results(tilupy.read.Results):
     def __init__(self, folder, raster_topo="mntsimulation.asc"):
@@ -83,11 +81,11 @@ class Results(tilupy.read.Results):
             lines = f.readlines()
         
         start_index = 17
-        for l in lines[start_index::2]:
-            if l.strip() == '':
+        for line in lines[start_index::2]:
+            if line.strip() == '':
                 continue
             else:
-                _, t, _, _, _ = l.split()
+                _, t, _, _, _ = line.split()
                 t_list.append(int(float(t)))
         
         return t_list            
