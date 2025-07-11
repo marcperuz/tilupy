@@ -766,7 +766,7 @@ class Benchmark:
             else:
                 raise ValueError(" -> Incorrect axis: 'Y' or 'X'.")
         else:
-            raise ValueError(f" -> No allowed model selected, choose between:\n       {self._allowed_model.append("as")}")
+            raise ValueError(f" -> No allowed model selected, choose between:\n       {self._allowed_model.append('as')}")
 
         if h_plot is not None:
             if ax is None:
@@ -919,7 +919,7 @@ class Benchmark:
             else:
                 raise ValueError(" -> Incorrect velocity axis: 'U' or 'V'.")
         else:
-            raise ValueError(f" -> No allowed model selected, choose between:\n       {self._allowed_model[:].append("as")}")
+            raise ValueError(f" -> No allowed model selected, choose between:\n       {self._allowed_model[:].append('as')}")
 
         if u_plot is not None:
             if ax is None:
@@ -1040,7 +1040,7 @@ class Benchmark:
             If no numerical result has been loaded.
         """
         if direction not in ["right", "left", "up", "down"]:
-            raise ValueError(f' -> Invalid direction: "right", "left", "up", "down"')
+            raise ValueError(' -> Invalid direction: "right", "left", "up", "down"')
         
         if model_to_plot not in self._allowed_model:
             raise ValueError(f" -> No allowed model selected, choose between:\n       {self._allowed_model}")
@@ -1081,7 +1081,7 @@ class Benchmark:
         
         for params in self._h_num_1d_params[max_time]:
             if params[0] == model_to_plot:
-                idx = params[1]
+                # idx = params[1]
                 fronts = params[2]
         
         morpho = AS.Coussot_shape(rho=rho, tau=tau, theta=theta, H_size=H_size)
