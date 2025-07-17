@@ -21,7 +21,9 @@ class Results(tilupy.read.Results):
         self.folder_inputs = os.path.join(folder, "inputs") if os.path.exists(os.path.join(folder, "inputs")) else None
         
         self._u = None
-        self._v = None
+        
+        self._ux = None
+        self._uy = None
 
         if not raster_topo.endswith(".asc"):
             raster_topo = raster_topo + ".asc"
@@ -95,14 +97,16 @@ class Results(tilupy.read.Results):
         self,
     ):  
         h_list = []
+        ux_list = []
+        uy_list = []
         u_list = []
-        v_list = []
         
         # read initial mass
         _, _, h_init = tilupy.raster.read_ascii(os.path.join(self.folder_inputs, "zdepsimulation.asc"))
         h_list.append(h_init)
+        ux_list.append(np.zeros_like(h_init))
+        uy_list.append(np.zeros_like(h_init))
         u_list.append(np.zeros_like(h_init))
-        v_list.append(np.zeros_like(h_init))
         
         # Read results
         self._tim = [0]
@@ -113,18 +117,23 @@ class Results(tilupy.read.Results):
             qu_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuqu{t}.asc"))
             qv_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuqv{t}.asc"))
             
-            u_t = np.divide(qu_t, h_t, out=np.zeros_like(qu_t), where=h_t != 0)
-            v_t = np.divide(qv_t, h_t, out=np.zeros_like(qv_t), where=h_t != 0)
+            ux_t = np.divide(qu_t, h_t, out=np.zeros_like(qu_t), where=h_t != 0)
+            uy_t = np.divide(qv_t, h_t, out=np.zeros_like(qv_t), where=h_t != 0)
+            
+            u_t = np.sqrt(ux_t**2 + uy_t**2)
             
             h_list.append(h_t)
             
+            ux_list.append(ux_t)
+            uy_list.append(uy_t)
             u_list.append(u_t)
-            v_list.append(v_t)
             self._tim.append(t)
         
         self._h = np.stack(h_list, axis=-1)
+        self._ux = np.stack(ux_list, axis=-1)
+        self._uy = np.stack(uy_list, axis=-1)
         self._u = np.stack(u_list, axis=-1)
-        self._v = np.stack(v_list, axis=-1)
+
 
     @property
     def h(self):
@@ -139,10 +148,16 @@ class Results(tilupy.read.Results):
         return self._u
 
     @property
-    def v(self):
-        if self._v is None:
+    def ux(self):
+        if self._ux is None:
             self.read_resfile()
-        return self._v
+        return self._ux
+
+    @property
+    def uy(self):
+        if self._uy is None:
+            self.read_resfile()
+        return self._uy
 
     @property
     def tim(self):
@@ -159,9 +174,9 @@ class Results(tilupy.read.Results):
         t = None
         notation = None
 
-        if name in ["h", "u", "v"]:
+        if name in ["h", "u", "ux", "uy"]:
             d = getattr(self, name)
-            t = self.tim
+            t = self._tim
             return tilupy.read.TemporalResults2D(
                 name, d, t, notation=notation, x=self.x, y=self.y, z=self.z
             )

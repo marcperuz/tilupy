@@ -16,6 +16,8 @@ from scipy.interpolate import RegularGridInterpolator
 class Results(tilupy.read.Results):
     def __init__(self, folder, name, raster, grid="edges"):
         super().__init__()
+        
+        self._u = None
 
         self.folder = folder
         self.folder_output = folder  # Results are in the same folder
@@ -170,7 +172,10 @@ class Results(tilupy.read.Results):
 
         if name in ["h", "u"]:
             d = getattr(self, name)
-            t = self.tim
+            t = self._tim
             return tilupy.read.TemporalResults2D(
                 name, d, t, notation=notation, x=self.x, y=self.y, z=self.z
             )
+        
+        elif name in ["ux", 'uy']:
+            return None
