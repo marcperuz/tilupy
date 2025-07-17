@@ -23,7 +23,7 @@ class Benchmark:
         self._allowed_model = ["shaltop", "lave2D", "saval2D"]
         
         self._current_model = None
-        self._current_result = None
+        self._current_result = {}
         self._x, self._y, self._z = None, None, None
         
         self._h_num_1d_X = {}
@@ -36,15 +36,20 @@ class Benchmark:
         self._u_num_1d_Y = {}
         self._u_num_1d_params = {}
         
-        self._v_num_1d_X = {}
-        self._v_num_1d_Y = {}
-        self._v_num_1d_params = {}
+        self._ux_num_1d_X = {}
+        self._ux_num_1d_Y = {}
+        self._ux_num_1d_params = {}
+        
+        self._uy_num_1d_X = {}
+        self._uy_num_1d_Y = {}
+        self._uy_num_1d_params = {}
         
         self._u_as_1d = []
         
         self._h_num_2d = {}
         self._u_num_2d = {}
-        self._v_num_2d = {}
+        self._ux_num_2d = {}
+        self._uy_num_2d = {}
     
     
     def load_numerical_result(self, 
@@ -68,15 +73,220 @@ class Benchmark:
         """
         if model in self._allowed_model:
             self._current_model = model
-            self._current_result = tilupy.read.get_results(model, **kwargs)
-            self._x, self._y, self._z = self._current_result.x, self._current_result.y, self._current_result.z
+            if model not in self._current_result:
+                self._current_result[model] = tilupy.read.get_results(model, **kwargs)
+            self._x, self._y, self._z = self._current_result[model].x, self._current_result[model].y, self._current_result[model].z
         else:
             raise ValueError(f" -> No correct model selected, choose between:\n       {self._allowed_model}")
     
     
+    def process_data_field(self, 
+                           model: str, 
+                           field_name: str, 
+                           storage_dict_X: dict, 
+                           storage_dict_Y: dict, 
+                           storage_params: dict, 
+                           t_val: float, 
+                           direction_index: str | list[float], 
+                           flow_threshold: float = 1e-3,
+                           show_message: bool = False,
+                           ) -> str | list[float]:
+        """Process data field to extract profiles.
+
+        Parameters
+        ----------
+        model : str
+            Model to extract the profile.
+        field_name : str
+            Data field. Can be: 'h', 'u', 'ux' or 'uy'.
+        storage_dict_X : dict
+            Dictionary to save the X axis profile. 
+        storage_dict_Y : dict
+            Dictionary to save the Y axis profile.
+        storage_params : dict
+            Dictionary to save the parameters of the profiles.
+        t_val : float
+            Value of the time to extract the profiles.
+        direction_index : str | list[float]
+            Index along each axis to extract the profile from: (X, Y). If None, it is detected automatically based on the farthest flow front 
+            and the position of maximum fluid data.
+        flow_threshold : float
+            Minimum velocity to consider as part of the flow, by default 1e-3.
+        show_message : bool, optional
+            If True, print the indexes and the front positions saved, by default False
+
+        Returns
+        -------
+        str | list[float]
+            direction_index
+        """
+        # Extract data and time
+        field_all = self._current_result[model].get_output(field_name)
+        tim = self._current_result[model].tim
+        
+        
+        # If no data extracted, stop the program
+        if field_all is None:
+            return direction_index
+        
+        
+        # Find the index of the wanted time (or the closest)
+        if t_val is not None:
+            for idx in range(len(tim)):
+                if tim[idx] == t_val:
+                    t = idx
+                    break
+                else:
+                    if abs(tim[idx] - t_val) < 0.01:
+                        t = idx
+        else:
+            t = field_all.d.shape[2]-1
+
+        
+        # Keep only the data field at the wanted time
+        field_t = field_all.d[:, :, t]
+        field_t[field_t <= flow_threshold] = 0
+
+        def find_max_index_along_axis(matrix: np.ndarray, axis: int, threshold: float):
+            """Find the best profile index based on the farthest flow front and the position of maximum fluid data.
+
+            Parameters
+            ----------
+            matrix : np.ndarray
+                Data field
+            axis : int
+                Axis to look at (0: X, 1: Y).
+            threshold : float
+                Minimum value considered.
+
+            Returns
+            -------
+            int
+                Index of the selected profile.
+            """
+            max_front_idx = 0
+            list_with_front = []
+
+            for i in range(matrix.shape[1 - axis]):
+                profile = matrix[:, i] if axis == 0 else matrix[i, :]
+                idx_max = np.argmax(profile)
+                sub_profile = profile[idx_max:]
+                idx = np.where(sub_profile < threshold)[0]
+
+                if len(idx) == 0:
+                    temp_front = 0
+                else:
+                    temp_front = idx[0] + idx_max
+
+                if temp_front > max_front_idx:
+                    max_front_idx = temp_front
+                    list_with_front = [i]
+                elif temp_front == max_front_idx:
+                    list_with_front.append(i)
+
+            max_front_value = 0
+            list_with_value = []
+            for idx in list_with_front:
+                val = matrix[max_front_idx - 1, idx] if axis == 0 else matrix[idx, max_front_idx - 1]
+                if val > max_front_value:
+                    max_front_value = val
+                    list_with_value = [idx]
+                elif val == max_front_value:
+                    list_with_value.append(idx)
+
+            if len(list_with_value) > 1:
+                max_index = np.unravel_index(
+                    np.argmax(matrix[:, list_with_value]) if axis == 0 else np.argmax(matrix[list_with_value, :]),
+                    matrix.shape
+                )
+                return list_with_value[max_index[1 if axis == 0 else 0]]
+            else:
+                return list_with_value[0]
+
+        y_size, x_size = field_t.shape
+
+
+        # Different cases depending on the type of direction_index 
+        if isinstance(direction_index[0], float):
+            x_val = direction_index[0]
+            y_val = direction_index[1]
+            
+            x_index, y_index = None, None
+            for x in range(x_size):
+                if abs(x_val - self._x[x]) <= 0.1:
+                    x_index = x
+            for y in range(y_size):
+                if abs(y_val - self._y[y]) <= 0.1:
+                    y_index = y
+            
+            direction_index[0] = x_index if x_index is not None else None
+            direction_index[1] = y_index if y_index is not None else None
+           
+        elif isinstance(direction_index, str):
+            direction_index = [None, None]
+            direction_index[0] = find_max_index_along_axis(field_t, axis=0, threshold=flow_threshold)
+            direction_index[1] = find_max_index_along_axis(field_t, axis=1, threshold=flow_threshold)
+
+        else:
+            direction_index[0] = x_size//2
+            direction_index[1] = y_size//2
+        
+        if direction_index[0] is None or direction_index[1] is None:
+            direction_index[0] = x_size//2
+            direction_index[1] = y_size//2
+        
+        
+        # Save profiles in the dictionaries       
+        if t in storage_dict_Y:
+            if not any(res[0] == model for res in storage_dict_Y[t]):
+                storage_dict_Y[t].append((model, field_t[:, direction_index[0]]))
+        else:
+            storage_dict_Y[t] = [(model, field_t[:, direction_index[0]])]
+
+        if t in storage_dict_X:
+            if not any(res[0] == model for res in storage_dict_X[t]):
+                storage_dict_X[t].append((model, field_t[direction_index[1], :]))
+        else:
+            storage_dict_X[t] = [(model, field_t[direction_index[1], :])]
+
+
+        # Calculate front positions
+        idx_max_X = np.argmax(field_t[direction_index[1], :])
+        idx_max_Y = np.argmax(field_t[:, direction_index[0]])
+
+        def get_front_index(profile):
+            idx = np.where(profile <= flow_threshold)[0]
+            return (idx[0] - 1) if len(idx) else len(profile) - 1
+
+        def get_back_index(profile):
+            idx = np.where(profile <= flow_threshold)[0]
+            return (idx[-1] + 1) if len(idx) else 0
+
+        idx_r = get_front_index(field_t[direction_index[1], idx_max_X:]) + idx_max_X
+        idx_l = get_back_index(field_t[direction_index[1], :idx_max_X])
+        idx_u = get_front_index(field_t[idx_max_Y:, direction_index[0]]) + idx_max_Y
+        idx_d = get_back_index(field_t[:idx_max_Y, direction_index[0]])
+
+        
+        # Save front positions
+        if t in storage_params:
+            if not any(res[0] == model for res in storage_params[t]):
+                storage_params[t].append((model, direction_index, [idx_l, idx_r, idx_d, idx_u]))
+        else:
+            storage_params[t] = [(model, direction_index, [idx_l, idx_r, idx_d, idx_u])]
+
+        if show_message:
+            print(self._current_model, f" -> {field_name}")
+            print(f"Selected index:\n   X -> {direction_index[0]}\n   Y -> {direction_index[1]}")
+            print(f"Front positions:\n  Right -> {idx_r}, {self._x[idx_r]}m\n  Left -> {idx_l}, {self._x[idx_l]}m\n  Up -> {idx_u}, {self._y[idx_u]}m\n  Down -> {idx_d}, {self._y[idx_d]}m")
+
+        return direction_index
+
+
     def extract_height_profiles(self,
-                                t: float=None,
-                                direction_index: list[int] = None,
+                                model: str = None,
+                                t: float = None,
+                                direction_index: list[float] | str = None,
                                 flow_height_threshold: float = 1e-3,
                                 show_message: bool = False,
                                 ) -> None:
@@ -85,11 +295,15 @@ class Benchmark:
 
         Parameters
         ----------
+        model : str, optional
+            Wanted model to extract profiles, if None take the currently loaded model.
         t : float, optional
             Time index to extract. If None, uses the last available time step.
-        direction_index : list[int], optional
-            Index along each axis to extract the profile from: (X, Y). If None, it is detected automatically based on the farthest flow front 
-            and the position of maximum fluid height.
+        direction_index : list[float] or str, optional
+            Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
+                - list[float]: position (in meter) of the wanted profiles.
+                - str: 'max' for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
+                - None: select the medians.
         flow_height_threshold : float, optional
             Minimum height to consider as part of the flow, by default 1e-3.
         show_message : bool, optional
@@ -98,164 +312,30 @@ class Benchmark:
         Raises
         ------
         ValueError
-            If no numerical result has been loaded.
+            If the model has not been loaded.
         """
-        if self._current_result is None:
-            raise ValueError(" -> No result load, use first load_numerical_result.")
-                
+        if model is None:
+            model = self._current_model
+
+        if model not in self._current_result:
+            raise ValueError(" -> Model not load, use first load_numerical_result(model).")
+        
         if direction_index is None:
-            direction_index = [None, None]
-        
-        h_2d_all = self._current_result.get_output('h')
-
-        t = h_2d_all.d.shape[2]-1 if t is None or t >= h_2d_all.d.shape[2] else t
-        h_2d_t = h_2d_all.d[:, :, t]
-        h_2d_t[h_2d_t <= flow_height_threshold] = 0
-        
-        y_size, x_size = h_2d_t.shape[0], h_2d_t.shape[1]
-           
-        # ALONG Y
-        if direction_index[0] is None:
-            max_front_idx = 0
-            list_column_with_front = []
-            
-            for x in range(x_size):
-                idx_max = np.argmax(h_2d_t[:, x])
-                profile = h_2d_t[idx_max:, x]
-                idx = np.where(profile < flow_height_threshold)[0]
-                                
-                if len(idx) == 0:
-                    max_front_idx = 0
-                    list_column_with_front = [0]
+            direction_index = [None, None]            
                 
-                else:
-                    if (idx[0] + idx_max) > max_front_idx :
-                        max_front_idx = (idx[0] + idx_max)
-                        list_column_with_front = [x]
-                    
-                    elif (idx[0] + idx_max) == max_front_idx :
-                        list_column_with_front.append(x)
-                                    
-            max_front_value = 0
-            list_column_with_value = []
-            for idx in list_column_with_front:
-                val = h_2d_t[max_front_idx - 1, idx]
-                if val > max_front_value:
-                    max_front_value = val
-                    list_column_with_value = [idx]
-                elif val == max_front_value:
-                    list_column_with_value.append(idx)
-                            
-            if len(list_column_with_value) > 1:
-                max_index = np.unravel_index(np.argmax(h_2d_t[:, list_column_with_value]), h_2d_t.shape)
-                direction_index[0] = list_column_with_value[max_index[1]]
-            else:
-                direction_index[0] = list_column_with_value[0]
-            
-        if t in self._h_num_1d_Y:
-            if not any(res[0] == self._current_model for res in self._h_num_1d_Y[t]):
-                self._h_num_1d_Y[t].append((self._current_model, h_2d_t[:, direction_index[0]]))
-        else:
-            self._h_num_1d_Y[t] = [(self._current_model, h_2d_t[:, direction_index[0]])]
-        
-        # ALONG X
-        if direction_index[1] is None:
-            max_front_idx = 0
-            list_row_with_front = []
-            
-            for y in range(y_size):
-                idx_max = np.argmax(h_2d_t[y, :])
-                profile = h_2d_t[y, idx_max:]
-                idx = np.where(profile <= flow_height_threshold)[0]
-                
-                if len(idx) == 0:
-                    max_front_idx = 0
-                    list_row_with_front = [0]
-                
-                else:
-                    if (idx[0] + idx_max) > max_front_idx :
-                        max_front_idx = (idx[0] + idx_max)
-                        list_row_with_front = [y]
-
-                    elif (idx[0] + idx_max) == max_front_idx :
-                        list_row_with_front.append(y)
-            
-            max_front_value = 0
-            list_row_with_value = []
-            for idx in list_row_with_front:
-                val = h_2d_t[idx, max_front_idx - 1]
-                if val > max_front_value:
-                    max_front_value = val
-                    list_row_with_value = [idx]
-                elif val == max_front_value:
-                    list_row_with_value.append(idx)
-                        
-            if len(list_row_with_value) > 1:
-                max_index = np.unravel_index(np.argmax(h_2d_t[list_row_with_value, :]), h_2d_t.shape)
-                direction_index[1] = list_row_with_value[max_index[0]]
-            else:
-                direction_index[1] = list_row_with_value[0]            
-
-        if t in self._h_num_1d_X:
-            if not any(res[0] == self._current_model for res in self._h_num_1d_X[t]):
-                self._h_num_1d_X[t].append((self._current_model, h_2d_t[direction_index[1], :]))
-        else:
-            self._h_num_1d_X[t] = [(self._current_model, h_2d_t[direction_index[1], :])]
-        
-        # FRONT POSITIONS
-        idx_max_X = np.argmax(h_2d_t[direction_index[1], :])
-        idx_max_Y = np.argmax(h_2d_t[:, direction_index[0]])
-        
-        # RIGHT
-        profile = h_2d_t[direction_index[1], idx_max_X:]
-        idx = np.where(profile <= flow_height_threshold)[0]
-        
-        if len(idx) == 0:
-            idx_r = x_size - 1
-        else:
-            idx_r = idx[0] + idx_max_X - 1
-        
-        # LEFT
-        profile = h_2d_t[direction_index[1], :idx_max_X]
-        idx = np.where(profile <= flow_height_threshold)[0]
-        
-        if len(idx) == 0:
-            idx_l = 0
-        else:
-            idx_l = idx[-1] + 1
-        
-        # UP
-        profile = h_2d_t[idx_max_Y:, direction_index[0]]
-        idx = np.where(profile <= flow_height_threshold)[0]
-        
-        if len(idx) == 0:
-            idx_u = y_size - 1
-        else:
-            idx_u = idx[0] + idx_max_Y - 1
-        
-        # LEFT
-        profile = h_2d_t[:idx_max_Y, direction_index[0]]
-        idx = np.where(profile <= flow_height_threshold)[0]
-        
-        if len(idx) == 0:
-            idx_d = 0
-        else:
-            idx_d = idx[-1] + 1
-        
-        
-        if t in self._h_num_1d_params:
-            if not any(res[0] == self._current_model for res in self._h_num_1d_params[t]):
-                self._h_num_1d_params[t].append((self._current_model, direction_index, [idx_l, idx_r, idx_d, idx_u]))
-        else:
-            self._h_num_1d_params[t] = [(self._current_model, direction_index, [idx_l, idx_r, idx_d, idx_u])]
-        
-        if show_message:
-            print(self._current_model)
-            print(f"Selected index:\n   X -> {direction_index[0]}\n   Y -> {direction_index[1]}")
-            print(f"Front positions:\n  Right -> {idx_r}, {self._x[idx_r]}m\n  Left -> {idx_l}, {self._x[idx_l]}m\n  Up -> {idx_u}, {self._y[idx_u]}m\n  Down -> {idx_d}, {self._y[idx_d]}m")
+        self.process_data_field(model=model, 
+                                field_name='h', 
+                                storage_dict_X=self._h_num_1d_X, 
+                                storage_dict_Y=self._h_num_1d_Y, 
+                                storage_params=self._h_num_1d_params, 
+                                t_val=t,
+                                direction_index=direction_index, 
+                                flow_threshold=flow_height_threshold, 
+                                show_message=show_message)
 
 
     def extract_velocity_profiles(self,
+                                  model: str = None,
                                   t: float = None,
                                   direction_index: list[int] = None,
                                   flow_velocity_threshold: float = 1e-3,
@@ -266,405 +346,187 @@ class Benchmark:
 
         Parameters
         ----------
+        model : str, optional
+            Wanted model to extract profiles, if None take the currently loaded model.
         t : float, optional
             Time index to extract. If None, uses the last available time step.
         direction_index : tuple[int], optional
             Index along each axis to extract the profile from: (X, Y). If None, it is detected automatically based on the farthest flow front 
             and the position of maximum fluid velocity.
         flow_velocity_threshold : float, optional
-            Minimum height to consider as part of the flow, by default 1e-3.
+            Minimum velocity to consider as part of the flow, by default 1e-3.
         show_message : bool, optional
             If True, print the indexes and the front positions saved. 
 
         Raises
         ------
         ValueError
-            If no numerical result has been loaded.
+            If the model has not been loaded.
         """
-        if self._current_result is None:
-            raise ValueError(" -> No result load, use first load_numerical_result.")
+        if model is None:
+            model = self._current_model
+        
+        if model not in self._current_result:
+            raise ValueError(" -> Model not load, use first load_numerical_result(model).")
                 
         if direction_index is None:
             direction_index = [None, None]
         
-        if self._current_model == "shaltop":
-            u_2d_all = self._current_result.get_output('ux')
-            v_2d_all = self._current_result.get_output('uy')
-        elif self._current_model == "lave2D":
-            u_2d_all = self._current_result.get_output('u')
-            v_2d_all = None
-        elif self._current_model == "saval2D":
-            u_2d_all = self._current_result.get_output('u')
-            v_2d_all = self._current_result.get_output('v')
-            
-        t = u_2d_all.d.shape[2]-1 if t is None or t >= u_2d_all.d.shape[2] else t
-        u_2d_t = u_2d_all.d[:, :, t]
-        u_2d_t[u_2d_t <= flow_velocity_threshold] = 0
+        self.process_data_field(model=model,
+                                field_name='u',
+                                storage_dict_X=self._u_num_1d_X,
+                                storage_dict_Y=self._u_num_1d_Y,
+                                storage_params=self._u_num_1d_params,
+                                t_val=t,
+                                direction_index=direction_index,
+                                flow_threshold=flow_velocity_threshold,
+                                show_message=show_message)
         
-        y_size, x_size = u_2d_t.shape[0], u_2d_t.shape[1]
+        self.process_data_field(model=model,
+                                field_name='ux',
+                                storage_dict_X=self._ux_num_1d_X,
+                                storage_dict_Y=self._ux_num_1d_Y,
+                                storage_params=self._ux_num_1d_params,
+                                t_val=t,
+                                direction_index=direction_index,
+                                flow_threshold=flow_velocity_threshold,
+                                show_message=show_message)
         
-        # ALONG Y
-        if direction_index[0] is None:
-            max_front_idx = 0
-            list_column_with_front = []
-            
-            for x in range(x_size):
-                idx_max = np.argmax(u_2d_t[:, x])
-                profile = u_2d_t[idx_max:, x]
-                idx = np.where(profile < flow_velocity_threshold)[0]
-                                
-                if len(idx) == 0:
-                    max_front_idx = 0
-                    list_column_with_front = [0]
-                
-                else:
-                    if (idx[0] + idx_max) > max_front_idx :
-                        max_front_idx = (idx[0] + idx_max)
-                        list_column_with_front = [x]
-                    
-                    elif (idx[0] + idx_max) == max_front_idx :
-                        list_column_with_front.append(x)
-                                    
-            max_front_value = 0
-            list_column_with_value = []
-            for idx in list_column_with_front:
-                val = u_2d_t[max_front_idx - 1, idx]
-                if val > max_front_value:
-                    max_front_value = val
-                    list_column_with_value = [idx]
-                elif val == max_front_value:
-                    list_column_with_value.append(idx)
-                            
-            if len(list_column_with_value) > 1:
-                max_index = np.unravel_index(np.argmax(u_2d_t[:, list_column_with_value]), u_2d_t.shape)
-                direction_index[0] = list_column_with_value[max_index[1]]
-            else:
-                direction_index[0] = list_column_with_value[0]
-            
-        if t in self._u_num_1d_Y:
-            if not any(res[0] == self._current_model for res in self._u_num_1d_Y[t]):
-                self._u_num_1d_Y[t].append((self._current_model, u_2d_t[:, direction_index[0]]))
-        else:
-            self._u_num_1d_Y[t] = [(self._current_model, u_2d_t[:, direction_index[0]])]
+        self.process_data_field(model=model,
+                                field_name='uy',
+                                storage_dict_X=self._uy_num_1d_X,
+                                storage_dict_Y=self._uy_num_1d_Y,
+                                storage_params=self._uy_num_1d_params,
+                                t_val=t,
+                                direction_index=direction_index,
+                                flow_threshold=flow_velocity_threshold,
+                                show_message=show_message)
         
-        # ALONG X
-        if direction_index[1] is None:
-            max_front_idx = 0
-            list_row_with_front = []
-            
-            for y in range(y_size):
-                idx_max = np.argmax(u_2d_t[y, :])
-                profile = u_2d_t[y, idx_max:]
-                idx = np.where(profile <= flow_velocity_threshold)[0]
-                
-                if len(idx) == 0:
-                    max_front_idx = 0
-                    list_row_with_front = [0]
-                
-                else:
-                    if (idx[0] + idx_max) > max_front_idx :
-                        max_front_idx = (idx[0] + idx_max)
-                        list_row_with_front = [y]
-
-                    elif (idx[0] + idx_max) == max_front_idx :
-                        list_row_with_front.append(y)
-            
-            max_front_value = 0
-            list_row_with_value = []
-            for idx in list_row_with_front:
-                val = u_2d_t[idx, max_front_idx - 1]
-                if val > max_front_value:
-                    max_front_value = val
-                    list_row_with_value = [idx]
-                elif val == max_front_value:
-                    list_row_with_value.append(idx)
-                        
-            if len(list_row_with_value) > 1:
-                max_index = np.unravel_index(np.argmax(u_2d_t[list_row_with_value, :]), u_2d_t.shape)
-                direction_index[1] = list_row_with_value[max_index[0]]
-            else:
-                direction_index[1] = list_row_with_value[0]            
-
-        if t in self._u_num_1d_X:
-            if not any(res[0] == self._current_model for res in self._u_num_1d_X[t]):
-                self._u_num_1d_X[t].append((self._current_model, u_2d_t[direction_index[1], :]))
-        else:
-            self._u_num_1d_X[t] = [(self._current_model, u_2d_t[direction_index[1], :])]
-        
-        # FRONT POSITIONS
-        idx_max_X = np.argmax(u_2d_t[direction_index[1], :])
-        idx_max_Y = np.argmax(u_2d_t[:, direction_index[0]])
-        
-        # RIGHT
-        profile = u_2d_t[direction_index[1], idx_max_X:]
-        idx = np.where(profile <= flow_velocity_threshold)[0]
-        
-        if len(idx) == 0:
-            idx_r = x_size - 1
-        else:
-            idx_r = idx[0] + idx_max_X - 1
-        
-        # LEFT
-        profile = u_2d_t[direction_index[1], :idx_max_X]
-        idx = np.where(profile <= flow_velocity_threshold)[0]
-        
-        if len(idx) == 0:
-            idx_l = 0
-        else:
-            idx_l = idx[-1] + 1
-        
-        # UP
-        profile = u_2d_t[idx_max_Y:, direction_index[0]]
-        idx = np.where(profile <= flow_velocity_threshold)[0]
-        
-        if len(idx) == 0:
-            idx_u = y_size - 1
-        else:
-            idx_u = idx[0] + idx_max_Y - 1
-        
-        # LEFT
-        profile = u_2d_t[:idx_max_Y, direction_index[0]]
-        idx = np.where(profile <= flow_velocity_threshold)[0]
-        
-        if len(idx) == 0:
-            idx_d = 0
-        else:
-            idx_d = idx[-1] + 1
-        
-        if t in self._u_num_1d_params:
-            if not any(res[0] == self._current_model for res in self._u_num_1d_params[t]):
-                self._u_num_1d_params[t].append((self._current_model, direction_index, [idx_l, idx_r, idx_d, idx_u]))
-        else:
-            self._u_num_1d_params[t] = [(self._current_model, direction_index, [idx_l, idx_r, idx_d, idx_u])]
-        
-        if show_message:
-            print(self._current_model, " -> U")
-            print(f"Selected index:\n   X -> {direction_index[0]}\n   Y -> {direction_index[1]}")
-            print(f"Front positions:\n  Right -> {idx_r}, {self._x[idx_r]}m\n  Left -> {idx_l}, {self._x[idx_l]}m\n  Up -> {idx_u}, {self._y[idx_u]}m\n  Down -> {idx_d}, {self._y[idx_d]}m")
-
-
-        if v_2d_all is not None:
-            v_2d_t = v_2d_all.d[:, :, t]
-            v_2d_t[v_2d_t <= flow_velocity_threshold] = 0
-        
-            # ALONG Y
-            if direction_index[0] is None:
-                max_front_idx = 0
-                list_column_with_front = []
-                
-                for x in range(x_size):
-                    idx_max = np.argmax(v_2d_t[:, x])
-                    profile = v_2d_t[idx_max:, x]
-                    idx = np.where(profile < flow_velocity_threshold)[0]
-                                    
-                    if len(idx) == 0:
-                        max_front_idx = 0
-                        list_column_with_front = [0]
-                    
-                    else:
-                        if (idx[0] + idx_max) > max_front_idx :
-                            max_front_idx = (idx[0] + idx_max)
-                            list_column_with_front = [x]
-                        
-                        elif (idx[0] + idx_max) == max_front_idx :
-                            list_column_with_front.append(x)
-                                        
-                max_front_value = 0
-                list_column_with_value = []
-                for idx in list_column_with_front:
-                    val = v_2d_t[max_front_idx - 1, idx]
-                    if val > max_front_value:
-                        max_front_value = val
-                        list_column_with_value = [idx]
-                    elif val == max_front_value:
-                        list_column_with_value.append(idx)
-                                
-                if len(list_column_with_value) > 1:
-                    max_index = np.unravel_index(np.argmax(v_2d_t[:, list_column_with_value]), v_2d_t.shape)
-                    direction_index[0] = list_column_with_value[max_index[1]]
-                else:
-                    direction_index[0] = list_column_with_value[0]
-                
-            if t in self._v_num_1d_Y:
-                if not any(res[0] == self._current_model for res in self._v_num_1d_Y[t]):
-                    self._v_num_1d_Y[t].append((self._current_model, v_2d_t[:, direction_index[0]]))
-            else:
-                self._v_num_1d_Y[t] = [(self._current_model, v_2d_t[:, direction_index[0]])]
-            
-            # ALONG X
-            if direction_index[1] is None:
-                max_front_idx = 0
-                list_row_with_front = []
-                
-                for y in range(y_size):
-                    idx_max = np.argmax(v_2d_t[y, :])
-                    profile = v_2d_t[y, idx_max:]
-                    idx = np.where(profile <= flow_velocity_threshold)[0]
-                    
-                    if len(idx) == 0:
-                        max_front_idx = 0
-                        list_row_with_front = [0]
-                    
-                    else:
-                        if (idx[0] + idx_max) > max_front_idx :
-                            max_front_idx = (idx[0] + idx_max)
-                            list_row_with_front = [y]
-
-                        elif (idx[0] + idx_max) == max_front_idx :
-                            list_row_with_front.append(y)
-                
-                max_front_value = 0
-                list_row_with_value = []
-                for idx in list_row_with_front:
-                    val = v_2d_t[idx, max_front_idx - 1]
-                    if val > max_front_value:
-                        max_front_value = val
-                        list_row_with_value = [idx]
-                    elif val == max_front_value:
-                        list_row_with_value.append(idx)
-                            
-                if len(list_row_with_value) > 1:
-                    max_index = np.unravel_index(np.argmax(v_2d_t[list_row_with_value, :]), v_2d_t.shape)
-                    direction_index[1] = list_row_with_value[max_index[0]]
-                else:
-                    direction_index[1] = list_row_with_value[0]            
-
-            if t in self._v_num_1d_X:
-                if not any(res[0] == self._current_model for res in self._v_num_1d_X[t]):
-                    self._v_num_1d_X[t].append((self._current_model, v_2d_t[direction_index[1], :]))
-            else:
-                self._v_num_1d_X[t] = [(self._current_model, v_2d_t[direction_index[1], :])]
-            
-            # FRONT POSITIONS
-            idx_max_X = np.argmax(v_2d_t[direction_index[1], :])
-            idx_max_Y = np.argmax(v_2d_t[:, direction_index[0]])
-            
-            # RIGHT
-            profile = v_2d_t[direction_index[1], idx_max_X:]
-            idx = np.where(profile <= flow_velocity_threshold)[0]
-            
-            if len(idx) == 0:
-                idx_r = x_size - 1
-            else:
-                idx_r = idx[0] + idx_max_X - 1
-            
-            # LEFT
-            profile = v_2d_t[direction_index[1], :idx_max_X]
-            idx = np.where(profile <= flow_velocity_threshold)[0]
-            
-            if len(idx) == 0:
-                idx_l = 0
-            else:
-                idx_l = idx[-1] + 1
-            
-            # UP
-            profile = v_2d_t[idx_max_Y:, direction_index[0]]
-            idx = np.where(profile <= flow_velocity_threshold)[0]
-            
-            if len(idx) == 0:
-                idx_u = y_size - 1
-            else:
-                idx_u = idx[0] + idx_max_Y - 1
-            
-            # LEFT
-            profile = v_2d_t[:idx_max_Y, direction_index[0]]
-            idx = np.where(profile <= flow_velocity_threshold)[0]
-            
-            if len(idx) == 0:
-                idx_d = 0
-            else:
-                idx_d = idx[-1] + 1
-            
-            if t in self._v_num_1d_params:
-                if not any(res[0] == self._current_model for res in self._v_num_1d_params[t]):
-                    self._v_num_1d_params[t].append((self._current_model, direction_index, [idx_l, idx_r, idx_d, idx_u]))
-            else:
-                self._v_num_1d_params[t] = [(self._current_model, direction_index, [idx_l, idx_r, idx_d, idx_u])]
-            
-            if show_message:
-                print(self._current_model, " -> V")
-                print(f"Selected index:\n   X -> {direction_index[0]}\n   Y -> {direction_index[1]}")
-                print(f"Front positions:\n  Right -> {idx_r}, {self._x[idx_r]}m\n  Left -> {idx_l}, {self._x[idx_l]}m\n  Up -> {idx_u}, {self._y[idx_u]}m\n  Down -> {idx_d}, {self._y[idx_d]}m")
-
 
     def extract_height_field(self,
-                               t: float = None
-                               ) -> None:
+                             model: str = None,
+                             t: float = None,
+                             ) -> None:
         """
         Extract and store the full 2D height field at a given time step and store it for future use.
 
         Parameters
         ----------
+        model : str, optional
+            Wanted model to extract profiles, if None take the currently loaded model.
         t : float, optional
             Time index to extract. If None or invalid, uses the last available time step.
 
         Raises
         ------
         ValueError
-            If no numerical result has been loaded.
+            If the model has not been loaded.
         """
-        if self._current_result is None:
-            raise ValueError(" -> No result load, use first load_numerical_result.")
+        if model is None:
+            model = self._current_model
 
-        h_2d_all = self._current_result.get_output("h")
+        if model not in self._current_result:
+            raise ValueError(" -> Model not load, use first load_numerical_result(model).")
 
-        t = h_2d_all.d.shape[2]-1 if t is None or t >= h_2d_all.d.shape[2] else t
+        h_2d_all = self._current_result[model].get_output("h")
+        tim = self._current_result[model].tim
+        
+        # Find the index of the wanted time (or the closest)
+        if t is not None:
+            for idx in range(len(tim)):
+                if tim[idx] == t:
+                    t = idx
+                    break
+                else:
+                    if abs(tim[idx] - t) < 0.01:
+                        t = idx
+        else:
+            t = field_all.d.shape[2]-1
+            
+        
+        t = h_2d_all.d.shape[2]-1 if t is None or t >= h_2d_all.d.shape[2] or type(t) != type(1) else t
         h_2d_t = h_2d_all.d[:, :, t]
                     
         if t in self._h_num_2d:
-            if not any(res[0] == self._current_model for res in self._h_num_2d[t]):
-                self._h_num_2d[t].append((self._current_model, h_2d_t))
+            if not any(res[0] == model for res in self._h_num_2d[t]):
+                self._h_num_2d[t].append((model, h_2d_t))
         else:
-            self._h_num_2d[t] = [(self._current_model, h_2d_t)]
+            self._h_num_2d[t] = [(model, h_2d_t)]
             
 
     def extract_velocity_field(self,
-                               t: float = None
+                               model: str = None,
+                               t: float = None,
                                ) -> None:
         """
         Extract and store the full 2D velocity field at a given time step and store it for future use.
 
         Parameters
         ----------
+        model : str, optional
+            Wanted model to extract profiles, if None take the currently loaded model.
         t : float, optional
             Time index to extract. If None or invalid, uses the last available time step.
 
         Raises
         ------
         ValueError
-            If no numerical result has been loaded.
+            If the model has not been loaded.
         """
-        if self._current_result is None:
-            raise ValueError(" -> No result load, use first load_numerical_result.")
+        if model is None:
+            model = self._current_model
 
-        if self._current_model == "shaltop":
-            u_2d_all = self._current_result.get_output('ux')
-            v_2d_all = self._current_result.get_output('uy')
-        elif self._current_model == "lave2D":
-            u_2d_all = self._current_result.get_output('u')
-            v_2d_all = None
-        elif self._current_model == "saval2D":
-            u_2d_all = self._current_result.get_output('u')
-            v_2d_all = self._current_result.get_output('v')
+        if model not in self._current_result:
+            raise ValueError(" -> Model not load, use first load_numerical_result(model).")
         
-        t = u_2d_all.d.shape[2]-1 if t is None or t >= u_2d_all.d.shape[2] else t
-        u_2d_t = u_2d_all.d[:, :, t]
+        u_2d_all = self._current_result[model].get_output('u')
+        ux_2d_all = self._current_result[model].get_output('ux')
+        uy_2d_all = self._current_result[model].get_output('uy')
+        tim = self._current_result[model].tim
         
-        if t in self._u_num_2d:
-            if not any(res[0] == self._current_model for res in self._u_num_2d[t]):
-                self._u_num_2d[t].append((self._current_model, u_2d_t))
+        # Find the index of the wanted time (or the closest)
+        if t is not None:
+            for idx in range(len(tim)):
+                if tim[idx] == t:
+                    t = idx
+                    break
+                else:
+                    if abs(tim[idx] - t) < 0.01:
+                        t = idx
         else:
-            self._u_num_2d[t] = [(self._current_model, u_2d_t)]
+            t = field_all.d.shape[2]-1
+            # print("oui")
         
-        if v_2d_all is not None:
-            v_2d_t = v_2d_all.d[:, :, t]
-                    
-            if t in self._v_num_2d:
-                if not any(res[0] == self._current_model for res in self._v_num_2d[t]):
-                    self._v_num_2d[t].append((self._current_model, v_2d_t))
+        if u_2d_all is not None:
+            t = u_2d_all.d.shape[2]-1 if t is None or t >= u_2d_all.d.shape[2] else t
+            u_2d_t = u_2d_all.d[:, :, t]
+            
+            if t in self._u_num_2d:
+                if not any(res[0] == self._current_model for res in self._u_num_2d[t]):
+                    self._u_num_2d[t].append((model, u_2d_t))
             else:
-                self._v_num_2d[t] = [(self._current_model, v_2d_t)]
-      
+                self._u_num_2d[t] = [(model, u_2d_t)]
+        
+        if ux_2d_all is not None:
+            t = ux_2d_all.d.shape[2]-1 if t is None or t >= ux_2d_all.d.shape[2] else t
+            u_2d_t = ux_2d_all.d[:, :, t]
+            
+            if t in self._ux_num_2d:
+                if not any(res[0] == self._current_model for res in self._ux_num_2d[t]):
+                    self._ux_num_2d[t].append((model, u_2d_t))
+            else:
+                self._ux_num_2d[t] = [(model, u_2d_t)]
+        
+        if uy_2d_all is not None:
+            t = uy_2d_all.d.shape[2]-1 if t is None or t >= uy_2d_all.d.shape[2] else t
+            u_2d_t = uy_2d_all.d[:, :, t]
+            
+            if t in self._uy_num_2d:
+                if not any(res[0] == self._current_model for res in self._uy_num_2d[t]):
+                    self._uy_num_2d[t].append((model, u_2d_t))
+            else:
+                self._uy_num_2d[t] = [(model, u_2d_t)]
+         
     
     def compute_analytic_solution(self, 
                                   model: Callable, 
@@ -690,14 +552,21 @@ class Benchmark:
         
         solution.compute_h(self._x, T)
         solution.compute_u(self._x, T)
-        for i in range(len(T)):
-            self._h_as_1d.append((T[i], solution.h[i]))
-            self._u_as_1d.append((T[i], solution.u[i]))
+        
+        if solution.h is not None:
+            for i in range(len(T)):
+                self._h_as_1d.append((T[i], solution.h[i]))    
+        if solution.u is not None:
+            for i in range(len(T)):
+                self._u_as_1d.append((T[i], solution.u[i]))
     
 
     def show_height_profile(self,
                             model_to_plot: str,
                             axis: str = "X",
+                            time_steps: float | list[float] = None,
+                            direction_index = None,
+                            flow_height_threshold = 0.001,
                             linestyles: list[str] = None,
                             ax: matplotlib.axes._axes.Axes = None,
                             x_unit:str = "m",
@@ -713,6 +582,9 @@ class Benchmark:
             Model name to plot ('shaltop', 'lave2D', 'saval2D', or 'as' for analytic solution).
         axis : str, optional
             Allows to choose the profile according to the desired axis, by default 'X'.
+        time_steps : float or list[float], optional
+            List of time steps required to extract and display profiles. If None displays the profiles already extracted. Only available for
+            models.
         linestyles : list[str], optional
             Custom linestyles for each time step. If None, colors and styles are auto-assigned.
         ax : matplotlib.axes._axes.Axes, optional
@@ -744,20 +616,35 @@ class Benchmark:
         profil_idx = None
         profil_positions = []
         
-        if model_to_plot == 'as' and (axis == 'X' or axis == 'x'):
+        axis = axis.upper()
+                
+        # For analytic solution profile
+        if model_to_plot == 'as' and axis == 'X':            
             if len(self._h_as_1d) == 0:
                 raise ValueError(" -> No analytic solution computed.")
             else:
                 h_plot = self._h_as_1d[:]
         
+        
+        # For models profile
         elif model_to_plot in self._allowed_model:
-            if axis == "Y" or axis == "y":
+            # If time_steps is given, first extract the wanted profiles at specified time
+            if isinstance(time_steps, float):
+                    self.extract_height_profiles(model_to_plot, time_steps, direction_index, flow_height_threshold)
+                
+            elif isinstance(time_steps, list):
+                for t in time_steps:
+                    self.extract_height_profiles(model_to_plot, t, direction_index, flow_height_threshold)
+            
+            
+            # Then extract the profile depending on the axis 
+            if axis == "Y":
                 if any(label == model_to_plot for lst in self._h_num_1d_Y.values() for label, _ in lst):
                     h_plot = [(t, val) for t, lst in self._h_num_1d_Y.items() for label, val in lst if label == model_to_plot]
                     profil_idx = [idx[0] for t, lst in self._h_num_1d_params.items() for label, idx, front in lst if label == model_to_plot]
                 else:
                     raise ValueError(" -> Solution not extracted.")
-            elif axis == "X" or axis == "x":
+            elif axis == "X":
                 if any(label == model_to_plot for lst in self._h_num_1d_X.values() for label, _ in lst):
                     h_plot = [(t, val) for t, lst in self._h_num_1d_X.items() for label, val in lst if label == model_to_plot]
                     profil_idx = [idx[1] for t, lst in self._h_num_1d_params.items() for label, idx, front in lst if label == model_to_plot]
@@ -765,63 +652,66 @@ class Benchmark:
                     raise ValueError(" -> Solution not extracted.")
             else:
                 raise ValueError(" -> Incorrect axis: 'Y' or 'X'.")
+        
         else:
             raise ValueError(f" -> No allowed model selected, choose between:\n       {self._allowed_model.append('as')}")
 
-        if h_plot is not None:
-            if ax is None:
-                fig, ax = plt.subplots()
-            
-            if axis == "Y" or axis == "y":
-                absci = self._y
-                if profil_idx is not None:
-                    for i in profil_idx:
-                        profil_positions.append(float(self._x[i]))
-                    print(f"Profiles' position: {profil_positions}m")
-
-            elif axis == "X" or axis == "x":
-                absci = self._x
-                if profil_idx is not None:
-                    for i in profil_idx:
-                        profil_positions.append(float(self._y[i]))
-                    print(f"Profiles' position: {profil_positions}m")
-
-            if len(h_plot) == 1:
-                ax.plot(absci, h_plot[0][1], color='black', linewidth=1, label=f"t={h_plot[0][0]}s")
-            else:
-                if linestyles is None or len(linestyles)!=(len(h_plot)):
-                    norm = plt.Normalize(vmin=min(t for t, _ in h_plot), vmax=max(t for t, _ in h_plot))
-                    cmap = plt.cm.copper
-                    
-                for sol_idx, sol_val in enumerate(h_plot):
-                    t_val = h_plot[sol_idx][0]
-                    if linestyles is None or len(linestyles)!=(len(h_plot)):
-                        color = cmap(norm(t_val)) if t_val != 0 else "red"
-                        l_style = "-" if t_val != 0 else (0, (1, 4))
-                    else:
-                        color = "black" if t_val != 0 else "red"
-                        l_style = linestyles[sol_idx] if t_val != 0 else (0, (1, 4))    
-                    ax.plot(absci, sol_val[1], color=color, linestyle=l_style, label=f"t={t_val}s")
-
-            ax.grid(which='major')
-            ax.grid(which='minor', alpha=0.5)
-            ax.set_xlim(left=min(absci), right=max(absci))
-            
-            ax.set_title(f"Flow height profile along {axis}")
-            ax.set_xlabel(f"x [{x_unit}]")
-            ax.set_ylabel(f"h [{h_unit}]")
-            ax.legend(loc='upper right')
-            
-            if show_plot:
-                plt.show()
+        
+        # Create fig if not given
+        if ax is None:
+            fig, ax = plt.subplots()
+        
+        
+        # Print the position of the plotted profiles
+        absci = self._y if axis == 'Y' else self._x
+        profil_coord = self._x if axis == 'Y' else self._y
+        if profil_idx:
+            profil_positions = [float(profil_coord[i]) for i in profil_idx]
+            print(f"Profiles' position: {profil_positions}m")
+        
+        
+        # Plot the profiles
+        if len(h_plot) == 1: # Only one time to plot
+            ax.plot(absci, h_plot[0][1], color='black', linewidth=1, label=f"t={h_plot[0][0]}s")
+        else: # Multiple times to plot
+            if linestyles is None or len(linestyles)!=(len(h_plot)):
+                norm = plt.Normalize(vmin=min(t for t, _ in h_plot), vmax=max(t for t, _ in h_plot))
+                cmap = plt.cm.copper
                 
-            return ax        
-    
-    
+            for sol_idx, sol_val in enumerate(h_plot):
+                t_val = h_plot[sol_idx][0]
+                if linestyles is None or len(linestyles)!=(len(h_plot)):
+                    color = cmap(norm(t_val)) if t_val != 0 else "red"
+                    l_style = "-" if t_val != 0 else (0, (1, 4))
+                else:
+                    color = "black" if t_val != 0 else "red"
+                    l_style = linestyles[sol_idx] if t_val != 0 else (0, (1, 4))    
+                ax.plot(absci, sol_val[1], color=color, linestyle=l_style, label=f"t={t_val}s")
+
+
+        # Formatting the fig
+        ax.grid(which='major')
+        ax.grid(which='minor', alpha=0.5)
+        ax.set_xlim(left=min(absci), right=max(absci))
+        
+        ax.set_title(f"Flow height profile along {axis}")
+        ax.set_xlabel(f"x [{x_unit}]")
+        ax.set_ylabel(f"h [{h_unit}]")
+        ax.legend(loc='upper right')
+        
+        if show_plot:
+            plt.show()
+            
+        return ax        
+
+
     def show_velocity_profile(self,
                               model_to_plot: str,
-                              velocity_axis: str='U',
+                              velocity_axis: str='ux',
                               axis: str="X",
+                              time_steps: float | list[float] = None,
+                              direction_index = None,
+                              flow_velocity_threshold = 0.001,
                               velocity_threshold: float=1e-6,
                               linestyles: list[str]=None,
                               ax: matplotlib.axes._axes.Axes = None,
@@ -840,8 +730,11 @@ class Benchmark:
             Velocity direction to use for the plot, by default 'U' (along X axis).
         axis : str, optional
             Allows to choose the profile according to the desired axis, by default 'X'.
+        time_steps : float or list[float], optional
+            List of time steps required to extract and display profiles. If None displays the profiles already extracted. Only available for
+            models.
         velocity_threshold : float, optional
-            Threshold value where lower values ​​will be replaced by Nan, by default 1e-6.
+            Threshold value where lower values will be replaced by Nan, by default 1e-6.
         linestyles : list[str], optional
             Custom linestyles for each time step. If None, colors and styles are auto-assigned.
         ax : matplotlib.axes._axes.Axes, optional
@@ -869,110 +762,138 @@ class Benchmark:
         ValueError
             If the axis is incorrect.
         """
+        def get_profile_data(velocity_axis, axis, model):
+            """Helper to extract profile data and index from appropriate dictionaries.
+
+            Parameters
+            ----------
+            velocity_axis : str
+                Axis 'ux' or 'uy'. Can also be 'u'.
+            axis : str
+                Acis 'X' or 'Y'
+            model : str
+                Model to plot
+
+            Returns
+            -------
+            u_plot : list[np.ndarray] 
+                List of profiles to plot.
+            profil_idx : list[int]
+                Profiles indexes.    
+
+            Raises
+            ------
+            ValueError
+                If incorrect axis.
+            ValueError
+                If no solution extracted.
+            """
+            axis = axis.upper()
+            valid_axes = ['X', 'Y']
+            if axis not in valid_axes or velocity_axis not in ['u', 'ux', 'uy']:
+                raise ValueError(" -> Incorrect axis or velocity axis. Use axis in ['X', 'Y'] and velocity in ['u', 'ux', 'uy'].")
+
+            dicts = {
+                ('u', 'X'): self._u_num_1d_X,
+                ('u', 'Y'): self._u_num_1d_Y,
+                ('ux', 'X'): self._ux_num_1d_X,
+                ('ux', 'Y'): self._ux_num_1d_Y,
+                ('uy', 'X'): self._uy_num_1d_X,
+                ('uy', 'Y'): self._uy_num_1d_Y,
+            }
+            params = {
+                'u': self._u_num_1d_params,
+                'ux': self._ux_num_1d_params,
+                'uy': self._uy_num_1d_params,
+            }
+
+            data_dict = dicts[(velocity_axis, axis)]
+            param_dict = params[velocity_axis]
+
+            if not any(label == model for lst in data_dict.values() for label, _ in lst):
+                raise ValueError(" -> Solution not extracted.")
+
+            u_plot = [(t, val) for t, lst in data_dict.items() for label, val in lst if label == model]
+            profil_idx = [idx[0 if axis == 'Y' else 1] for t, lst in param_dict.items() for label, idx, _ in lst if label == model]
+            return u_plot, profil_idx
+
         u_plot = None
         profil_idx = None
         profil_positions = []
         
-        if model_to_plot == 'as':
-            if len(self._u_as_1d) == 0:
-                raise ValueError(" -> No analytic solution computed.")
-            else:
-                u_plot = self._u_as_1d[:]
+        axis = axis.upper()
+
         
+        # For analytic solution profile
+        if model_to_plot == 'as':
+            if not self._u_as_1d:
+                raise ValueError(" -> No analytic solution computed.")
+            u_plot = self._u_as_1d[:]
+            profil_idx = None
+        
+        
+        # For models profile  
         elif model_to_plot in self._allowed_model:
-            if velocity_axis == 'U' or velocity_axis == 'u':
-                if axis == "Y" or axis == "y":
-                    if any(label == model_to_plot for lst in self._u_num_1d_Y.values() for label, _ in lst):
-                        u_plot = [(t, val) for t, lst in self._u_num_1d_Y.items() for label, val in lst if label == model_to_plot]
-                        profil_idx = [idx[0] for t, lst in self._u_num_1d_params.items() for label, idx, front in lst if label == model_to_plot]
-                    else:
-                        raise ValueError(" -> Solution not extracted.")
-                elif axis == "X" or axis == "x":
-                    # print(0)
-                    # print(self._u_num_1d_X)
-                    # print(self._u_num_1d_Y)
-                    # print(self._v_num_1d_X)
-                    # print(self._v_num_1d_Y)
-                    if any(label == model_to_plot for lst in self._u_num_1d_X.values() for label, _ in lst):
-                        u_plot = [(t, val) for t, lst in self._u_num_1d_X.items() for label, val in lst if label == model_to_plot]
-                        profil_idx = [idx[1] for t, lst in self._u_num_1d_params.items() for label, idx, front in lst if label == model_to_plot]
-                    else:
-                        raise ValueError(" -> Solution not extracted.")
-                else:
-                    raise ValueError(" -> Incorrect axis: 'Y' or 'X'.")
-            
-            elif velocity_axis == 'V' or velocity_axis == 'v':
-                if axis == "Y" or axis == "y":
-                    if any(label == model_to_plot for lst in self._v_num_1d_Y.values() for label, _ in lst):
-                        u_plot = [(t, val) for t, lst in self._v_num_1d_Y.items() for label, val in lst if label == model_to_plot]
-                        profil_idx = [idx[0] for t, lst in self._v_num_1d_params.items() for label, idx, front in lst if label == model_to_plot]
-                    else:
-                        raise ValueError(" -> Solution not extracted.")
-                elif axis == "X" or axis == "x":
-                    if any(label == model_to_plot for lst in self._v_num_1d_X.values() for label, _ in lst):
-                        u_plot = [(t, val) for t, lst in self._v_num_1d_X.items() for label, val in lst if label == model_to_plot]
-                        profil_idx = [idx[1] for t, lst in self._v_num_1d_params.items() for label, idx, front in lst if label == model_to_plot]
-                    else:
-                        raise ValueError(" -> Solution not extracted.")
-                else:
-                    raise ValueError(" -> Incorrect axis: 'Y' or 'X'.")
-            else:
-                raise ValueError(" -> Incorrect velocity axis: 'U' or 'V'.")
-        else:
-            raise ValueError(f" -> No allowed model selected, choose between:\n       {self._allowed_model[:].append('as')}")
-
-        if u_plot is not None:
-            if ax is None:
-                fig, ax = plt.subplots()
+            # If time_steps is given, first extract the wanted profiles at specified time
+            if isinstance(time_steps, float):
+                    self.extract_velocity_profiles(model_to_plot, time_steps, direction_index, flow_velocity_threshold)
                 
-            if axis == "Y" or axis == "y":
-                absci = self._y
-                if profil_idx is not None:
-                    for i in profil_idx:
-                        profil_positions.append(float(self._x[i]))
-                    print(f"Profiles' position: {profil_positions}m")
-
-            elif axis == "X" or axis == "x":
-                absci = self._x
-                if profil_idx is not None:
-                    print(len(self._x), len(self._y))
-                    print(profil_idx)
-                    for i in profil_idx:
-                        profil_positions.append(float(self._y[i]))
-                    print(f"Profiles' position: {profil_positions}m")
-
-            if len(u_plot) == 1:
-                u_plot[0][1][u_plot[0][1] <= velocity_threshold] = np.nan
-                ax.plot(absci, u_plot[0][1], color='black', linewidth=1, label=f"t={u_plot[0][0]}s")
-            else:
-                if linestyles is None or len(linestyles)!=(len(u_plot)):
-                    norm = plt.Normalize(vmin=min(t for t, _ in u_plot), vmax=max(t for t, _ in u_plot))
-                    cmap = plt.cm.copper
-                    
-                for sol_idx, sol_val in enumerate(u_plot):
-                    t_val = u_plot[sol_idx][0]
-                    if linestyles is None or len(linestyles)!=(len(u_plot)):
-                        color = cmap(norm(t_val)) if t_val != 0 else "red"
-                        l_style = "-" if t_val != 0 else (0, (1, 4))
-                    else:
-                        color = "black" if t_val != 0 else "red"
-                        l_style = linestyles[sol_idx] if t_val != 0 else (0, (1, 4))
-                    sol_val[1][sol_val[1] <= velocity_threshold] = np.nan
-                    ax.plot(absci, sol_val[1], color=color, linestyle=l_style, label=f"t={t_val}s")
-
-            ax.grid(which='major')
-            ax.grid(which='minor', alpha=0.5)
-            ax.set_xlim(left=min(absci), right=max(absci))
+            elif isinstance(time_steps, list):
+                for t in time_steps:
+                    self.extract_velocity_profiles(model_to_plot, t, direction_index, flow_velocity_threshold)
             
-            ax.set_title(f"Flow velocity ({velocity_axis}) profile along {axis}")
-            ax.set_xlabel(f"x [{x_unit}]")
-            ax.set_ylabel(f"h [{h_unit}]")
-            ax.legend(loc='upper right')
             
-            if show_plot:
-                plt.show()            
+            # Extract the profiles
+            u_plot, profil_idx = get_profile_data(velocity_axis, axis, model_to_plot)
+        else:
+            raise ValueError(f" -> Invalid model. Choose from: {self._allowed_model + ['as']}")
 
-            return ax
+
+        # Create the fig
+        if ax is None:
+            _, ax = plt.subplots()
+
+        
+        # Print the position of the plotted profiles
+        axis = axis.upper()
+        absci = self._y if axis == 'Y' else self._x
+        profil_coord = self._x if axis == 'Y' else self._y
+        if profil_idx:
+            profil_positions = [float(profil_coord[i]) for i in profil_idx]
+            print(f"Profiles' position: {profil_positions}m")
+        
+
+        # Plot the profiles
+        if isinstance(u_plot[0], tuple):
+            if linestyles is None or len(linestyles) != len(u_plot):
+                cmap = plt.cm.copper
+                norm = plt.Normalize(vmin=min(t for t, _ in u_plot), vmax=max(t for t, _ in u_plot))
+            for idx, (t_val, profile) in enumerate(u_plot):
+                profile[profile <= velocity_threshold] = np.nan
+                if linestyles and len(linestyles) == len(u_plot):
+                    l_style = linestyles[idx]
+                    color = "black" if t_val != 0 else "red"
+                else:
+                    color = cmap(norm(t_val)) if t_val != 0 else "red"
+                    l_style = "-" if t_val != 0 else (0, (1, 4))
+                ax.plot(absci, profile, color=color, linestyle=l_style, label=f"t={t_val}s")
+        else:
+            u_plot[u_plot <= velocity_threshold] = np.nan
+            ax.plot(absci, u_plot, color='black', linewidth=1, label=f"t={t_val}s")
+
+
+        # Formatting the fig
+        ax.grid(which='both', alpha=0.5)
+        ax.set_xlim(min(absci), max(absci))
+        ax.set_title(f"Flow velocity ({velocity_axis}) profile along {axis}")
+        ax.set_xlabel(f"x [{x_unit}]")
+        ax.set_ylabel(f"h [{h_unit}]")
+        ax.legend(loc='upper right')
+
+        if show_plot:
+            plt.show()
+
+        return ax
 
 
     def show_height_profile_with_coussot_morpho(self, 
@@ -981,7 +902,9 @@ class Benchmark:
                                                 tau: float, 
                                                 theta: int=0, 
                                                 H_size: int=100, 
-                                                direction: str = "right", 
+                                                direction: str = "right",
+                                                direction_index: list[float] | str = None,
+                                                flow_threshold: float = 1e-3,
                                                 front_position: float = None,
                                                 lateral_position: list[float] = None,
                                                 h_init: float = None, 
@@ -996,6 +919,8 @@ class Benchmark:
 
         Parameters
         ----------
+        model_to_plot : str
+            Model name to plot ('shaltop', 'lave2D', 'saval2D').
         rho : float
             Density of the material.
         tau : float
@@ -1006,6 +931,11 @@ class Benchmark:
             Number of discretization points, by default 100.
         direction : str, optional
             Direction of the flow ("right", "left", "down", "up"), by default "right".
+        direction_index : list[float] or str, optional
+            Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
+                - list[float]: position (in meter) of the wanted profiles.
+                - str: 'max' for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
+                - None: select the medians.
         front_position : float, optional
             Location to align the theoretical shape for the flow front. If None, detected automatically.
         lateral_position : float, optional
@@ -1044,7 +974,14 @@ class Benchmark:
         
         if model_to_plot not in self._allowed_model:
             raise ValueError(f" -> No allowed model selected, choose between:\n       {self._allowed_model}")
-
+                
+        # Extract the profiles at the latest time
+        self.extract_height_profiles(model=model_to_plot,
+                                     t=None,
+                                     direction_index=direction_index,
+                                     flow_height_threshold=flow_threshold)
+        
+        # Extract profile along X
         if direction == "right" or direction == "left":
             max_time = max(self._h_num_1d_X.keys())
             saved_profiles = self._h_num_1d_X[max_time]
@@ -1057,11 +994,14 @@ class Benchmark:
             else:
                 raise ValueError(" -> Model not loaded, first extract profiles.")
 
+            # Find the equivalent Y axis profile
             for lat_res in self._h_num_1d_Y[max_time]:
                 if lat_res[0] == model_to_plot:
                     lat_profile = lat_res[1]
                     break  
         
+        
+        # Do for axis Y
         else:
             max_time = max(self._h_num_1d_Y.keys())
             saved_profiles = self._h_num_1d_Y[max_time]
@@ -1079,11 +1019,15 @@ class Benchmark:
                     lat_profile = lat_res[1]
                     break  
         
+        
+        # Extract front positions
         for params in self._h_num_1d_params[max_time]:
             if params[0] == model_to_plot:
                 # idx = params[1]
                 fronts = params[2]
         
+        
+        # Compute Coussot's solution and positions it in the right place for the front flow
         morpho = AS.Coussot_shape(rho=rho, tau=tau, theta=theta, H_size=H_size)
         morpho.compute_rheological_test_front_morpho(h_init=h_init, h_final=h_final)
         
@@ -1102,16 +1046,20 @@ class Benchmark:
         else:
             morpho.translate_front(front_position)
 
+        
+        # Create fig
         if axes is None:
             fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
-            
+        
+        
+        # Formatting axes[0] for the front flow 
         if direction == "up" or direction == "down" :
-            axes[0].plot(self._y, front_profile, linestyle='-', color='black', label=self._current_model)
+            axes[0].plot(self._y, front_profile, linestyle='-', color='black', label=model_to_plot)
             axes[0].set_xlim(left=min(self._y), right=max(self._y))
             axes[0].set_xlabel(f"y [{x_unit}]")
  
         else:
-            axes[0].plot(self._x, front_profile, linestyle='-', color='black', label=self._current_model)
+            axes[0].plot(self._x, front_profile, linestyle='-', color='black', label=model_to_plot)
             axes[0].set_xlim(left=min(self._x), right=max(self._x))
             axes[0].set_xlabel(f"x [{x_unit}]")
         
@@ -1125,7 +1073,9 @@ class Benchmark:
         axes[0].legend(loc='upper right')
         
         axes[0].set_title("Flow front")
+
         
+        # Compute Coussot's solution and positions it in the right place for the lateral flow
         if theta != 0:
             morpho.compute_rheological_test_lateral_morpho()
             lat_morpho_left = morpho.y
@@ -1154,13 +1104,14 @@ class Benchmark:
             lat_morpho_right = [v+lateral_position[1] for v in lat_morpho_right]
         
         
+        # Formatting axes[1] for the lateral flow 
         if direction == "up" or direction == "down" :
-            axes[1].plot(self._x, lat_profile, linestyle='-', color='black', label=self._current_model)
+            axes[1].plot(self._x, lat_profile, linestyle='-', color='black', label=model_to_plot)
             axes[1].set_xlim(left=min(self._x), right=max(self._x))
             axes[1].set_xlabel(f"x [{x_unit}]")
  
         else:
-            axes[1].plot(self._y, lat_profile, linestyle='-', color='black', label=self._current_model)
+            axes[1].plot(self._y, lat_profile, linestyle='-', color='black', label=model_to_plot)
             axes[1].set_xlim(left=min(self._y), right=max(self._y))
             axes[1].set_xlabel(f"y [{x_unit}]")
         
@@ -1227,8 +1178,6 @@ class Benchmark:
         ValueError
             If no result has been loaded.
         ValueError
-            If no result extracted at the specified time step.
-        ValueError
             If no result computed at the specified time step for the analytical solution.
         ValueError
             If the axis is incorrect.
@@ -1236,15 +1185,22 @@ class Benchmark:
         if self._x is None:
             raise ValueError(" -> No solution extracted, first use load_numerical_result.")
         
-        if axis == 'X' or axis == 'x':
+        axis = axis.upper()
+        
+        if axis == 'X':
             step = len(self._x) // nbr_point
             
+            # If no profile for the time_step, extract it
             if time_step not in self._h_num_1d_X.keys():
-                raise ValueError(" -> Time step not extracted.")
+                for model in models_to_plot:
+                    self.extract_height_profiles(model=model,
+                                                 t=time_step)
             
             if ax is None:
                 fig, ax = plt.subplots()
             
+            
+            # Plot analytic solution
             if plot_as:
                 if any(res[0] == time_step for res in self._h_as_1d):
                     for t, h in self._h_as_1d:
@@ -1253,7 +1209,9 @@ class Benchmark:
                             break
                 else:
                     raise ValueError(" -> Time step not computed in analytical solution.")
-        
+
+
+            # Plot models
             for model in models_to_plot:
                 if any(res[0] == model for res in self._h_num_1d_X[time_step]):
                     for m, h in self._h_num_1d_X[time_step]:
@@ -1267,25 +1225,30 @@ class Benchmark:
             ax.set_xlim(left=min(self._x), right=max(self._x))
             ax.set_xlabel(f"x [{x_unit}]")
         
-        elif axis == 'Y' or axis == 'y':
+        elif axis == 'Y':
             step = len(self._y) // nbr_point
             
+            # If no profile for the time_step, extract it
             if time_step not in self._h_num_1d_Y.keys():
-                raise ValueError(" -> Time step not extracted.")
+                for model in models_to_plot:
+                    self.extract_height_profiles(model=model,
+                                                 t=time_step)
             
             if ax is None:
                 fig, ax = plt.subplots()
             
-            # # NO SOLUTION ALONG AXIS Y
-            # if plot_as:
-            #     if any(res[0] == time_step for res in self._h_as_1d):
-            #         for t, h in self._h_as_1d:
-            #             if t == time_step:
-            #                 ax.plot(self._x, h, linestyle="-", color='black', label="AS")
-            #                 break
-            #     else:
-            #         raise ValueError(" -> Time step not computed in analytical solution.")
-        
+            """NO ANALYTIC SOLUTION ALONG AXIS Y
+            if plot_as:
+                if any(res[0] == time_step for res in self._h_as_1d):
+                    for t, h in self._h_as_1d:
+                        if t == time_step:
+                            ax.plot(self._x, h, linestyle="-", color='black', label="AS")
+                            break
+                else:
+                    raise ValueError(" -> Time step not computed in analytical solution.")
+            """
+
+            # Plot models
             for model in models_to_plot:
                 if any(res[0] == model for res in self._h_num_1d_Y[time_step]):
                     for m, h in self._h_num_1d_Y[time_step]:
@@ -1301,7 +1264,9 @@ class Benchmark:
 
         else:
             raise ValueError(" -> Incorrect axis: 'Y' or 'X'.")
-             
+        
+        
+        # Formatting fig  
         ax.grid(which='major')
         ax.grid(which='minor', alpha=0.5)
         
@@ -1319,7 +1284,7 @@ class Benchmark:
     def show_velocity_profile_comparison(self,
                                          models_to_plot: list[str],
                                          time_step: float,
-                                         velocity_axis: str = "U",
+                                         velocity_axis: str = "u",
                                          axis: str = "X",
                                          velocity_threshold: float = 1e-6,
                                          plot_as: bool = False,
@@ -1367,8 +1332,6 @@ class Benchmark:
         ValueError
             If no result has been loaded.
         ValueError
-            If no result extracted at the specified time step.
-        ValueError
             If no result computed at the specified time step for the analytical solution.
         ValueError
             If the axis is incorrect.
@@ -1378,12 +1341,16 @@ class Benchmark:
         if self._x is None:
             raise ValueError(" -> No solution extracted, first use load_numerical_result.")
         
-        if axis == 'X' or axis == 'x':
+        axis = axis.upper()
+        
+        if axis == 'X':
             step = len(self._x) // nbr_point
             
-            if velocity_axis == 'U' or velocity_axis == 'u':
+            if velocity_axis == 'u':
                 if time_step not in self._u_num_1d_X.keys():
-                    raise ValueError(" -> Time step not extracted.")
+                    for model in models_to_plot:
+                        self.extract_velocity_profiles(model=model,
+                                                       t=time_step)
                 
                 if ax is None:
                     fig, ax = plt.subplots()
@@ -1411,16 +1378,40 @@ class Benchmark:
                                 h[h <= velocity_threshold] = np.nan
                                 ax.plot(self._x[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
             
-            elif velocity_axis == 'V' or velocity_axis == 'v':
-                if time_step not in self._v_num_1d_X.keys():
-                    raise ValueError(" -> Time step not extracted.")
+            elif velocity_axis == 'ux':
+                if time_step not in self._ux_num_1d_X.keys():
+                    for model in models_to_plot:
+                        self.extract_velocity_profiles(model=model,
+                                                       t=time_step)
                 
                 if ax is None:
                     fig, ax = plt.subplots()
             
                 for model in models_to_plot:
-                    if any(res[0] == model for res in self._v_num_1d_X[time_step]):
-                        for m, h in self._v_num_1d_X[time_step]:
+                    if any(res[0] == model for res in self._ux_num_1d_X[time_step]):
+                        for m, h in self._ux_num_1d_X[time_step]:
+                            if model == "shaltop" and model == m:
+                                h[h <= velocity_threshold] = np.nan
+                                ax.plot(self._x[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
+                            elif model == "lave2D" and model == m:
+                                h[h <= velocity_threshold] = np.nan
+                                ax.plot(self._x[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
+                            elif model == "saval2D" and model == m:
+                                h[h <= velocity_threshold] = np.nan
+                                ax.plot(self._x[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+
+            elif velocity_axis == 'uy':
+                if time_step not in self._uy_num_1d_X.keys():
+                    for model in models_to_plot:
+                        self.extract_velocity_profiles(model=model,
+                                                       t=time_step)
+                
+                if ax is None:
+                    fig, ax = plt.subplots()
+            
+                for model in models_to_plot:
+                    if any(res[0] == model for res in self._uy_num_1d_X[time_step]):
+                        for m, h in self._uy_num_1d_X[time_step]:
                             if model == "shaltop" and model == m:
                                 h[h <= velocity_threshold] = np.nan
                                 ax.plot(self._x[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
@@ -1432,17 +1423,20 @@ class Benchmark:
                                 ax.plot(self._x[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
 
             else:
-                raise ValueError(" -> Incorrect velocity axis: 'U' or 'V'.")
+                raise ValueError(" -> Incorrect velocity axis: 'u', 'ux' or 'uy")
             
             ax.set_xlim(left=min(self._x), right=max(self._x))
             ax.set_xlabel(f"x [{x_unit}]")
+            
         
-        elif axis == 'Y' or axis == 'y':
+        elif axis == 'Y':
             step = len(self._y) // nbr_point
 
-            if velocity_axis == 'U' or velocity_axis == 'u':
+            if velocity_axis == 'u':
                 if time_step not in self._u_num_1d_Y.keys():
-                    raise ValueError(" -> Time step not extracted.")
+                    for model in models_to_plot:
+                        self.extract_velocity_profiles(model=model,
+                                                       t=time_step)
                 
                 if ax is None:
                     fig, ax = plt.subplots()
@@ -1460,16 +1454,40 @@ class Benchmark:
                                 h[h <= velocity_threshold] = np.nan
                                 ax.plot(self._y[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
 
-            elif velocity_axis == 'V' or velocity_axis == 'v':
-                if time_step not in self._v_num_1d_Y.keys():
-                    raise ValueError(" -> Time step not extracted.")
+            elif velocity_axis == 'ux':
+                if time_step not in self._ux_num_1d_Y.keys():
+                    for model in models_to_plot:
+                        self.extract_velocity_profiles(model=model,
+                                                       t=time_step)
                 
                 if ax is None:
                     fig, ax = plt.subplots()
             
                 for model in models_to_plot:
-                    if any(res[0] == model for res in self._v_num_1d_Y[time_step]):
-                        for m, h in self._v_num_1d_Y[time_step]:
+                    if any(res[0] == model for res in self._ux_num_1d_Y[time_step]):
+                        for m, h in self._ux_num_1d_Y[time_step]:
+                            if model == "shaltop" and model == m:
+                                h[h <= velocity_threshold] = np.nan
+                                ax.plot(self._y[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
+                            elif model == "lave2D" and model == m:
+                                h[h <= velocity_threshold] = np.nan
+                                ax.plot(self._y[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
+                            elif model == "saval2D" and model == m:
+                                h[h <= velocity_threshold] = np.nan
+                                ax.plot(self._y[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+
+            elif velocity_axis == 'uy':
+                if time_step not in self._uy_num_1d_Y.keys():
+                    for model in models_to_plot:
+                        self.extract_velocity_profiles(model=model,
+                                                       t=time_step)
+                
+                if ax is None:
+                    fig, ax = plt.subplots()
+            
+                for model in models_to_plot:
+                    if any(res[0] == model for res in self._uy_num_1d_Y[time_step]):
+                        for m, h in self._uy_num_1d_Y[time_step]:
                             if model == "shaltop" and model == m:
                                 h[h <= velocity_threshold] = np.nan
                                 ax.plot(self._y[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
@@ -1481,7 +1499,7 @@ class Benchmark:
                                 ax.plot(self._y[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
 
             else:
-                raise ValueError(" -> Incorrect velocity axis: 'U' or 'V'.")
+                raise ValueError(" -> Incorrect velocity axis: 'u', 'ux' or 'uy.")
             
             ax.set_xlim(left=min(self._y), right=max(self._y))
             ax.set_xlabel(f"y [{x_unit}]")
@@ -1502,6 +1520,139 @@ class Benchmark:
         
         return ax
 
+
+    def show_height_field(self,
+                          model_to_plot: str,
+                          t: float,
+                          ax: matplotlib.axes._axes.Axes = None,
+                          show_plot: bool = True,
+                          **kwargs,
+                          ) -> matplotlib.axes._axes.Axes:
+        """
+        Visualize the 2D height field at a specified time steps.
+
+        Parameters
+        ----------
+        model_to_plot : str
+            Model name to plot ('shaltop', 'lave2D', 'saval2D').
+        t : float
+            Time step to plot.
+        ax : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib window.
+        show_plot : bool, optional
+            If True, show the plot, by default True.
+        
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            The axis with the plotted profiles.
+        """
+        if t not in self._h_num_2d:
+            self.extract_height_field(model=model_to_plot, t=t)
+                
+        if not any(res[0] == model_to_plot for res in self._h_num_2d[t]):
+            self.extract_height_field(model=model_to_plot, t=t)
+        
+        if ax is None:
+            fig, ax = plt.subplots()
+        
+        for lst in self._h_num_2d[t]:
+            if lst[0] == model_to_plot:
+                pyplt.plot_data_on_topo(self._x, self._y, self._z, lst[1], axe=ax, **kwargs)
+                break
+            
+        if show_plot:
+            plt.show()
+        
+        return ax
+  
+
+    def show_velocity_field(self,
+                            model_to_plot: str,
+                            t: float,
+                            velocity_axis: str = 'u',
+                            ax: matplotlib.axes._axes.Axes = None,
+                            show_plot: bool = True,
+                            ) -> matplotlib.axes._axes.Axes:
+        """
+        Visualize the 2D height field at a specified time steps.
+
+        Parameters
+        ----------
+        model_to_plot : str
+            Model name to plot ('shaltop', 'lave2D', 'saval2D').
+        t : float
+            Time step to plot.
+        velocity_axis : str, optional
+            Velocity direction to use for the plot, by default 'U' (along X axis).
+        ax : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib window.
+        show_plot : bool, optional
+            If True, show the plot, by default True.
+        
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            The axis with the plotted profiles.
+
+        Raises
+        ------
+        ValueError
+            If the velocity axis is incorrect.
+        """
+        if velocity_axis == 'u':
+            if t not in self._u_num_2d:
+                self.extract_velocity_field(model=model_to_plot, t=t)
+            
+            if not any(res[0] == model_to_plot for res in self._u_num_2d[t]):
+                self.extract_velocity_field(model=model_to_plot, t=t)
+            
+            if ax is None:
+                fig, ax = plt.subplots()
+            
+            for lst in self._u_num_2d[t]:
+                if lst[0] == model_to_plot:
+                    pyplt.plot_data_on_topo(self._x, self._y, self._z, lst[1], axe=ax)
+                    break
+                
+        elif velocity_axis == 'ux':
+            if t not in self._ux_num_2d:
+                self.extract_velocity_field(model=model_to_plot, t=t)
+            
+            if not any(res[0] == model_to_plot for res in self._ux_num_2d[t]):
+                self.extract_velocity_field(model=model_to_plot, t=t)
+            
+            if ax is None:
+                fig, ax = plt.subplots()
+            
+            for lst in self._ux_num_2d[t]:
+                if lst[0] == model_to_plot:
+                    pyplt.plot_data_on_topo(self._x, self._y, self._z, lst[1], axe=ax)
+                    break
+                
+        elif velocity_axis == 'uy':
+            if t not in self._uy_num_2d:
+                self.extract_velocity_field(model=model_to_plot, t=t)
+            
+            if not any(res[0] == model_to_plot for res in self._uy_num_2d[t]):
+                self.extract_velocity_field(model=model_to_plot, t=t)
+            
+            if ax is None:
+                fig, ax = plt.subplots()
+            
+            for lst in self._uy_num_2d[t]:
+                if lst[0] == model_to_plot:
+                    pyplt.plot_data_on_topo(self._x, self._y, self._z, lst[1], axe=ax)
+                    break
+        
+        else:
+            raise ValueError(" -> Incorrect velocity axis: 'u', 'ux' or 'uy'")
+        
+        if show_plot:
+            plt.show()
+        
+        return ax
+      
 
     '''def show_comparison_1D(self,
                            model_to_plot: list,
@@ -1689,130 +1840,6 @@ class Benchmark:
         plt.show()
     '''
 
-
-    def show_height_field(self,
-                          model_to_plot: str,
-                          t: float,
-                          ax: matplotlib.axes._axes.Axes = None,
-                          show_plot: bool = True,
-                          ) -> matplotlib.axes._axes.Axes:
-        """
-        Visualize the 2D height field at a specified time steps.
-
-        Parameters
-        ----------
-        model_to_plot : str
-            Model name to plot ('shaltop', 'lave2D', 'saval2D').
-        t : float
-            Time step to plot.
-        ax : matplotlib.axes._axes.Axes, optional
-            Existing matplotlib window.
-        show_plot : bool, optional
-            If True, show the plot, by default True.
-        
-        Returns
-        -------
-        matplotlib.axes._axes.Axes
-            The axis with the plotted profiles.
-
-        Raises
-        ------
-        ValueError
-            If no numerical result has been extracted.
-        """
-        if t not in self._h_num_2d:
-            raise ValueError(" -> No solution extracted at specified time, use extract_height_field")
-        
-        if not any(label == model_to_plot for lst in self._h_num_2d.values() for label, _ in lst):
-            raise ValueError(" -> No solution extracted for this model, load and use extract_height_field")
-        
-        if ax is None:
-            fig, ax = plt.subplots()
-        
-        for lst in self._h_num_2d[t]:
-            if lst[0] == model_to_plot:
-                pyplt.plot_data_on_topo(self._x, self._y, self._z, lst[1], axe=ax)
-                break
-            
-        if show_plot:
-            plt.show()
-        
-        return ax
-  
-
-    def show_velocity_field(self,
-                            model_to_plot: str,
-                            t: float,
-                            velocity_axis: str = 'U',
-                            ax: matplotlib.axes._axes.Axes = None,
-                            show_plot: bool = True,
-                            ) -> matplotlib.axes._axes.Axes:
-        """
-        Visualize the 2D height field at a specified time steps.
-
-        Parameters
-        ----------
-        model_to_plot : str
-            Model name to plot ('shaltop', 'lave2D', 'saval2D').
-        t : float
-            Time step to plot.
-        velocity_axis : str, optional
-            Velocity direction to use for the plot, by default 'U' (along X axis).
-        ax : matplotlib.axes._axes.Axes, optional
-            Existing matplotlib window.
-        show_plot : bool, optional
-            If True, show the plot, by default True.
-        
-        Returns
-        -------
-        matplotlib.axes._axes.Axes
-            The axis with the plotted profiles.
-
-        Raises
-        ------
-        ValueError
-            If no numerical result has been extracted.
-        ValueError
-            If the velocity axis is incorrect.
-        """
-        if velocity_axis == 'U' or velocity_axis == 'u':
-            if t not in self._u_num_2d:
-                raise ValueError(" -> No solution extracted, use extract_height_field")
-            
-            if not any(label == model_to_plot for lst in self._u_num_2d.values() for label, _ in lst):
-                raise ValueError(" -> No solution extracted for this model, load and use extract_height_field")
-            
-            if ax is None:
-                fig, ax = plt.subplots()
-            
-            for lst in self._u_num_2d[t]:
-                if lst[0] == model_to_plot:
-                    pyplt.plot_data_on_topo(self._x, self._y, self._z, lst[1], axe=ax)
-                    break
-                
-        elif velocity_axis == 'V' or velocity_axis == 'v':
-            if t not in self._v_num_2d:
-                raise ValueError(" -> No solution extracted, use extract_height_field")
-            
-            if not any(label == model_to_plot for lst in self._v_num_2d.values() for label, _ in lst):
-                raise ValueError(" -> No solution extracted for this model, load and use extract_height_field")
-            
-            if ax is None:
-                fig, ax = plt.subplots()
-            
-            for lst in self._v_num_2d[t]:
-                if lst[0] == model_to_plot:
-                    pyplt.plot_data_on_topo(self._x, self._y, self._z, lst[1], axe=ax)
-                    break
-        
-        else:
-            raise ValueError(" -> Incorrect velocity axis: 'U' or 'V'.")
-        
-        if show_plot:
-            plt.show()
-        
-        return ax
-      
         
     '''def show_difference_2D(self, 
                            first_models:str, 
