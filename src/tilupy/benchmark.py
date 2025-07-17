@@ -441,10 +441,10 @@ class Benchmark:
                     if abs(tim[idx] - t) < 0.01:
                         t = idx
         else:
-            t = field_all.d.shape[2]-1
+            t = h_2d_all.d.shape[2]-1
             
         
-        t = h_2d_all.d.shape[2]-1 if t is None or t >= h_2d_all.d.shape[2] or type(t) != type(1) else t
+        t = h_2d_all.d.shape[2]-1 if t is None or t >= h_2d_all.d.shape[2] or isinstance(t, int) else t
         h_2d_t = h_2d_all.d[:, :, t]
                     
         if t in self._h_num_2d:
@@ -494,11 +494,11 @@ class Benchmark:
                     if abs(tim[idx] - t) < 0.01:
                         t = idx
         else:
-            t = field_all.d.shape[2]-1
+            t = u_2d_all.d.shape[2]-1
             # print("oui")
         
         if u_2d_all is not None:
-            t = u_2d_all.d.shape[2]-1 if t is None or t >= u_2d_all.d.shape[2] else t
+            t = u_2d_all.d.shape[2]-1 if t is None or t >= u_2d_all.d.shape[2] or isinstance(t, int) else t
             u_2d_t = u_2d_all.d[:, :, t]
             
             if t in self._u_num_2d:
