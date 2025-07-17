@@ -104,7 +104,7 @@ case_1.show_res(show_u=True, linestyles=["", ":", "-.", "--", "-"])
 x = np.linspace(0, 10, 1000)
 
 case_2 = Ritter_dry(x_0=5, h_0=0.005)
-case_2.compute_h(x, 6)
+case_2.compute_h(x, 6.0)
 case_2.show_res(show_h=True, linestyles=["-"])
 
 # %%
