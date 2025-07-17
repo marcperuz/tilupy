@@ -1642,7 +1642,10 @@ class Chanson_dry(Depth_result):
         self._h = np.array(h)
             
             
-    def compute_u(self) -> None:
+    def compute_u(self, 
+                  x: float | np.ndarray, 
+                  T: float | np.ndarray
+                  ) -> None:
         r"""Not implemented
         """
         self._u = None
