@@ -449,20 +449,19 @@ def write_simu(raster_topo: str,
     if rheology_type != "Herschel_Bulkley":
         raise ValueError("Rheology type must be 'Herschel_Bulkley'.")
     
-    output_file = os.path.join(folder_out, "lave2D")
+    # output_file = os.path.join(folder_out, "lave2D")
 
-    if not os.path.isdir(output_file):
-        os.mkdir(output_file)
+    os.makedirs(folder_out, exist_ok=True)
     
     shutil.copy2(
         os.path.join(lave2D_exe_folder, "Lave2_Arc.exe"),
-        output_file,
+        folder_out,
     )
     shutil.copy2(
         os.path.join(lave2D_exe_folder, "vf2marc.exe"), 
-        output_file,
+        folder_out,
     )
-    simu_lave2D = Simu(output_file, simulation_name)
+    simu_lave2D = Simu(folder_out, simulation_name)
     simu_lave2D.set_topography(raster_topo)
     simu_lave2D.set_init_mass(raster_mass)
     simu_lave2D.set_rheology(rheology_params["tau_rho"], rheology_params["K_tau"])

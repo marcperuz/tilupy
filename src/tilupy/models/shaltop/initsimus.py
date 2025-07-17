@@ -120,16 +120,15 @@ def write_simu(raster_topo: str,
     if folder_out is None:
         folder_out = "."
     
-    output_file = os.path.join(folder_out, "shaltop")
+    # output_file = os.path.join(folder_out, "shaltop")
     
-    if not os.path.isdir(output_file):
-        os.mkdir(output_file)
+    os.makedirs(folder_out, exist_ok=True)
 
     x, y, z = tilupy.raster.read_raster(raster_topo)
-    raster_to_shaltop_txtfile(raster_topo, os.path.join(output_file, "z.d"))
-    raster_to_shaltop_txtfile(raster_mass, os.path.join(output_file, "m.d"))
+    raster_to_shaltop_txtfile(raster_topo, os.path.join(folder_out, "z.d"))
+    raster_to_shaltop_txtfile(raster_mass, os.path.join(folder_out, "m.d"))
     folder_output = "data2"
-    os.makedirs(os.path.join(output_file, folder_output), exist_ok=True)
+    os.makedirs(os.path.join(folder_out, folder_output), exist_ok=True)
 
     if rheology_type not in SHALTOP_LAW_ID:
         raise ValueError(f"Wrong law, choose in: {SHALTOP_LAW_ID}")
@@ -149,7 +148,7 @@ def write_simu(raster_topo: str,
         icomp=SHALTOP_LAW_ID[rheology_type],
         **rheology_params,
     )
-    write_params_file(params, directory=output_file, file_name="params.txt")
+    write_params_file(params, directory=folder_out, file_name="params.txt")
 
 
 def write_job_files(
