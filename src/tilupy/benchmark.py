@@ -4,7 +4,7 @@ Created on Fri Aug  4 12:09:41 2023
 
 @author: peruzzetto
 """
-
+import importlib
 
 from typing import Callable
 
@@ -12,6 +12,7 @@ import math as math
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 import tilupy.read
 import tilupy.analytic_sol as AS
@@ -86,7 +87,7 @@ class Benchmark:
                            storage_dict_X: dict, 
                            storage_dict_Y: dict, 
                            storage_params: dict, 
-                           t_val: float, 
+                           t: float, 
                            direction_index: str | list[float], 
                            flow_threshold: float = 1e-3,
                            show_message: bool = False,
@@ -123,7 +124,7 @@ class Benchmark:
         # Extract data and time
         field_all = self._current_result[model].get_output(field_name)
         tim = self._current_result[model].tim
-        
+        t_idx = None
         
         # If no data extracted, stop the program
         if field_all is None:
@@ -131,20 +132,21 @@ class Benchmark:
         
         
         # Find the index of the wanted time (or the closest)
-        if t_val is not None:
+        if t is not None:
             for idx in range(len(tim)):
-                if tim[idx] == t_val:
-                    t = idx
+                if tim[idx] == t:
+                    t_idx = idx
                     break
                 else:
-                    if abs(tim[idx] - t_val) < 0.01:
-                        t = idx
+                    if abs(tim[idx] - t) < 0.1:
+                        t_idx = idx
+                        break
         else:
-            t = field_all.d.shape[2]-1
+            t_idx = field_all.d.shape[2]-1
 
         
         # Keep only the data field at the wanted time
-        field_t = field_all.d[:, :, t]
+        field_t = field_all.d[:, :, t_idx]
         field_t[field_t <= flow_threshold] = 0
 
         def find_max_index_along_axis(matrix: np.ndarray, axis: int, threshold: float):
@@ -328,7 +330,7 @@ class Benchmark:
                                 storage_dict_X=self._h_num_1d_X, 
                                 storage_dict_Y=self._h_num_1d_Y, 
                                 storage_params=self._h_num_1d_params, 
-                                t_val=t,
+                                t=t,
                                 direction_index=direction_index, 
                                 flow_threshold=flow_height_threshold, 
                                 show_message=show_message)
@@ -377,7 +379,7 @@ class Benchmark:
                                 storage_dict_X=self._u_num_1d_X,
                                 storage_dict_Y=self._u_num_1d_Y,
                                 storage_params=self._u_num_1d_params,
-                                t_val=t,
+                                t=t,
                                 direction_index=direction_index,
                                 flow_threshold=flow_velocity_threshold,
                                 show_message=show_message)
@@ -387,7 +389,7 @@ class Benchmark:
                                 storage_dict_X=self._ux_num_1d_X,
                                 storage_dict_Y=self._ux_num_1d_Y,
                                 storage_params=self._ux_num_1d_params,
-                                t_val=t,
+                                t=t,
                                 direction_index=direction_index,
                                 flow_threshold=flow_velocity_threshold,
                                 show_message=show_message)
@@ -397,7 +399,7 @@ class Benchmark:
                                 storage_dict_X=self._uy_num_1d_X,
                                 storage_dict_Y=self._uy_num_1d_Y,
                                 storage_params=self._uy_num_1d_params,
-                                t_val=t,
+                                t=t,
                                 direction_index=direction_index,
                                 flow_threshold=flow_velocity_threshold,
                                 show_message=show_message)
@@ -430,22 +432,23 @@ class Benchmark:
 
         h_2d_all = self._current_result[model].get_output("h")
         tim = self._current_result[model].tim
+        t_idx = None
         
         # Find the index of the wanted time (or the closest)
         if t is not None:
             for idx in range(len(tim)):
                 if tim[idx] == t:
-                    t = idx
+                    t_idx = idx
                     break
                 else:
-                    if abs(tim[idx] - t) < 0.01:
-                        t = idx
+                    if abs(tim[idx] - t) < 0.1:
+                        t_idx = idx
+                        break
         else:
-            t = h_2d_all.d.shape[2]-1
-            
+            t_idx = h_2d_all.d.shape[2]-1
         
-        t = h_2d_all.d.shape[2]-1 if t is None or t >= h_2d_all.d.shape[2] or isinstance(t, int) else t
-        h_2d_t = h_2d_all.d[:, :, t]
+        t_idx = h_2d_all.d.shape[2]-1 if t_idx is None or t_idx >= h_2d_all.d.shape[2] or isinstance(t_idx, float) else t_idx
+        h_2d_t = h_2d_all.d[:, :, t_idx]
                     
         if t in self._h_num_2d:
             if not any(res[0] == model for res in self._h_num_2d[t]):
@@ -491,14 +494,15 @@ class Benchmark:
                     t = idx
                     break
                 else:
-                    if abs(tim[idx] - t) < 0.01:
+                    if abs(tim[idx] - t) < 0.1:
                         t = idx
+                        break
         else:
             t = u_2d_all.d.shape[2]-1
             # print("oui")
         
         if u_2d_all is not None:
-            t = u_2d_all.d.shape[2]-1 if t is None or t >= u_2d_all.d.shape[2] or isinstance(t, int) else t
+            t = u_2d_all.d.shape[2]-1 if t is None or t >= u_2d_all.d.shape[2] or isinstance(t, float) else t
             u_2d_t = u_2d_all.d[:, :, t]
             
             if t in self._u_num_2d:
@@ -508,7 +512,7 @@ class Benchmark:
                 self._u_num_2d[t] = [(model, u_2d_t)]
         
         if ux_2d_all is not None:
-            t = ux_2d_all.d.shape[2]-1 if t is None or t >= ux_2d_all.d.shape[2] else t
+            t = ux_2d_all.d.shape[2]-1 if t is None or t >= ux_2d_all.d.shape[2] or isinstance(t, float) else t
             u_2d_t = ux_2d_all.d[:, :, t]
             
             if t in self._ux_num_2d:
@@ -518,7 +522,7 @@ class Benchmark:
                 self._ux_num_2d[t] = [(model, u_2d_t)]
         
         if uy_2d_all is not None:
-            t = uy_2d_all.d.shape[2]-1 if t is None or t >= uy_2d_all.d.shape[2] else t
+            t = uy_2d_all.d.shape[2]-1 if t is None or t >= uy_2d_all.d.shape[2] or isinstance(t, float) else t
             u_2d_t = uy_2d_all.d[:, :, t]
             
             if t in self._uy_num_2d:
@@ -1142,6 +1146,7 @@ class Benchmark:
                                        ax: matplotlib.axes._axes.Axes = None,
                                        x_unit:str = "m",
                                        h_unit:str = "m",
+                                       cmap: str = 'plasma',
                                        show_plot: bool = True,
                                        ) -> matplotlib.axes._axes.Axes:
         """
@@ -1165,6 +1170,8 @@ class Benchmark:
             Unit for the x-axis, by default "m".
         h_unit : str, optional
             Unit for the height axis, by default "m".
+        cmap : str, optional
+            Cmap for the model_to_plot curves, be default 'plasma'. 
         show_plot : bool, optional
             If True, show the plot, by default True.
 
@@ -1182,6 +1189,9 @@ class Benchmark:
         ValueError
             If the axis is incorrect.
         """
+        marker_list = ["o", "s", "^", "p", "D", "h", "v", "*"]
+        cmap = cm.get_cmap(cmap, len(models_to_plot))
+        
         if self._x is None:
             raise ValueError(" -> No solution extracted, first use load_numerical_result.")
         
@@ -1212,15 +1222,19 @@ class Benchmark:
 
 
             # Plot models
-            for model in models_to_plot:
-                if any(res[0] == model for res in self._h_num_1d_X[time_step]):
+            for i in range(len(models_to_plot)):
+                if any(res[0] == models_to_plot[i] for res in self._h_num_1d_X[time_step]):
                     for m, h in self._h_num_1d_X[time_step]:
-                        if model == "shaltop" and model == m:
-                            ax.plot(self._x[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
-                        elif model == "lave2D" and model == m:
-                            ax.plot(self._x[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
-                        elif model == "saval2D" and model == m:
-                            ax.plot(self._x[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+                        if models_to_plot[i] == m:
+                            j = i
+                            while j >= len(marker_list):
+                                j -= len(marker_list)
+                                if j < 0:
+                                    j = 0
+                            ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
+
+                            # plot_params = importlib.import_module("tilupy.models." + model + ".plot_params")
+                            # ax.plot(self._x[::step], h[::step], marker=plot_params.marker, linestyle='None', color=plot_params.color, label=model)
 
             ax.set_xlim(left=min(self._x), right=max(self._x))
             ax.set_xlabel(f"x [{x_unit}]")
@@ -1249,15 +1263,16 @@ class Benchmark:
             """
 
             # Plot models
-            for model in models_to_plot:
-                if any(res[0] == model for res in self._h_num_1d_Y[time_step]):
+            for i in range(len(models_to_plot)):
+                if any(res[0] == models_to_plot[i] for res in self._h_num_1d_Y[time_step]):
                     for m, h in self._h_num_1d_Y[time_step]:
-                        if model == "shaltop" and model == m:
-                            ax.plot(self._y[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
-                        elif model == "lave2D" and model == m:
-                            ax.plot(self._y[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
-                        elif model == "saval2D" and model == m:
-                            ax.plot(self._y[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+                        if models_to_plot[i] == m:
+                            j = i
+                            while j >= len(marker_list):
+                                j -= len(marker_list)
+                                if j < 0:
+                                    j = 0
+                            ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
 
             ax.set_xlim(left=min(self._y), right=max(self._y))
             ax.set_xlabel(f"y [{x_unit}]")
@@ -1291,7 +1306,8 @@ class Benchmark:
                                          nbr_point: int = 20,
                                          ax: matplotlib.axes._axes.Axes = None,
                                          x_unit:str = "m",
-                                         h_unit:str = "m",
+                                         u_unit:str = "m/s",
+                                         cmap: str = 'plasma',
                                          show_plot: bool = True,
                                          ) -> matplotlib.axes._axes.Axes:
         """
@@ -1317,8 +1333,10 @@ class Benchmark:
             Existing matplotlib window.
         x_unit : str, optional
             Unit for the x-axis, by default "m".
-        h_unit : str, optional
+        u_unit : str, optional
             Unit for the height axis, by default "m".
+        cmap : str, optional
+            Cmap for the model_to_plot curves, be default 'plasma'. 
         show_plot : bool, optional
             If True, show the plot, by default True.
 
@@ -1338,6 +1356,9 @@ class Benchmark:
         ValueError
             If the velocity axis is incorrect.
         """
+        marker_list = ["o", "s", "^", "p", "D", "h", "v", "*"]
+        cmap = cm.get_cmap(cmap, len(models_to_plot))
+        
         if self._x is None:
             raise ValueError(" -> No solution extracted, first use load_numerical_result.")
         
@@ -1365,18 +1386,18 @@ class Benchmark:
                     else:
                         raise ValueError(" -> Time step not computed in analytical solution.")
             
-                for model in models_to_plot:
-                    if any(res[0] == model for res in self._u_num_1d_X[time_step]):
+                for i in range(len(models_to_plot)):
+                    if any(res[0] == models_to_plot[i] for res in self._u_num_1d_X[time_step]):
                         for m, h in self._u_num_1d_X[time_step]:
-                            if model == "shaltop" and model == m:
+                            if models_to_plot[i] == m:
                                 h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
-                            elif model == "lave2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
-                            elif model == "saval2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+                                j = i
+                                while j >= len(marker_list):
+                                    j -= len(marker_list)
+                                    if j < 0:
+                                        j = 0
+                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
+
             
             elif velocity_axis == 'ux':
                 if time_step not in self._ux_num_1d_X.keys():
@@ -1386,19 +1407,19 @@ class Benchmark:
                 
                 if ax is None:
                     fig, ax = plt.subplots()
-            
-                for model in models_to_plot:
-                    if any(res[0] == model for res in self._ux_num_1d_X[time_step]):
+
+                for i in range(len(models_to_plot)):
+                    if any(res[0] == models_to_plot[i] for res in self._ux_num_1d_X[time_step]):
                         for m, h in self._ux_num_1d_X[time_step]:
-                            if model == "shaltop" and model == m:
+                            if models_to_plot[i] == m:
                                 h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
-                            elif model == "lave2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
-                            elif model == "saval2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+                                j = i
+                                while j >= len(marker_list):
+                                    j -= len(marker_list)
+                                    if j < 0:
+                                        j = 0
+                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
+
 
             elif velocity_axis == 'uy':
                 if time_step not in self._uy_num_1d_X.keys():
@@ -1409,18 +1430,18 @@ class Benchmark:
                 if ax is None:
                     fig, ax = plt.subplots()
             
-                for model in models_to_plot:
-                    if any(res[0] == model for res in self._uy_num_1d_X[time_step]):
+                for i in range(len(models_to_plot)):
+                    if any(res[0] == models_to_plot[i] for res in self._uy_num_1d_X[time_step]):
                         for m, h in self._uy_num_1d_X[time_step]:
-                            if model == "shaltop" and model == m:
+                            if models_to_plot[i] == m:
                                 h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
-                            elif model == "lave2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
-                            elif model == "saval2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+                                j = i
+                                while j >= len(marker_list):
+                                    j -= len(marker_list)
+                                    if j < 0:
+                                        j = 0
+                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
+
 
             else:
                 raise ValueError(" -> Incorrect velocity axis: 'u', 'ux' or 'uy")
@@ -1441,18 +1462,18 @@ class Benchmark:
                 if ax is None:
                     fig, ax = plt.subplots()
             
-                for model in models_to_plot:
-                    if any(res[0] == model for res in self._u_num_1d_Y[time_step]):
+                for i in range(len(models_to_plot)):
+                    if any(res[0] == models_to_plot[i] for res in self._u_num_1d_Y[time_step]):
                         for m, h in self._u_num_1d_Y[time_step]:
-                            if model == "shaltop" and model == m:
+                            if models_to_plot[i] == m:
                                 h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._y[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
-                            elif model == "lave2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._y[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
-                            elif model == "saval2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._y[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+                                j = i
+                                while j >= len(marker_list):
+                                    j -= len(marker_list)
+                                    if j < 0:
+                                        j = 0
+                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
+
 
             elif velocity_axis == 'ux':
                 if time_step not in self._ux_num_1d_Y.keys():
@@ -1463,18 +1484,18 @@ class Benchmark:
                 if ax is None:
                     fig, ax = plt.subplots()
             
-                for model in models_to_plot:
-                    if any(res[0] == model for res in self._ux_num_1d_Y[time_step]):
+                for i in range(len(models_to_plot)):
+                    if any(res[0] == models_to_plot[i] for res in self._ux_num_1d_Y[time_step]):
                         for m, h in self._ux_num_1d_Y[time_step]:
-                            if model == "shaltop" and model == m:
+                            if models_to_plot[i] == m:
                                 h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._y[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
-                            elif model == "lave2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._y[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
-                            elif model == "saval2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._y[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+                                j = i
+                                while j >= len(marker_list):
+                                    j -= len(marker_list)
+                                    if j < 0:
+                                        j = 0
+                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
+
 
             elif velocity_axis == 'uy':
                 if time_step not in self._uy_num_1d_Y.keys():
@@ -1485,18 +1506,18 @@ class Benchmark:
                 if ax is None:
                     fig, ax = plt.subplots()
             
-                for model in models_to_plot:
-                    if any(res[0] == model for res in self._uy_num_1d_Y[time_step]):
+                for i in range(len(models_to_plot)):
+                    if any(res[0] == models_to_plot[i] for res in self._uy_num_1d_Y[time_step]):
                         for m, h in self._uy_num_1d_Y[time_step]:
-                            if model == "shaltop" and model == m:
+                            if models_to_plot[i] == m:
                                 h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._y[::step], h[::step], marker='.', linestyle='None', color='red', label=model)
-                            elif model == "lave2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._y[::step], h[::step], marker='x', linestyle='None', color='green', label=model)
-                            elif model == "saval2D" and model == m:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._y[::step], h[::step], marker='*', linestyle='None', color='blue', label=model)
+                                j = i
+                                while j >= len(marker_list):
+                                    j -= len(marker_list)
+                                    if j < 0:
+                                        j = 0
+                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
+
 
             else:
                 raise ValueError(" -> Incorrect velocity axis: 'u', 'ux' or 'uy.")
@@ -1512,7 +1533,7 @@ class Benchmark:
         
         ax.set_title(f"Velocity comparison along {axis} for t={time_step}s")
         
-        ax.set_ylabel(f"h [{h_unit}]")
+        ax.set_ylabel(f"u [{u_unit}]")
         ax.legend(loc='upper right')
         
         if show_plot:
