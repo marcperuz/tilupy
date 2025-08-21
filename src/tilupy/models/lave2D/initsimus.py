@@ -383,6 +383,9 @@ class Simu:
         # but results are then written on grid cell centers
         x2 = x[1:] - (x[1] - x[0]) / 2
         y2 = y[1:] - (y[1] - y[0]) / 2
+        
+        y2 = y2[::-1]
+        
         fm = RegularGridInterpolator(
             (y, x),
             m,
