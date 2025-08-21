@@ -1201,7 +1201,7 @@ class Benchmark:
             If the axis is incorrect.
         """
         marker_list = ["o", "s", "^", "p", "D", "h", "v", "*"]
-        cmap = cm.get_cmap(cmap, len(models_to_plot))
+        cmap = plt.get_cmap(cmap, len(models_to_plot))
         
         if self._x is None:
             raise ValueError(" -> No solution extracted, first use load_numerical_result.")
@@ -1368,7 +1368,7 @@ class Benchmark:
             If the velocity axis is incorrect.
         """
         marker_list = ["o", "s", "^", "p", "D", "h", "v", "*"]
-        cmap = cm.get_cmap(cmap, len(models_to_plot))
+        cmap = plt.get_cmap(cmap, len(models_to_plot))
         
         if self._x is None:
             raise ValueError(" -> No solution extracted, first use load_numerical_result.")
