@@ -878,6 +878,22 @@ class Results:
             notation=None,
         )
         return res
+    
+    def get_volume(self, h_thresh=None):
+        dx = self.x[1] - self.x[0]
+        dy = self.y[1] - self.y[0]
+        h2 = self.h.copy()
+        if h_thresh is not None:
+            h2[h2 < h_thresh] = 0
+        w = h2 / self.costh[:, :, np.newaxis] * dx * dy
+        vol = np.nansum(w, axis=(0, 1))
+        res = TemporalResults0D(
+                    "volume",
+                    vol,
+                    self.tim,
+                    notation=None,
+                )
+        return res
 
     def plot(
         self,
