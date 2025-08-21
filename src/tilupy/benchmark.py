@@ -116,6 +116,11 @@ class Benchmark:
         show_message : bool, optional
             If True, print the indexes and the front positions saved, by default False
 
+        Raises
+        ------
+        ValueError
+            If invalid time step.
+        
         Returns
         -------
         str | list[float]
@@ -141,6 +146,10 @@ class Benchmark:
                     if abs(tim[idx] - t) < 0.1:
                         t_idx = idx
                         break
+            
+            if t_idx is None:
+                raise ValueError(f"Invalid time step. Recorded time steps are : {tim}")
+            
         else:
             t_idx = field_all.d.shape[2]-1
 
@@ -423,6 +432,8 @@ class Benchmark:
         ------
         ValueError
             If the model has not been loaded.
+        ValueError
+            If invalid time step.
         """
         if model is None:
             model = self._current_model
@@ -444,6 +455,8 @@ class Benchmark:
                     if abs(tim[idx] - t) < 0.1:
                         t_idx = idx
                         break
+            if t_idx is None:
+                raise ValueError(f"Invalid time step. Recorded time steps are : {tim}")
         else:
             t_idx = h_2d_all.d.shape[2]-1
         
