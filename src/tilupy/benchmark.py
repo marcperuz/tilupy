@@ -10,7 +10,6 @@ import math as math
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 
 import tilupy.read
 import tilupy.analytic_sol as AS
