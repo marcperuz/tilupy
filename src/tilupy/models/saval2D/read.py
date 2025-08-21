@@ -82,13 +82,13 @@ class Results(tilupy.read.Results):
         with open(path, 'r') as f:
             lines = f.readlines()
         
-        start_index = 17
-        for line in lines[start_index::2]:
+        start_index = 16
+        for line in lines[start_index:]:
             if line.strip() == '':
                 continue
             else:
                 _, t, _, _, _ = line.split()
-                t_list.append(int(float(t)))
+                t_list.append(float(t))
         
         return t_list            
     
@@ -111,11 +111,11 @@ class Results(tilupy.read.Results):
         # Read results
         self._tim = [0]
         t_list = self.extract_times(os.path.join(self.folder_outputs, "log.txt"))
-        
-        for t in t_list:
-            h_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuh{t}.asc"))
-            qu_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuqu{t}.asc"))
-            qv_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuqv{t}.asc"))
+                
+        for t in range(len(t_list)):
+            h_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuh{t+1}.asc"))
+            qu_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuqu{t+1}.asc"))
+            qv_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuqv{t+1}.asc"))
             
             ux_t = np.divide(qu_t, h_t, out=np.zeros_like(qu_t), where=h_t != 0)
             uy_t = np.divide(qv_t, h_t, out=np.zeros_like(qv_t), where=h_t != 0)
@@ -127,13 +127,13 @@ class Results(tilupy.read.Results):
             ux_list.append(ux_t)
             uy_list.append(uy_t)
             u_list.append(u_t)
-            self._tim.append(t)
+            self._tim.append(t_list[t])
         
         self._h = np.stack(h_list, axis=-1)
         self._ux = np.stack(ux_list, axis=-1)
         self._uy = np.stack(uy_list, axis=-1)
         self._u = np.stack(u_list, axis=-1)
-
+        
 
     @property
     def h(self):
