@@ -485,6 +485,8 @@ class Benchmark:
         ------
         ValueError
             If the model has not been loaded.
+        ValueError
+            If invalid time step.
         """
         if model is None:
             model = self._current_model
@@ -501,19 +503,20 @@ class Benchmark:
         if t is not None:
             for idx in range(len(tim)):
                 if tim[idx] == t:
-                    t = idx
+                    t_idx = idx
                     break
                 else:
                     if abs(tim[idx] - t) < 0.1:
-                        t = idx
+                        t_idx = idx
                         break
+            if t_idx is None:
+                raise ValueError(f"Invalid time step. Recorded time steps are : {tim}")
         else:
-            t = u_2d_all.d.shape[2]-1
-            # print("oui")
+            t_idx = u_2d_all.d.shape[2]-1
         
         if u_2d_all is not None:
-            t = u_2d_all.d.shape[2]-1 if t is None or t >= u_2d_all.d.shape[2] or isinstance(t, float) else t
-            u_2d_t = u_2d_all.d[:, :, t]
+            t_idx = u_2d_all.d.shape[2]-1 if t_idx is None or t_idx >= u_2d_all.d.shape[2] or isinstance(t_idx, float) else t_idx
+            u_2d_t = u_2d_all.d[:, :, t_idx]
             
             if t in self._u_num_2d:
                 if not any(res[0] == self._current_model for res in self._u_num_2d[t]):
@@ -522,8 +525,8 @@ class Benchmark:
                 self._u_num_2d[t] = [(model, u_2d_t)]
         
         if ux_2d_all is not None:
-            t = ux_2d_all.d.shape[2]-1 if t is None or t >= ux_2d_all.d.shape[2] or isinstance(t, float) else t
-            u_2d_t = ux_2d_all.d[:, :, t]
+            t_idx = ux_2d_all.d.shape[2]-1 if t_idx is None or t_idx >= ux_2d_all.d.shape[2] or isinstance(t_idx, float) else t_idx
+            u_2d_t = ux_2d_all.d[:, :, t_idx]
             
             if t in self._ux_num_2d:
                 if not any(res[0] == self._current_model for res in self._ux_num_2d[t]):
@@ -532,8 +535,8 @@ class Benchmark:
                 self._ux_num_2d[t] = [(model, u_2d_t)]
         
         if uy_2d_all is not None:
-            t = uy_2d_all.d.shape[2]-1 if t is None or t >= uy_2d_all.d.shape[2] or isinstance(t, float) else t
-            u_2d_t = uy_2d_all.d[:, :, t]
+            t_idx = uy_2d_all.d.shape[2]-1 if t_idx is None or t_idx >= uy_2d_all.d.shape[2] or isinstance(t_idx, float) else t_idx
+            u_2d_t = uy_2d_all.d[:, :, t_idx]
             
             if t in self._uy_num_2d:
                 if not any(res[0] == self._current_model for res in self._uy_num_2d[t]):
@@ -1633,8 +1636,8 @@ class Benchmark:
         """
         if velocity_axis == 'u':
             if t not in self._u_num_2d:
-                self.extract_velocity_field(model=model_to_plot, t=t)
-            
+                self.extract_velocity_field(model=model_to_plot, t=t)     
+                   
             if not any(res[0] == model_to_plot for res in self._u_num_2d[t]):
                 self.extract_velocity_field(model=model_to_plot, t=t)
             
