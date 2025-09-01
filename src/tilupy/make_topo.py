@@ -390,14 +390,14 @@ def channel(
         slope_angle[ind] * (theta_channel - theta_end) + theta_end
     )
 
-    bz = scipy.integrate.cumtrapz(
+    bz = scipy.integrate.cumulative_trapezoid(
         -np.sin(slope_angle), xtopo, axis=0, initial=0
     )
     bz = bz - np.min(bz)
 
     # Get the coordinates of (xtopo,ytopo) in the cartesian reference frame
     # by=ytopo
-    bx = scipy.integrate.cumtrapz(
+    bx = scipy.integrate.cumulative_trapezoid(
         np.cos(slope_angle), xtopo, axis=0, initial=0
     )
     bx = bx + xmin * np.cos(theta_start)
