@@ -1782,6 +1782,7 @@ class Coussot_shape(Shape_result):
         self._rho = rho
         self._tau = tau
         
+        self.H_size = H_size
         self._D = None
         self._H = np.linspace(0, 0.99, H_size)
 
@@ -1907,7 +1908,7 @@ class Coussot_shape(Shape_result):
         return x
 
 
-    def compute_rheological_test_front_morpho(self, h_init: float=None, h_final: float=None, H_size: int=100) -> None:
+    def compute_rheological_test_front_morpho(self, h_init: float=None, h_final: float=None) -> None:
         r"""Compute the shape of the frontal lobe from the normalized fluid depth for a rheological test on an inclined 
         surface by following :
         
@@ -1932,8 +1933,8 @@ class Coussot_shape(Shape_result):
             if h_final is None:
                 h_final = self.compute_slump_test_hf(h_init) if h_init is not None else self.compute_slump_test_hf(1)
             H_max = self.h_to_H(h_final)
-            H_list = np.linspace(0, H_max, H_size)
-            h = np.linspace(0, h_final, H_size)
+            H_list = np.linspace(0, H_max, self.H_size)
+            h = np.linspace(0, h_final, self.H_size)
             self._h = np.array(h)
 
             D = []
