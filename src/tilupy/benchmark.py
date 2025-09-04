@@ -498,7 +498,8 @@ class Benchmark:
         ux_2d_all = self._current_result[model].get_output('ux')
         uy_2d_all = self._current_result[model].get_output('uy')
         tim = self._current_result[model].tim
-        
+        t_idx = None
+
         # Find the index of the wanted time (or the closest)
         if t is not None:
             for idx in range(len(tim)):
