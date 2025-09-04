@@ -1,0 +1,14 @@
+nx 236
+ny 68
+per 60.254
+pery 17.1788
+tmax 3
+dt_im 0.5
+initz 0
+file_z_init z.d
+ipr 0
+file_m_init m.d
+folder_output data2
+icomp 61
+tau_density 0.1
+K_tau 0.3

@@ -1,0 +1,10 @@
+paray                             .000990000000
+tmax                              3.000000000000
+dtinit                            0.010000000000
+cfl constante ?                   1
+CFL                               0.200000000000
+Go,VaLe1,VaLe2                    3
+secmbr0/1                         1
+CL variable (si=0) ?              0
+dtsorties                         0.500000000000
+alpha cor pentes                  1.000000000000
