@@ -144,7 +144,7 @@ def read_file_init(file, nx, ny):
 class Results(tilupy.read.Results):
     """Results of shaltop simulations."""
 
-    def __init__(self, file_params=None, folder_base=None, **varargs):
+    def __init__(self, file_params=None, folder=None, **varargs):
         """
         Init simulation results.
 
@@ -156,15 +156,15 @@ class Results(tilupy.read.Results):
         """
         super().__init__()
 
-        if folder_base is None:
-            folder_base = os.getcwd()
+        if folder is None:
+            folder = os.getcwd()
         if file_params is None:
             file_params = "params.txt"
 
         if "." not in file_params:
             file_params = file_params + ".txt"
 
-        file_params = os.path.join(folder_base, file_params)
+        file_params = os.path.join(folder, file_params)
 
         params = read_params(file_params)
         x, y = get_axes(**params)
@@ -184,13 +184,13 @@ class Results(tilupy.read.Results):
         for key in varargs:
             setattr(self, key, varargs[key])
 
-        self.folder_base = folder_base
+        self.folder = folder
         # Folder where results are stored
         if "folder_output" not in self.params:
-            self.folder_output = os.path.join(self.folder_base, "data2")
+            self.folder_output = os.path.join(self.folder, "data2")
         else:
             self.folder_output = os.path.join(
-                self.folder_base, self.params["folder_output"]
+                self.folder, self.params["folder_output"]
             )
 
         # Get time of outputs
@@ -215,7 +215,7 @@ class Results(tilupy.read.Results):
         path_zinit = os.path.join(self.folder_output, "z.bin")
         if not os.path.isfile(path_zinit) and "file_z_init" in self.params:
             path_zinit = os.path.join(
-                self.folder_base, self.params["file_z_init"]
+                self.folder, self.params["file_z_init"]
             )
             self._zinit = read_file_init(path_zinit, self.nx, self.ny)
         else:
