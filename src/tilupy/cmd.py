@@ -44,7 +44,7 @@ def process_results(
     if kwargs_read is None:
         kwargs_read = dict()
 
-    kw_read = dict(folder_base=folder)
+    kw_read = dict(folder=folder)
     kw_read.update(kwargs_read)
 
     for param_file in param_files:
