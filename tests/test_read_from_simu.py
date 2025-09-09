@@ -37,7 +37,7 @@ def simu_data():
 def test_get_output(folder_data, simu_data, args, expected):
     folder_simus = os.path.join(folder_data, simu_data["simu_name"], args[0])
     res = tiread.get_results(
-        args[0], file_params=simu_data["param_file"], folder_base=folder_simus
+        args[0], file_params=simu_data["param_file"], folder=folder_simus
     )
     # pytest.set_trace()
     output = res.get_output(args[1])
@@ -64,7 +64,7 @@ def test_plot(folder_data, folder_plots, simu_data, args, expected):
         os.remove(file_out)
     os.makedirs(folder_output, exist_ok=True)
     res = tiread.get_results(
-        args[0], file_params=simu_data["param_file"], folder_base=folder_simus
+        args[0], file_params=simu_data["param_file"], folder=folder_simus
     )
     # Test generation of ouput and plot
     output = res.get_output(args[1])
@@ -93,7 +93,7 @@ def test_plot_Results(folder_data, folder_plots, simu_data, args, expected):
         os.remove(file_out)
     os.makedirs(folder_output, exist_ok=True)
     res = tiread.get_results(
-        args[0], file_params=simu_data["param_file"], folder_base=folder_simus
+        args[0], file_params=simu_data["param_file"], folder=folder_simus
     )
     # Test generation of ouput and plot
     res.plot(args[1], folder_out=folder_output, file_suffix="from_res")
