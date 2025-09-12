@@ -194,7 +194,7 @@ res = tilupy.read.get_results([model_name], **kwargs)
 where `kwargs must be adapted to the considered model. For instance with Shaltop and the example above, the results of the simulation with a friction angle of 25 must be initiated as :
 
 ```python
-res = tilupy.read.get_results('shaltop', folder_base=folder_simus, file_params='delta_25p00.txt)
+res = tilupy.read.get_results('shaltop', folder=folder_simus, file_params='delta_25p00.txt)
 ```
 
 The topography and axes can then directly be read from `res` :
