@@ -155,6 +155,15 @@ class Results(tilupy.read.Results):
 
         """
         super().__init__()
+        
+        try:
+            if "folder_base" in varargs:
+                raise UserWarning("Variable name has changed: 'folder_base' -> 'folder'")
+        except UserWarning as w:
+            print(f"[WARNING] {w}")
+        
+        if "folder_base" in varargs :
+            folder = varargs["folder_base"]
 
         if folder is None:
             folder = os.getcwd()
