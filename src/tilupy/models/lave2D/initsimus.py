@@ -15,9 +15,8 @@ from scipy.interpolate import RegularGridInterpolator
 import tilupy.raster
 
 
-def make_edges_matrices(nx, ny):
-    """
-    Numbering edges for a regular rectangular grid.
+def make_edges_matrices(nx: int, ny: int):
+    """Numbering edges for a regular rectangular grid.
 
     Considering a matrix M with whape (ny, nx),the convention is that
     M[0, 0] corresponds to the lower left corner of the matrix, M[0, -1]
@@ -26,15 +25,24 @@ def make_edges_matrices(nx, ny):
     bottom, right, up, left. The first cell is M[0, 0], then cells are
     processed line by line.
 
-    :param nx: Number of faces in the X direction
-    :type nx: int
-    :param ny: Number of faces in the Y direction
-    :type ny: int
-    :return: DESCRIPTION
-    :rtype: TYPE
+    Parameters
+    ----------
+    nx : int
+        Number of faces in the X direction
+    ny : int
+        Number of faces in the Y direction
 
+    Returns
+    -------
+    h_edges : numpy.ndarray
+        Matrix containing the global edge indices of all horizontal edges
+        (bottom and top edges of the cells). Rows correspond to y-levels,
+        columns to x-positions.
+    v_edges : numpy.ndarray
+        Matrix containing the global edge indices of all vertical edges
+        (left and right edges of the cells). Rows correspond to y-levels,
+        columns to x-positions.
     """
-
     # Numbers of horizontal edges
     h_edges = np.zeros((ny + 1, nx))
     # Numbers of vertical edges
@@ -81,45 +89,87 @@ def make_edges_matrices(nx, ny):
 
 
 class ModellingDomain:
+    """Mesh of simulation topography
+    
+    This class represents a structured 2D mesh built either from a raster
+    or from user-specified dimensions and spacing.
+    It stores the topographic data (z), the grid geometry (x, y, dx, dy, nx, ny),
+    and the numbering of edges used for discretization of the domain.
+    
+    Attributes:
+    -----------
+        _z : numpy.ndarray
+            Elevation values of the mesh nodes ([ny, nx]).
+        _nx : int
+            Number of grid points along the X direction.
+        _ny : int
+            Number of grid points along the Y direction.
+        _dx : float
+            Grid resolution in the X direction.
+        _dy : float
+            Grid resolution in the Y direction.
+        _x : numpy.ndarray
+            Array of X coordinates.
+        _y : numpy.ndarray
+            Array of Y coordinates.
+        _h_edges : numpy.ndarray
+            Matrix of horizontal edge numbers ([ny, nx-1]).
+        _v_edges : numpy.ndarray
+            Matrix of vertical edge numbers ([ny-1, nx]).
+    
+    Parameters:
+    -----------
+        raster : numpy.ndarray, str, or None, optional
+            - If numpy.ndarray: used directly as the elevation grid (z).
+            - If str: path to a raster file readable by "tilupy.raster.read_raster".
+            - If None: grid is generated from nx, ny, dx, dy.
+        xmin : float, optional
+            Minimum X coordinate of the grid, used if raster is None, by default 0.0.
+        ymin : float, optional
+            Minimum Y coordinate of the grid, used if raster is None, by default 0.0.
+        nx : int, optional
+            Number of grid points in the X direction, used if raster is None.
+        ny : int, optional
+            Number of grid points in the Y direction, used if raster is None.
+        dx : float, optional
+            Grid spacing along X, by default 1.0.
+        dy : float, optional
+            Grid spacing along Y, by default 1.0.
     """
-    Mesh of simulation topography
-    """
-
-    def __init__(
-        self,
-        raster=None,
-        xmin=0,
-        ymin=0,
-        nx=None,
-        ny=None,
-        dx=1,
-        dy=1,
-    ):
+    def __init__(self,
+                 raster: np.ndarray = None,
+                 xmin: float = 0,
+                 ymin: float = 0,
+                 nx: int = None,
+                 ny: int = None,
+                 dx: float = 1,
+                 dy: float = 1,
+                 ):
         if raster is not None:
             if isinstance(raster, np.ndarray):
-                self.z = raster
-                self.nx = raster.shape[1]
-                self.ny = raster.shape[0]
-                self.dx = dx
-                self.dy = dy
-                self.x = np.arange(
-                    xmin, xmin + (self.nx - 1) * self.dx + self.dx / 2, self.dx
+                self._z = raster
+                self._nx = raster.shape[1]
+                self._ny = raster.shape[0]
+                self._dx = dx
+                self._dy = dy
+                self._x = np.arange(
+                    xmin, xmin + (self._nx - 1) * self._dx + self._dx / 2, self._dx
                 )
-                self.y = np.arange(
-                    ymin, ymin + (self.ny - 1) * self.dy + self.dy / 2, self.dy
+                self._y = np.arange(
+                    ymin, ymin + (self._ny - 1) * self._dy + self._dy / 2, self._dy
                 )
             if isinstance(raster, str):
-                self.x, self.y, self.z = tilupy.raster.read_raster(raster)
-                self.nx = len(self.x)
-                self.ny = len(self.y)
-                self.dx = self.x[1] - self.x[0]
-                self.dy = self.y[1] - self.y[0]
+                self._x, self._y, self._z = tilupy.raster.read_raster(raster)
+                self._nx = len(self._x)
+                self._ny = len(self._y)
+                self._dx = self._x[1] - self._x[0]
+                self._dy = self._y[1] - self._y[0]
         else:
-            self.z = raster
-            self.nx = nx
-            self.ny = ny
-            self.dx = dx
-            self.dy = dy
+            self._z = raster
+            self._nx = nx
+            self._ny = ny
+            self._dx = dx
+            self._dy = dy
             if (
                 xmin is not None
                 and ymin is not None
@@ -127,79 +177,102 @@ class ModellingDomain:
                 and ny is not None
                 and dx is not None
                 and dy is not None
-            ):
-                self.x = np.arange(xmin, xmin + dx * nx + dx / 2, dx)
-                self.y = np.arange(ymin, ymin + dy * ny + dy / 2, dy)
+                ):
+                self._x = np.arange(xmin, xmin + dx * nx + dx / 2, dx)
+                self._y = np.arange(ymin, ymin + dy * ny + dy / 2, dy)
 
-        self.h_edges = None
-        self.v_edges = None
+        self._h_edges = None
+        self._v_edges = None
 
-        if self.nx is not None and self.ny is not None:
+        if self._nx is not None and self._ny is not None:
             self.set_edges()
 
-    def set_edges(self):
-        """
-        Set horizontal and vertical edges number
-        :return: DESCRIPTION
-        :rtype: TYPE
 
+    def set_edges(self) -> None:
+        """Compute and assign horizontal and vertical edge number.
+        
+        Calls "make_edges_matrices()" to build the edge numbering
+        for the grid defined by nx and ny. 
+        Results are stored in attributes "h_edges" and "v_edges".
+        
+        Returns
+        -------
+        None
         """
-        self.h_edges, self.v_edges = make_edges_matrices(
-            self.nx - 1, self.ny - 1
-        )
+        self._h_edges, self._v_edges = make_edges_matrices(self._nx - 1, self._ny - 1)
 
-    def get_edge(self, xcoord, ycoord, cardinal):
-        """
-        Get edge number for given coordinates and cardinal direction
-        :param xcoord: DESCRIPTION
-        :type xcoord: TYPE
-        :param ycoord: DESCRIPTION
-        :type ycoord: TYPE
-        :param cardinal: DESCRIPTION
-        :type cardinal: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
 
+    def get_edge(self, xcoord: float, ycoord: float, cardinal: str) -> int:
+        """Get edge number for given coordinates and cardinal direction
+
+        Parameters
+        ----------
+        xcoord : float
+            X coordinate of the point.
+        ycoord : float
+            Y coordinate of the point.
+        cardinal : str
+            Cardinal direction of the edge ('N', 'S', 'E', 'W'):
+            - 'N': top edge of the cell
+            - 'S': bottom edge of the cell
+            - 'E': right edge of the cell
+            - 'W': left edge of the cell
+        
+        Returns
+        -------
+        int
+            Edge number corresponding to the requested location and direction.
+        
+        Raises
+        ------
+        AssertionError
+            If "set_edges()" has not been called before (i.e. h_edges and v_edges are None).
         """
-        assert (self.h_edges is not None) and (
-            self.v_edges is not None
-        ), "h_edges and v_edges must be computed to get edge number"
-        ix = np.argmin(np.abs(self.x[:-1] + self.dx / 2 - xcoord))
-        iy = np.argmin(np.abs(self.y[:-1] + self.dx / 2 - ycoord))
+        assert (self._h_edges is not None) and (self._v_edges is not None), "h_edges and v_edges must be computed to get edge number"
+        ix = np.argmin(np.abs(self._x[:-1] + self._dx / 2 - xcoord))
+        iy = np.argmin(np.abs(self._y[:-1] + self._dx / 2 - ycoord))
         if cardinal == "S":
-            return self.h_edges[-iy - 1, ix]
+            return self._h_edges[-iy - 1, ix]
         elif cardinal == "N":
-            return self.h_edges[-iy - 2, ix]
+            return self._h_edges[-iy - 2, ix]
         elif cardinal == "W":
-            return self.v_edges[-iy - 1, ix]
+            return self._v_edges[-iy - 1, ix]
         elif cardinal == "E":
-            return self.v_edges[-iy - 1, ix + 1]
+            return self._v_edges[-iy - 1, ix + 1]
 
-    def get_edges(self, xcoords, ycoords, cardinal, from_extremities=True):
-        """
-        Get edges numbers for a set of coordinates and cardinals direction.
-        xcoords and ycoords can be the min and max x and y coordinates of a line
-        if from_extremities is True.
-        :param xcoords: DESCRIPTION
-        :type xcoords: TYPE
-        :param ycoords: DESCRIPTION
-        :type ycoords: TYPE
-        :param cardinal: DESCRIPTION
-        :type cardinal: TYPE
-        :param from_extremities: DESCRIPTION, defaults to True
-        :type from_extremities: TYPE, optional
-        :return: DESCRIPTION
-        :rtype: TYPE
 
+    def get_edges(self, xcoords: np.ndarray, ycoords: np.ndarray, cardinal: str, from_extremities: bool=True) -> dict[str: list[int]]:
+        """Get edges numbers for a set of coordinates and cardinals direction.
+        
+        If from_extremities is True, xcoords and ycoords are treated as the extremities of a segment. 
+
+        Parameters
+        ----------
+        xcoords : np.ndarray or list
+            X coordinates of points. If from_extremities is True, indicated (xmin, xmax).
+        ycoords : np.ndarray or list
+            Y coordinates of points. If from_extremities is True, indicated (ymin, ymax).
+        cardinal : str
+            Cardinal directions to extract, any combination of {'N', 'S', 'E', 'W'}.
+            Example: "NS" will return both north and south edges.
+        from_extremities : bool, optional
+            If True, `xcoords` and `ycoords` are considered as the endpoints
+            of a line, by default True
+
+        Returns
+        -------
+        dict[str: list[int]]
+            Dictionary where keys are the requested cardinals and values are
+            sorted lists of unique edge numbers.
         """
         if from_extremities:
             d = np.sqrt(
                 (xcoords[1] - xcoords[0]) ** 2 + (ycoords[1] - ycoords[0]) ** 2
             )
-            npts = int(np.ceil(d / min(self.dx, self.dy)))
+            npts = int(np.ceil(d / min(self._dx, self._dy)))
             xcoords = np.linspace(xcoords[0], xcoords[1], npts + 1)
             ycoords = np.linspace(ycoords[0], ycoords[1], npts + 1)
-        if self.h_edges is None or self.v_edges is None:
+        if self._h_edges is None or self._v_edges is None:
             self.set_edges
         res = dict()
         # cardinal is a string with any combination of cardinal directions
@@ -213,19 +286,71 @@ class ModellingDomain:
 
 
 class Simu:
-    def __init__(self, folder, name):
+    """Simulation configuration and input file generator.
+    
+    This class manages the setup of lave2D. It creates the necessary input files (topography, numeric
+    parameters, rheology, boundary conditions, initial mass) that will be read by lave2D.
+    
+    Attributes:
+    -----------
+        _folder : str
+            Path to the directory where simulation input and output files are stored.
+        _name : str
+            Base name of the simulation, used as a prefix for generated files. Must have 8 characters.
+        _x : numpy.ndarray
+            Array of X coordinates of the topography grid.
+        _y : numpy.ndarray
+            Array of Y coordinates of the topography grid.
+        _z : numpy.ndarray
+            2D array of topographic elevations.
+        _tmax : float
+            Maximum simulation time.
+        _dtsorties : float
+            Time step for output results.
+    
+    Parameters:
+    -----------
+        folder : str
+            Directory where simulation files are written. Created if it does not exist.
+        name : str
+            Base name of the simulation (used as file prefix).
+    """
+    def __init__(self, folder: str, name: str):
         os.makedirs(folder, exist_ok=True)
-        self.folder = folder
-        self.name = name
-        self.x = None
-        self.y = None
-        self.z = None
+        self._folder = folder
+        self._name = name
+        self._x = None
+        self._y = None
+        self._z = None
 
-    def set_topography(self, z, x=None, y=None, file_out=None):
+
+    def set_topography(self, z: np.ndarray | str, 
+                       x: np.ndarray=None, 
+                       y: np.ndarray=None, 
+                       file_out: str=None
+                       ) -> None:
+        """Set simulation topography and write it as an ASCII grid.
+
+        Parameters
+        ----------
+        z : ndarray or str
+            Topography values as a 2D NumPy array, or path to a raster file.
+        x : ndarray, optional
+            X coordinates of the grid, ignored if z is a file path.
+        y : ndarray, optional
+            Y coordinates of the grid, ignored if z is a file path.
+        file_out : str, optional
+            Output filename (add ".asc"), by defaults "toposimu.asc".
+            Filenames are truncated or padded to 8 characters.
+
+        Returns
+        -------
+        None
+        """
         if isinstance(z, str):
-            self.x, self.y, self.z = tilupy.raster.read_raster(z)
+            self._x, self._y, self._z = tilupy.raster.read_raster(z)
         else:
-            self.x, self.y, self.z = x, y, z
+            self._x, self._y, self._z = x, y, z
 
         if file_out is None:
             file_out = "toposimu.asc"
@@ -246,23 +371,45 @@ class Simu:
             file_out = fname + ".asc"
 
         tilupy.raster.write_ascii(
-            self.x, self.y, self.z, os.path.join(self.folder, file_out)
+            self._x, self._y, self._z, os.path.join(self._folder, file_out)
         )
 
-    def set_numeric_params(
-        self,
-        tmax,
-        dtsorties,
-        paray=0.00099,
-        dtinit=0.01,
-        cfl_const=1,
-        CFL=0.2,
-        alpha_cor_pente=1.0,
-    ):
-        self.tmax = tmax
-        self.dtsorties = dtsorties
+    def set_numeric_params(self,
+                           tmax: float,
+                           dtsorties: float,
+                           paray: float=0.00099,
+                           dtinit: float=0.01,
+                           cfl_const: int=1,
+                           CFL: float=0.2,
+                           alpha_cor_pente: float=1.0,
+                           ) -> None:
+        """Set numerical simulation parameters and write them to file.
 
-        with open(os.path.join(self.folder, "DONLEDD1.DON"), "w") as fid:
+        Parameters
+        ----------
+        tmax : float
+            Maximum simulation time.
+        dtsorties : float
+            Time step for output results.
+        paray : float, optional
+            Hydraulic roughness parameter, by default 0.00099.
+        dtinit : float, optional
+            Initial time step, by default 0.01.
+        cfl_const : int, optional
+            If 1, CFL condition is constant, by default 1.
+        CFL : float, optional
+            Courant-Friedrichs-Lewy number, by default 0.2.
+        alpha_cor_pente : float, optional
+            Slope correction coefficient, by default 1.0.
+
+        Returns
+        -------
+        None
+        """
+        self._tmax = tmax
+        self._dtsorties = dtsorties
+
+        with open(os.path.join(self._folder, "DONLEDD1.DON"), "w") as fid:
             fid.write(
                 "paray".ljust(34, " ") + "{:.12f}\n".format(paray).lstrip("0")
             )
@@ -285,50 +432,78 @@ class Simu:
                 + "{:.12f}".format(alpha_cor_pente)
             )
 
-    def set_rheology(self, tau_rho, K_tau=0.3):
+    def set_rheology(self, tau_rho: float, K_tau: float=0.3) -> None:
+        r"""Set Herschel-Bulkley rheology parameters
+
+        Rheological parameters are tau/rho and K/tau. See :
+        
+        - Coussot, P., 1994. Steady, laminar, flow of concentrated mud suspensions in open channel. Journal of Hydraulic Research 32, 535-559.
+        doi.org/10.1080/00221686.1994.9728354 
+            --> Eq 8 and text after eq 22 for the default value of K/tau
+        - Rickenmann, D. et al., 2006. Comparison of 2D debris-flow simulation models with field events. Computational Geosciences 10,
+        241-264. doi.org/10.1007/s10596-005-9021-3 
+            --> Eq 9
+
+        tau_rho : float
+            Yield stress divided by density (:math:`\tau/\rho`).
+        K_tau : float, optional
+            Consistency index divided by yield stress (:math:`K/\tau`).
+            By default 0.3, following Rickenmann (2006).
         """
-        Set Herschel-Bulkley rheology parameters
-
-        Rheological parameters are tau/rho and K/tau. See
-        -Coussot, P., 1994. Steady, laminar, flow of concentrated mud
-        suspensions in open channel. Journal of Hydraulic Research 32, 535–559.
-        doi.org/10.1080/00221686.1994.9728354 --> Eq 8 and text after eq 22
-        for the default value of K/tau
-        -Rickenmann, D. et al., 2006. Comparison of 2D debris-flow
-        simulation models with field events. Computational Geosciences 10,
-        241–264. doi.org/10.1007/s10596-005-9021-3 --> Eq 9
-
-
-        :param tau_rho: DESCRIPTION
-        :type tau_rho: TYPE
-        :param K_rau: DESCRIPTION
-        :type K_rau: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
-
-        """
-        with open(os.path.join(self.folder, self.name + ".rhe"), "w") as fid:
+        with open(os.path.join(self._folder, self._name + ".rhe"), "w") as fid:
             fid.write("{:.3f}\n".format(tau_rho))
             fid.write("{:.3f}".format(K_tau))
 
-    def set_boundary_conditions(
-        self,
-        xcoords,
-        ycoords,
-        cardinal,
-        discharges,
-        times=None,
-        thicknesses=None,
-        tmax=9999,
-        discharge_from_volume=False,
-    ):
+
+    def set_boundary_conditions(self,
+                                xcoords: list,
+                                ycoords: list,
+                                cardinal: str,
+                                discharges: list | float,
+                                times: list=None,
+                                thicknesses: list=None,
+                                tmax: float=9999,
+                                discharge_from_volume: bool=False,
+                                ) -> None:
+        r"""Define and write inflow hydrograph boundary conditions.
+
+        Parameters
+        ----------
+        xcoords : list
+            X coordinates of boundary location (two values for segment ends).
+        ycoords : list
+            Y coordinates of boundary location (two values for segment ends).
+        cardinal : str 
+            Boundary orientation ('N', 'S', 'E', 'W').
+        discharges : list or float
+            If times is None: interpreted as inflow volume (:math:`m^3`).
+            Else: Interpreted as discharge values (:math:`m^3/s`) at each time step.
+        times : list, optional
+            Time vector associated with discharges. If None, a synthetic
+            hydrograph is built from volume. By default None.
+        thicknesses : list, optional
+            Flow thicknesses for each time step. If None, put 1m everywhere. By default None.
+        tmax : float, optional
+            Maximum time for synthetic hydrograph generation, by default 9999.
+        discharge_from_volume : bool, optional
+            If True, discharges are computed from inflow volume, by default False. Not used.
+
+        Returns
+        -------
+        None
+        
+        Raises
+        ------
+        AttributeError
+            If no topography not been set.
+        """
         try:
             modelling_domain = ModellingDomain(
-                self.z,
-                self.x[0],
-                self.y[0],
-                dx=self.x[1] - self.x[0],
-                dy=self.y[1] - self.y[0],
+                self._z,
+                self._x[0],
+                self._y[0],
+                dx=self._x[1] - self._x[0],
+                dy=self._y[1] - self._y[0],
             )
         except AttributeError:
             print("Simulation topography has not been set")
@@ -357,11 +532,11 @@ class Simu:
             thicknesses = [1 for i in range(n_times)]
 
         if cardinal in ["W", "E"]:
-            dd = self.y[1] - self.y[0]
+            dd = self._y[1] - self._y[0]
         else:
-            dd = self.x[1] - self.x[0]
+            dd = self._x[1] - self._x[0]
 
-        with open(os.path.join(self.folder, self.name + ".cli"), "w") as fid:
+        with open(os.path.join(self._folder, self._name + ".cli"), "w") as fid:
             fid.write(
                 "{:d}\n".format(n_times)
             )  # Number of time steps in the hydrogram
@@ -377,7 +552,24 @@ class Simu:
                         )
                     )
 
-    def set_init_mass(self, mass_raster, h_min=0.01):
+
+    def set_init_mass(self, mass_raster: str, h_min: float=0.01) -> None:
+        """Set initial debris-flow mass from a raster file.
+
+        Reads an ASCII raster of initial thickness and interpolates it onto
+        the simulation grid cell centers.
+
+        Parameters
+        ----------
+        mass_raster : str
+            Path to raster file containing initial mass thickness.
+        h_min : float, optional
+            Minimum non-zero thickness assigned to the grid. Default is 0.01.
+
+        Returns
+        -------
+        None
+        """
         x, y, m = tilupy.raster.read_ascii(mass_raster)
         # The input raster is given as the topography for the grid corners,
         # but results are then written on grid cell centers
@@ -397,7 +589,7 @@ class Simu:
         m2 = fm((y_mesh, x_mesh))
         m2[m2 < h_min] = h_min
         np.savetxt(
-            os.path.join(self.folder, self.name + ".cin"),
+            os.path.join(self._folder, self._name + ".cin"),
             m2.flatten(),
             header="0.000000E+00",
             comments="",
