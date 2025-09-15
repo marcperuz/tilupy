@@ -20,7 +20,33 @@ README_PARAM_MATCH = dict(tmax="tmax", CFL="cflhyp", h_min="eps0", dt_im_output=
 SHALTOP_LAW_ID = dict(No_Friction=1, Herschel_Bulkley=61, Voellmy=8, Bingham=6, Coulomb=1, Coulomb_muI=7)
 
 
-def raster_to_shaltop_txtfile(file_in, file_out, folder_out=None):
+def raster_to_shaltop_txtfile(file_in: str, file_out: str, folder_out: str=None) -> dict:
+    """Convert a raster file to a Shaltop ASCII text format.
+
+    Reads a raster (formats readable by tilupy.raster) and saves it as a 
+    ASCII text file with values flattened column-wise and rows flipped vertically. 
+
+    Parameters
+    ----------
+    file_in : str
+        Path to the input raster file.
+    file_out : str
+        Name of the output ASCII text file.
+    folder_out : str, optional
+        Directory where the output file will be saved. If None, `file_out`
+        is used as-is, by default None.
+
+    Returns
+    -------
+    dict
+        Dictionary containing grid metadata:
+            - 'x0': X coordinate of the first column.
+            - 'y0': Y coordinate of the first row.
+            - 'dx': Grid spacing along X.
+            - 'dy': Grid spacing along Y.
+            - 'nx': Number of columns.
+            - 'ny': Number of rows.
+    """
     if folder_out is not None:
         file_out = os.path.join(folder_out, file_out)
 
@@ -38,27 +64,26 @@ def raster_to_shaltop_txtfile(file_in, file_out, folder_out=None):
     return res
 
 
-def write_params_file(params, directory=None, file_name="params.txt"):
-    """
-    Write params file for shaltop simulations
+def write_params_file(params: dict, directory: str=None, file_name: str="params.txt") -> None:
+    """Write a dictionary of parameters to a text file.
+
+    Each key-value pair in the dictionary is written on a separate line.
 
     Parameters
     ----------
-    params : TYPE
-        DESCRIPTION.
-    sup_data : TYPE, optional
-        DESCRIPTION. The default is {}.
-    directory : TYPE, optional
-        DESCRIPTION. The default is None.
-    file_name : TYPE, optional
-        DESCRIPTION. The default is 'params.txt'.
+    params : dict
+        Dictionary of parameter names and values. Values can be int, float,
+        or str.
+    directory : str, optional
+        Directory where the parameter file will be written. Default is the
+        current working directory.
+    file_name : str, optional
+        Name of the parameter file. Default is "params.txt".
 
     Returns
     -------
-    None.
-
+    None
     """
-
     if directory is None:
         directory = os.getcwd()
     with open(os.path.join(directory, file_name), "w") as file_params:
@@ -151,45 +176,44 @@ def write_simu(raster_topo: str,
     write_params_file(params, directory=folder_out, file_name="params.txt")
 
 
-def write_job_files(
-    dirs,
-    param_files,
-    file_job,
-    job_name,
-    max_time_hours=24,
-    ncores_per_node=6,
-    partitions="cpuall,data,datanew",
-    shaltop_file="shaltop",
-    folder_conf_in_job=None,
-    replace_path=None,
-    number_conf_file=True,
-):
+def write_job_files(dirs: list[str],
+                    param_files: list[str],
+                    file_job: str,
+                    job_name: str,
+                    max_time_hours: int=24,
+                    ncores_per_node: int=6,
+                    partitions: str="cpuall,data,datanew",
+                    shaltop_file: str="shaltop",
+                    folder_conf_in_job: str=None,
+                    replace_path: list=None,
+                    number_conf_file: bool=True,
+                    ):
     """
     Write job/conf files for slurm jobs. The conf contains all the commands
     needed to run each simulation (one command per simulation).
 
     Parameters
     ----------
-    dirs : list of string
+    dirs : list[str]
         list of paths where simus will be run.
-    param_files : list string
+    param_files : list[str]
         list of shaltop parameter files.
-    file_job : string
+    file_job : str
         name of job file called by sbatch.
-    job_name : string
+    job_name : str
         name of conf file used by file_job.
     max_time_hours : int, optional
         Maximum job duration in hours before stop. The default is 24.
     ncores_per_node : int, optional
         Number of cores per nodes. Used to know the number of nodes required
         for the job. The default is 6.
-    partitions : string, optional
+    partitions : str, optional
         Names of partitions on which jobs can be launched.
         The default is "cpuall,data,datanew".
-    shaltop_file : string, optional
+    shaltop_file : str, optional
         Bash command used to call shaltop. Can be a path.
         The default is "shaltop".
-    folder_conf_in_job : string, optional
+    folder_conf_in_job : str, optional
         Folder where the conf file is located. The default is the folder
         path of file_job.
     replace_path : list, optional
@@ -204,8 +228,7 @@ def write_job_files(
 
     Returns
     -------
-    None.
-
+    None
     """
     ntasks = len(dirs)
     nnodes = int(np.ceil(ntasks / ncores_per_node))
@@ -261,23 +284,28 @@ def write_job_files(
         job_file.write(line.format(ntasks, path_conf_in_job))
 
 
-def make_simus(law, rheol_params, folder_data, folder_out, readme_file):
-    """
-    Write shaltop initial file for simple slope test case
+def make_simus(law: str, rheol_params: dict, folder_data: str, folder_out: str, readme_file: str):
+    """Write shaltop initial file for simple slope test case
+
+    Reads topography and initial mass files in ASCII format,
+    writes them in Shaltop-compatible format, prepares simulation parameters
+    based on a README file and user-provided values,
+    and generates a shell script to run the simulations.
 
     Parameters
     ----------
-    deltas : TYPE
-        DESCRIPTION.
-    folder_in : TYPE
-        DESCRIPTION.
-    folder_out : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    None.
-
+    law : str
+        Name of the rheological law to use (must match a key in SHALTOP_LAW_ID).
+    rheol_params : dict of list
+        Dictionary of rheology parameters. Each key corresponds to a parameter
+        name and its value is a list of parameter values to simulate.
+    folder_data : str
+        Path to the folder containing input data files "topo.asc" and "mass.asc".
+    folder_out : str
+        Path to the folder where output simulation folders and Shaltop files
+        will be created.
+    readme_file : str
+        Path to the README file containing simulation parameters and metadata.
     """
     # Get topography and initial mass, and write them in Shaltop format
     zfile = os.path.join(folder_data, "topo.asc")
