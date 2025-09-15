@@ -318,7 +318,7 @@ def channel(
     alpha[ind] = (
         1 / (2 * R) * trans_function(xtopo[ind], xstart_channel, xstart_trans)
     )
-    ind = (xtopo > xend_channel) & (xtopo <= xend_trans)
+    ind = (xtopo >= xend_channel) & (xtopo < xend_trans)
     alpha[ind] = (
         1 / (2 * R) * trans_function(xtopo[ind], xend_channel, xend_trans)
     )
