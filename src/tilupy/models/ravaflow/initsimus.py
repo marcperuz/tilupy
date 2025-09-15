@@ -17,20 +17,23 @@ readme_param_match = dict(tmax='tmax',
                           dt_im_output='dt_im')
 
 
-def readme_to_params(folder_data):
-    """
-    Transform readme to parameters dictionnary.
+def readme_to_params(folder_data: str) -> dict:
+    """Read a README.txt file and convert it to a parameters dictionary.
 
+    Each line of the README file should contain a key and a value separated
+    by whitespace. The function parses the file and returns a dictionary
+    mapping keys to their corresponding string values.
+    
     Parameters
     ----------
-    folder_data : TYPE
-        DESCRIPTION.
+    folder_data : str
+        Path to the folder containing the README.txt file.
 
     Returns
     -------
-    params : TYPE
-        DESCRIPTION.
-
+    dict
+        Dictionary where keys are parameter names (str) and values are
+        their corresponding values (str) read from the file.
     """
     params = dict()
     with open(os.path.join(folder_data, 'README.txt'), 'r') as f:
@@ -40,20 +43,22 @@ def readme_to_params(folder_data):
     return params
 
 
-def write_params(params):
-    """
-    Write parameters to string for ravaflow input.
+def write_params(params: dict) -> str:
+    """Convert a parameters dictionary to a formatted string for RavaFlow input.
+
+    Generates a single string in the form "key1=val1 key2=val2 ...",
+    suitable for passing as command-line arguments to RavaFlow.
 
     Parameters
     ----------
-    params : TYPE
-        DESCRIPTION.
+    params : dict
+        Dictionary of parameters, where keys and values are strings.
 
     Returns
     -------
-    TYPE
-        DESCRIPTION.
-
+    str
+        Formatted string containing all parameters in "key=value" format,
+        separated by spaces.
     """
     txt = ''
     for key in params:
@@ -61,23 +66,32 @@ def write_params(params):
     return txt[:-1]
 
 
-def make_simus(law, rheol_params, folder_files, folder_out, readme_file):
-    """
-    Write shaltop initial file for simple slope test case.
+def make_simus(law: str, rheol_params: dict, folder_files: str, folder_out: str, readme_file: str) -> None:
+    """Write ravaflow initial file for simple slope test case
 
+    Reads simulation parameters from a README file and input
+    ASCII rasters, sets topography and mass, prepares numerical and rheological
+    parameters, and generates a shell script to execute simulations. Supports
+    multiple combinations of rheology parameters.
+    
     Parameters
     ----------
-    deltas : TYPE
-        DESCRIPTION.
-    folder_in : TYPE
-        DESCRIPTION.
-    folder_out : TYPE
-        DESCRIPTION.
-
+    law : str
+        Rheological law to use, e.g., "coulomb" or "voellmy".
+    rheol_params : dict of list
+        Dictionary of rheology parameters, each key maps to a list of values
+        defining multiple simulation runs.
+    folder_files : str
+        Path to folder containing input ASCII files "topo.asc" and "mass.asc".
+    folder_out : str
+        Path to the folder where output simulation folders and run scripts
+        will be created.
+    readme_file : str
+        Path to the README.txt file containing simulation metadata and parameters.
+        
     Returns
     -------
-    None.
-
+    None
     """
     # Parameters from README.txt file
     params_readme = tilupy.notations.readme_to_params(readme_file)

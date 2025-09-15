@@ -137,6 +137,10 @@ def write_simu(raster_topo: str,
     folder_out : str, optional
         Output folder where simulation inputs will be saved.
     
+    Returns
+    -------
+    None
+    
     Raises
     ------
     ValueError
@@ -187,7 +191,7 @@ def write_job_files(dirs: list[str],
                     folder_conf_in_job: str=None,
                     replace_path: list=None,
                     number_conf_file: bool=True,
-                    ):
+                    ) -> None:
     """
     Write job/conf files for slurm jobs. The conf contains all the commands
     needed to run each simulation (one command per simulation).
@@ -284,7 +288,7 @@ def write_job_files(dirs: list[str],
         job_file.write(line.format(ntasks, path_conf_in_job))
 
 
-def make_simus(law: str, rheol_params: dict, folder_data: str, folder_out: str, readme_file: str):
+def make_simus(law: str, rheol_params: dict, folder_data: str, folder_out: str, readme_file: str)  -> None:
     """Write shaltop initial file for simple slope test case
 
     Reads topography and initial mass files in ASCII format,
@@ -306,6 +310,10 @@ def make_simus(law: str, rheol_params: dict, folder_data: str, folder_out: str, 
         will be created.
     readme_file : str
         Path to the README file containing simulation parameters and metadata.
+    
+    Returns
+    -------
+    None
     """
     # Get topography and initial mass, and write them in Shaltop format
     zfile = os.path.join(folder_data, "topo.asc")

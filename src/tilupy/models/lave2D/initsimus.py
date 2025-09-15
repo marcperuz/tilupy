@@ -15,7 +15,7 @@ from scipy.interpolate import RegularGridInterpolator
 import tilupy.raster
 
 
-def make_edges_matrices(nx: int, ny: int):
+def make_edges_matrices(nx: int, ny: int) -> list[np.ndarray, np.ndarray]:
     """Numbering edges for a regular rectangular grid.
 
     Considering a matrix M with whape (ny, nx),the convention is that
@@ -449,6 +449,10 @@ class Simu:
         K_tau : float, optional
             Consistency index divided by yield stress (:math:`K/\tau`).
             By default 0.3, following Rickenmann (2006).
+        
+        Returns
+        -------
+        None
         """
         with open(os.path.join(self._folder, self._name + ".rhe"), "w") as fid:
             fid.write("{:.3f}\n".format(tau_rho))
@@ -633,6 +637,10 @@ def write_simu(raster_topo: str,
     folder_out : str, optional
         Output folder where simulation inputs will be stored.
     
+    Returns
+    -------
+    None
+        
     Raises
     ------
     ValueError
