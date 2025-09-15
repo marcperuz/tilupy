@@ -730,6 +730,7 @@ class Benchmark:
                               time_steps: float | list[float] = None,
                               direction_index = None,
                               flow_velocity_threshold = 0.001,
+                              flow_velocity_threshold_value = 0.0,
                               velocity_threshold: float=1e-6,
                               linestyles: list[str]=None,
                               ax: matplotlib.axes._axes.Axes = None,
@@ -887,7 +888,7 @@ class Benchmark:
                 cmap = plt.cm.copper
                 norm = plt.Normalize(vmin=min(t for t, _ in u_plot), vmax=max(t for t, _ in u_plot))
             for idx, (t_val, profile) in enumerate(u_plot):
-                profile[profile <= velocity_threshold] = np.nan
+                profile[profile <= velocity_threshold] = flow_velocity_threshold_value
                 if linestyles and len(linestyles) == len(u_plot):
                     l_style = linestyles[idx]
                     color = "black" if t_val != 0 else "red"
@@ -896,7 +897,7 @@ class Benchmark:
                     l_style = "-" if t_val != 0 else (0, (1, 4))
                 ax.plot(absci, profile, color=color, linestyle=l_style, label=f"t={t_val}s")
         else:
-            u_plot[u_plot <= velocity_threshold] = np.nan
+            u_plot[u_plot <= velocity_threshold] = flow_velocity_threshold_value
             ax.plot(absci, u_plot, color='black', linewidth=1, label=f"t={t_val}s")
 
 
@@ -905,7 +906,7 @@ class Benchmark:
         ax.set_xlim(min(absci), max(absci))
         ax.set_title(f"Flow velocity ({velocity_axis}) profile along {axis}")
         ax.set_xlabel(f"x [{x_unit}]")
-        ax.set_ylabel(f"h [{h_unit}]")
+        ax.set_ylabel(f"u [{h_unit}]")
         ax.legend(loc='upper right')
 
         if show_plot:
