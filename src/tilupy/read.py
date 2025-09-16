@@ -5,7 +5,10 @@ Created on Tue Jun  1 14:20:52 2021
 
 @author: peruzzetto
 """
+from __future__ import annotations
+from abc import abstractmethod
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -18,28 +21,157 @@ import pytopomap.plot as plt_fn
 import tilupy.plot as plt_tlp
 import tilupy.raster
 
+
+
 RAW_STATES = ["hvert", "h", "ux", "uy"]
+"""Raw states at the output of a model.
+
+Implemented states :
+
+    - hvert : Fluid thickness taken vertically
+    - h : Fluid thickness taken normal to topography
+    - ux : X-component of fluid velocity
+    - uy : Y-component of fluid velocity
+"""
 
 TEMPORAL_DATA_0D = ["ek", "vol"]
+"""Time-varying 0D data.
+   
+Implemented 0D temporal data :
+
+    - ek
+    - vol : Fluid volume
+    
+Also combine all the assembly possibilities between TEMPORAL_DATA_2D and NP/OTHER_OPERATORS, at each point xy following this format:
+
+[TEMPORAL_DATA_2D]_[NP/OTHER_OPERATORS]_xy
+
+For instance with h :
+    - h_max_xy
+    - h_mean_xy
+    - h_std_xy
+    - h_sum_xy
+    - h_min_xy
+    - h_final_xy
+    - h_init_xy
+    - h_int_xy
+"""
+
 TEMPORAL_DATA_1D = [""]
+"""Time-varying 1D data.
+
+Combine all the assembly possibilities between TEMPORAL_DATA_2D, NP/OTHER_OPERATORS and with an axis like this:
+
+[TEMPORAL_DATA_2D]_[NP/OTHER_OPERATORS]_[x/y]
+
+For instance with h :
+    - h_max_x
+    - h_max_y
+    - h_mean_x
+    - h_mean_y
+    - h_std_x
+    - h_std_y
+    - h_sum_x
+    - h_sum_y
+    - h_min_x
+    - h_min_y
+    - h_final_x
+    - h_final_y
+    - h_init_x
+    - h_init_y
+    - h_int_x
+    - h_int_y
+"""
+
 TEMPORAL_DATA_2D = ["hvert", "h", "u", "ux", "uy", "hu", "hu2"]
+"""Time-varying 2D data.
+   
+Implemented 2D temporal data :
+
+    - hvert : Fluid height taken vertically
+    - h : Fluid height taken normal to topography
+    - u : Fluid velocity
+    - ux : X-component of fluid velocity
+    - uy : Y-component of fluid velocity
+    - hu : Volume flow rate
+    - hu2 : Quadratic flow, convective term in equations
+"""
+
 STATIC_DATA_0D = []
+"""Static 0D data."""
+
 STATIC_DATA_1D = []
+"""Static 1D data."""
+
 STATIC_DATA_2D = []
+"""Static 2D data.
+
+Combine all the assembly possibilities between TEMPORAL_DATA_2D, NP/OTHER_OPERATORS and like this:
+
+[TEMPORAL_DATA_2D]_[NP/OTHER_OPERATORS]
+
+For instance with h :
+    - h_max : Maximum value of fluid height
+    - h_mean : Mean of fluid height
+    - h_std : Standard deviation of fluid height
+    - h_sum : Sum of fluid height
+    - h_min : Minimum value of fluid height
+    - h_final : Final value of fluid height
+    - h_init : Initial value of fluid height
+    - h_int : Integrated value of fluid height
+"""
 
 TOPO_DATA_2D = ["z", "zinit", "costh"]
+"""Data related to topography.
+
+Implemented topographic data :
+
+    - z : Elevation value of topography
+    - zinit : Initial elevation value of topography (same as z if the topography doesn't change during the flow)
+    - costh : Cosine of the angle between the vertical and the normal to the relief. Factor to transform vertical height (hvert) into normal height (h).
+"""
 
 NP_OPERATORS = ["max", "mean", "std", "sum", "min"]
+"""Statistical operators.
+   
+Implemented operators :
+
+    - max : Maximum value
+    - mean : Mean
+    - std : Standard deviation
+    - sum : Sum
+    - min : Minimum value
+"""
+
 OTHER_OPERATORS = ["final", "init", "int"]
+"""Other operators.
+
+Implemented operators :
+
+    - final : Final value
+    - init : Initial value
+    - int : Integrated value
+"""
+
 TIME_OPERATORS = ["final", "init", "int"]
+"""Time-related operators.
+
+Implemented operators :
+
+    - final : Final value
+    - init : Initial value
+    - int : Integrated value
+"""
 
 COMPUTED_STATIC_DATA_2D = []
+"""Intermediate calculation list for STATIC_DATA_2D."""
 for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
         COMPUTED_STATIC_DATA_2D.append(name + "_" + stat)
 STATIC_DATA_2D += COMPUTED_STATIC_DATA_2D
 
 COMPUTED_SPAT_1D_DATA = []
+"""Intermediate calculation list for TEMPORAL_DATA_1D."""
 for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
         for axis in ["x", "y"]:
@@ -47,24 +179,60 @@ for stat in NP_OPERATORS + OTHER_OPERATORS:
 TEMPORAL_DATA_1D += COMPUTED_SPAT_1D_DATA
 
 COMPUTED_SPAT_0D_DATA = []
+"""Intermediate calculation list for TEMPORAL_DATA_0D."""
 for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
         COMPUTED_SPAT_0D_DATA.append(name + "_" + stat + "_xy")
 TEMPORAL_DATA_0D += COMPUTED_SPAT_0D_DATA
 
 TEMPORAL_DATA = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
-STATIC_DATA = (
-    STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D + COMPUTED_STATIC_DATA_2D
-)
+"""Assembling all temporal data.
 
-DATA_NAMES = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
-DATA_NAMES += STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
+TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
+"""
+
+STATIC_DATA = STATIC_DATA_0D + STATIC_DATA_1D + \
+    STATIC_DATA_2D + COMPUTED_STATIC_DATA_2D
+"""Assembling all static data.
+
+STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D + COMPUTED_STATIC_DATA_2D
+"""
+
+DATA_NAMES = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D + STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
+"""Assembling all data.
+
+TEMPORAL_DATA + STATIC_DATA
+"""
 
 
 class AbstractResults:
-    """Abstract class for TemporalResults and StaticResults"""
+    """Abstract class for TemporalResults and StaticResults.
 
-    def __init__(self, name, d, notation=None, **kwargs):
+    Attributes:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : tilupy.Notation
+            Instance of the class Notation.
+
+    Parameters:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : dict, optional
+            Dictionnary of argument for creating an instance of the class Notation. 
+            If None use the function get_notation. By default None.
+        kwargs
+    """
+
+    def __init__(self, name: str, 
+                 d: np.ndarray, 
+                 notation: dict = None, 
+                 **kwargs):
         self.name = name
         self.d = d
         if isinstance(notation, dict):
@@ -77,21 +245,51 @@ class AbstractResults:
 
 
 class TemporalResults(AbstractResults):
-    """Time dependent result of simulation"""
+    """Abstract class for time dependent result of simulation.
 
-    def __init__(
-        self,
-        name,
-        d,
-        t,
-        notation=None,
-    ):
+    Attributes:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : tilupy.Notation
+            Instance of the class Notation.
+        t : numpy.ndarray
+            Time steps.
+            
+    Parameters:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        t : numpy.ndarray
+            Time steps, must match the last dimension of d.
+        notation : dict, optional
+            Dictionnary of argument for creating an instance of the class Notation. 
+            If None use the function get_notation. By default None.
+    """
+    def __init__(self, name: str, d: np.ndarray, t: np.ndarray, notation: dict=None):
         super().__init__(name, d, notation=notation)
         # 1d array with times, matching last dimension of self.d
         self.t = t
 
-    def get_temporal_stat(self, stat):
-        """Statistical analysis along temporal dimension"""
+
+    def get_temporal_stat(self, stat: str) -> tilupy.read.StaticResults2D | tilupy.read.StaticResults1D:
+        """Statistical analysis along temporal dimension.
+
+        Parameters
+        ----------
+        stat : str
+            Statistical operator to apply. Must be implemented in NP_OPERATORS or in
+            OTHER_OPERATORS.
+
+        Returns
+        -------
+        tilupy.StaticResults2D or tilupy.StaticResults1D
+            Static result object depending on the dimensionality of the data.
+        """
         if stat in NP_OPERATORS:
             dnew = getattr(np, stat)(self.d, axis=-1)
         elif stat == "final":
@@ -104,94 +302,114 @@ class TemporalResults(AbstractResults):
         notation = notations.add_operator(self.notation, stat, axis="t")
 
         if dnew.ndim == 2:
-            return StaticResults2D(
-                self.name + "_" + stat,
-                dnew,
-                notation=notation,
-                x=self.x,
-                y=self.y,
-                z=self.z,
-            )
+            return StaticResults2D(self.name + "_" + stat,
+                                   dnew,
+                                   notation=notation,
+                                   x=self.x,
+                                   y=self.y,
+                                   z=self.z,
+                                   )
         elif dnew.ndim == 1:
-            return StaticResults1D(
-                self.name + "_" + stat,
-                dnew,
-                notation=notation,
-                coords=self.coords,
-                coords_name=self.coords_name,
-            )
+            return StaticResults1D(self.name + "_" + stat,
+                                   dnew,
+                                   notation=notation,
+                                   coords=self.coords,
+                                   coords_name=self.coords_name,
+                                   )
 
+    @abstractmethod
     def get_spatial_stat(self, stat, axis):
-        raise NotImplementedError()
+        """Abstract method for statistical analysis along spatial dimension.
 
+        Parameters
+        ----------
+        stat : str
+            Statistical operator to apply. Must be implemented in NP_OPERATORS or in
+            OTHER_OPERATORS.
+        axis : str
+            Axis where to do the analysis.
+        """
+        pass
+
+
+    @abstractmethod
     def plot(*arg, **kwargs):
-        """Plot results as time dependent"""
-        raise NotImplementedError()
+        """Abstract method to plot the temporal evolution of the results."""
+        pass
 
+
+    @abstractmethod
     def save(*arg, **kwargs):
-        raise NotImplementedError()
+        """Abstract method to save the temporal results."""
+        pass
 
 
 class TemporalResults0D(TemporalResults):
     """
-    Class inheretied from TemporalResults where the data is one or multiple
-    scalar functions of time
-    of time.
-    """
-
-    def __init__(
-        self,
-        name,
-        d,
-        t,
-        scalar_names=None,
-        notation=None,
-    ):
-        """
-        initiates TemporalResults0D instance
-
-        Parameters
-        ----------
-        name : string
-            Name of the data type.
-        d : array
-            array like data, with last dimension corresponding to time. It can
-            be a one dimensionnal Nt array, or a two dimensionnal NdxNt array,
-            where Nt is the legnth of t, and Nd correspond to the number of
-            scalar values of interest (e.g. X and Y coordinates of the center
-            of mass / front)
-        t : array
-            Array of time of length Nt.
-        scalar_names : list of strings, optional
+    Class for simulation results described where the data is one or multiple scalar functions of time. 
+    Inherits from TemporalResults.
+    
+    Attributes:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : tilupy.Notation
+            Instance of the class Notation.
+        t : numpy.ndarray
+            Time steps.
+        scalar_names : list[str]
+            List of names of the scalar fields.
+    
+    Parameters:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property. The last dimension correspond to time. 
+            It can be a one dimensionnal Nt array, or a two dimensionnal [Nd, Nt] array,
+            where Nt is the legnth of t, and Nd correspond to the number of scalar values 
+            of interest (e.g. X and Y coordinates of the center of mass / front).
+        t : numpy.ndarray
+            Time steps, must match the last dimension of d (size Nt).
+        scalar_names : list[str]
             List of length Nd containing the names of the scalar fields (one
             name per row of d)
+        notation : dict, optional
+            Dictionnary of argument for creating an instance of the class Notation. 
+            If None use the function get_notation. By default None.
+    """
 
-        Returns
-        -------
-        None.
-
-        """
+    def __init__(self, name: str, 
+                 d: np.ndarray, 
+                 t: np.ndarray, 
+                 scalar_names: list[str]=None, 
+                 notation: dict=None):
         super().__init__(name, d, t, notation=notation)
         self.scalar_names = scalar_names
 
-    def plot(self, axe=None, figsize=None, **kwargs):
-        """Plot results.
 
-        :param axe: DESCRIPTION, defaults to None
-        :type axe: TYPE, optional
-        :param figsize: DESCRIPTION, defaults to None
-        :type figsize: TYPE, optional
-        :param **kwargs: DESCRIPTION
-        :type **kwargs: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
+    def plot(self, axe: matplotlib.axes._axes.Axes=None, 
+             figsize: tuple[float]=None, 
+             **kwargs
+             ) -> matplotlib.axes._axes.Axes:
+        """Plot the temporal evolution of the 0D results.
 
+        Parameters
+        ----------
+        axe : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib window, if None create one. By default None.
+        figsize : tuple[float], optional
+            Size of the figure, by default None.
+
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            The created plot.
         """
-
         if axe is None:
-            fig, axe = plt.subplots(
-                1, 1, figsize=figsize, layout="constrained"
-            )
+            fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
 
         if isinstance(self.d, np.ndarray):
             data = self.d.T
@@ -203,60 +421,102 @@ class TemporalResults0D(TemporalResults):
 
         return axe
 
+
     def save(self):
-        raise NotImplementedError(
-            "Saving method for TemporalResults0D not implemented yet"
-        )
+        """Save the temporal 0D results.
+
+        Raises
+        ------
+        NotImplementedError
+            Not implemented yet.
+        """
+        raise NotImplementedError("Saving method for TemporalResults0D not implemented yet")
+
 
     def get_spatial_stat(self, *arg, **kwargs):
-        raise NotImplementedError(
-            (
-                "Spatial integration of Spatialresults0D"
-                + " is not implemented because non relevant"
-            )
-        )
+        """Statistical analysis along spatial dimension for 0D results.
+
+        Raises
+        ------
+        NotImplementedError
+            Not implemented because irrelevant.
+        """
+        raise NotImplementedError("Spatial integration of Spatialresults0D is not implemented because non relevant")
 
 
 class TemporalResults1D(TemporalResults):
-    """Class for simulation results described by one dimension for space
-    and one dimension for time.
-
-    :param name: Name of the data
-    :type name: str
-    :param d: data
-    :type d: numpy.ndarray
-    :param t: time array
-    :type t: array like
-    :param coords: 1D coordinate for spatial dimension
-    :type coords: array like
-    :param coords_name: name of the 1D coordinate (typically "X" or "Y")
-    :type coords_name: str
-
     """
-
-    def __init__(
-        self, name, d, t, coords=None, coords_name=None, notation=None
-    ):
-        """Constructor method."""
+    Class for simulation results described by one dimension for space and one dimension for time. 
+    Inherits from TemporalResults.
+    
+    Attributes:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : tilupy.Notation
+            Instance of the class Notation.
+        t : numpy.ndarray
+            Time steps.
+        coords: numpy.ndarray
+            Spatial coordinates.
+        coords_name: list[str]
+            Spatial coordinates names.
+    
+    Parameters:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property. The last dimension correspond to time. 
+            It can be a one dimensionnal Nt array, or a two dimensionnal [Nd, Nt] array,
+            where Nt is the legnth of t, and Nd correspond to the number of scalar values 
+            of interest (e.g. X and Y coordinates of the center of mass / front).
+        t : numpy.ndarray
+            Time steps, must match the last dimension of d (size Nt).
+        coords: numpy.ndarray
+            Spatial coordinates.
+        coords_name: list[str]
+            Spatial coordinates names.
+        notation : dict, optional
+            Dictionnary of argument for creating an instance of the class Notation. 
+            If None use the function get_notation. By default None.
+    """
+    def __init__(self, name: str, 
+                 d: np.ndarray, 
+                 t: np.ndarray, 
+                 coords: np.ndarray=None, 
+                 coords_name: list[str]=None, 
+                 notation: dict=None):
         super().__init__(name, d, t, notation=notation)
         # x and y arrays
         self.coords = coords
         self.coords_name = coords_name
 
-    def plot(self, coords=None, **kwargs):
-        """Plot results.
 
-        :param axe: DESCRIPTION, defaults to None
-        :type axe: TYPE, optional
-        :param figsize: DESCRIPTION, defaults to None
-        :type figsize: TYPE, optional
-        :param **kwargs: DESCRIPTION
-        :type **kwargs: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
+    def plot(self, 
+             coords=None, 
+             **kwargs
+             ) -> matplotlib.axes._axes.Axes:
+        """Plot the temporal evolution of the 1D results.
 
+        Parameters
+        ----------
+        coords : np.ndarray, optional
+            Specified coordinates, if None uses the coordinates implemented when creating the instance (self.coords). 
+            By default None.
+
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            The created plot.
+
+        Raises
+        ------
+        TypeError
+            If missing coordinates. 
         """
-
         if coords is None:
             coords = self.coords
 
@@ -270,66 +530,106 @@ class TemporalResults1D(TemporalResults):
             clabel = notations.get_label(self.notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
 
-        axe = plt_tlp.plot_shotgather(
-            self.coords,
-            self.t,
-            self.d,
-            xlabel=xlabel,
-            ylabel=notations.get_label("t"),
-            **kwargs
-        )
+        axe = plt_tlp.plot_shotgather(self.coords,
+                                      self.t,
+                                      self.d,
+                                      xlabel=xlabel,
+                                      ylabel=notations.get_label("t"),
+                                      **kwargs
+                                      )
 
         return axe
 
+
     def save(self):
-        raise NotImplementedError(
-            "Saving method for TemporalResults1D not implemented yet"
-        )
+        """Save the temporal 1D results.
 
-    def get_spatial_stat(self, stat, **kwargs):
+        Raises
+        ------
+        NotImplementedError
+            Not implemented yet.
         """
+        raise NotImplementedError("Saving method for TemporalResults1D not implemented yet")
 
-        :param stat: DESCRIPTION
-        :type stat: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
 
+    def get_spatial_stat(self, stat, **kwargs) -> tilupy.read.TemporalResults0D:
+        """Statistical analysis along spatial dimension for 1D results.
+
+        Parameters
+        ----------
+        stat : str
+            Statistical operator to apply. Must be implemented in NP_OPERATORS or in
+            OTHER_OPERATORS.
+            
+        Returns
+        -------
+        tilupy.TemporalResults0D
+            Instance of TemporalResults0D.
         """
-
         if stat in NP_OPERATORS:
             dnew = getattr(np, stat)(self.d, axis=0)
         elif stat == "int":
             dd = self.coords[1] - self.coords[0]
             dnew = np.sum(self.d, axis=0) * dd
-        notation = notations.add_operator(
-            self.notation, stat, axis=self.coords_name
-        )
-        return TemporalResults0D(
-            self.name + "_" + stat, dnew, self.t, notation=notation
-        )
+        notation = notations.add_operator(self.notation, stat, axis=self.coords_name)
+        
+        return TemporalResults0D(self.name + "_" + stat, 
+                                 dnew, 
+                                 self.t, 
+                                 notation=notation)
 
 
 class TemporalResults2D(TemporalResults):
-    def __init__(self, name, d, t, x=None, y=None, z=None, notation=None):
-        """Initiate instance of TemporalResults2D.
-
-        :param name: DESCRIPTION
-        :type name: TYPE
-        :param d: DESCRIPTION
-        :type d: TYPE
-        :param t: DESCRIPTION
-        :type t: TYPE
-        :param x: DESCRIPTION, defaults to None
-        :type x: TYPE, optional
-        :param y: DESCRIPTION, defaults to None
-        :type y: TYPE, optional
-        :param z: DESCRIPTION, defaults to None
-        :type z: TYPE, optional
-        :return: DESCRIPTION
-        :rtype: TYPE
-
-        """
-
+    """
+    Class for simulation results described by a two dimensional space and one dimension for time. 
+    Inherits from TemporalResults.
+    
+    Attributes:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : tilupy.Notation
+            Instance of the class Notation.
+        t : numpy.ndarray
+            Time steps.
+        x : numpy.ndarray
+            X coordinate values.
+        y : numpy.ndarray
+            X coordinate values.
+        z : numpy.ndarray
+            Elevation values of the surface.
+    
+    Parameters:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property. The last dimension correspond to time. 
+            It can be a one dimensionnal Nt array, or a two dimensionnal [Nd, Nt] array,
+            where Nt is the legnth of t, and Nd correspond to the number of scalar values 
+            of interest (e.g. X and Y coordinates of the center of mass / front).
+        t : numpy.ndarray
+            Time steps, must match the last dimension of d (size Nt).
+        x : numpy.ndarray
+            X coordinate values.
+        y : numpy.ndarray
+            X coordinate values.
+        z : numpy.ndarray
+            Elevation values of the surface.
+        notation : dict, optional
+            Dictionnary of argument for creating an instance of the class Notation. 
+            If None use the function get_notation. By default None.
+    """
+    def __init__(self, 
+                 name: str, 
+                 d: np.ndarray, 
+                 t: np.ndarray, 
+                 x: np.ndarray=None, 
+                 y: np.ndarray=None, 
+                 z: np.ndarray=None, 
+                 notation: dict=None):
         super().__init__(name, d, t, notation=notation)
         # x and y arrays
         self.x = x
@@ -337,27 +637,53 @@ class TemporalResults2D(TemporalResults):
         # topography
         self.z = z
 
-    def plot(
-        self,
-        x=None,
-        y=None,
-        z=None,
-        file_name=None,
-        folder_out=None,
-        figsize=None,
-        dpi=None,
-        fmt="png",
-        sup_plt_fn=None,
-        sup_plt_fn_args=None,
-        **kwargs
-    ):
-        """Plot results.
 
-        :param **kwargs: DESCRIPTION
-        :type **kwargs: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
+    def plot(self,
+             x: np.ndarray=None,
+             y: np.ndarray=None,
+             z: np.ndarray=None,
+             file_name: str=None,
+             folder_out: str=None,
+             figsize: tuple[float]=None,
+             dpi: int=None,
+             fmt: str="png",
+             sup_plt_fn=None,
+             sup_plt_fn_args=None,
+             **kwargs
+             ) -> None:
+        """Plot the temporal evolution of the 2D results using pytopomap.plot_maps.
 
+        Parameters
+        ----------
+        x : numpy.ndarray, optional
+            X coordinate values, if None use self.x. By default None.
+        y : numpy.ndarray, optional
+            Y coordinate values, if None use self.y. By default None.
+        z : numpy.ndarray, optional
+            Elevation values, if None use self.z. By default None.
+        file_name : str, optional
+            Base name for the output image files, by default None.
+        folder_out : str, optional
+            Path to the output folder. If not provides, figures are not saved. By default None.
+        figsize : tuple[float], optional
+            Size of the figure, by default None.
+        dpi : int, optional
+            Resolution for saved figures. Only used if "folder_out" is set. By default None.
+        fmt : str, optional
+            File format for saving figures, by default "png".
+        sup_plt_fn : callable, optional
+            A custom function to apply additional plotting on the axes, by default None.
+        sup_plt_fn_args : dict, optional
+            Arguments to pass to "sup_plt_fn", by default None.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        TypeError
+            If no value for x, y.
         """
         if file_name is None:
             file_name = self.name
@@ -381,34 +707,63 @@ class TemporalResults2D(TemporalResults):
             clabel = notations.get_label(self.notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
 
-        plt_fn.plot_maps(
-            x,
-            y,
-            z,
-            self.d,
-            self.t,
-            file_name=file_name,
-            folder_out=folder_out,
-            figsize=figsize,
-            dpi=dpi,
-            fmt=fmt,
-            sup_plt_fn=sup_plt_fn,
-            sup_plt_fn_args=sup_plt_fn_args,
-            **kwargs
-        )
+        plt_fn.plot_maps(x,
+                         y,
+                         z,
+                         self.d,
+                         self.t,
+                         file_name=file_name,
+                         folder_out=folder_out,
+                         figsize=figsize,
+                         dpi=dpi,
+                         fmt=fmt,
+                         sup_plt_fn=sup_plt_fn,
+                         sup_plt_fn_args=sup_plt_fn_args,
+                         **kwargs
+                         )
 
         return None
 
-    def save(
-        self,
-        folder=None,
-        file_name=None,
-        fmt="asc",
-        time=None,
-        x=None,
-        y=None,
-        **kwargs
-    ):
+
+    def save(self,
+             folder: str=None,
+             file_name: str=None,
+             fmt: str="asc",
+             time: str | int=None,
+             x: np.ndarray=None,
+             y: np.ndarray=None,
+             **kwargs
+             ) -> None:
+        """Save the temporal 2D results.
+
+        Parameters
+        ----------
+        folder : str, optional
+            Path to the output folder, if None create a folder with self.name. By default None.
+        file_name : str, optional
+            Base name for the output image files, if None use self.name. By default None.
+        fmt : str, optional
+            File format for saving result, by default "asc".
+        time : str | int, optional
+            Time instants to save the results. 
+            If time is string, must be "initial" or "final".
+            If time is int, used as index in self.t.
+            If None use every instant in self.t.
+            By default None.
+        x : np.ndarray, optional
+            X coordinate values, if None use self.x. By default None.
+        y : np.ndarray, optional
+            Y coordinate values, if None use self.y. By default None.
+
+        Returns
+        -------
+        None
+        
+        Raises
+        ------
+        ValueError
+            If no value for x, y.
+        """
         if x is None:
             x = self.x
         if y is None:
@@ -435,20 +790,29 @@ class TemporalResults2D(TemporalResults):
 
         for i in inds:
             file_out = file_name + "_{:04d}.".format(i) + fmt
-            tilupy.raster.write_raster(
-                x, y, self.d[:, :, i], file_out, fmt=fmt, **kwargs
-            )
+            tilupy.raster.write_raster(x, y, self.d[:, :, i], file_out, fmt=fmt, **kwargs)
 
-    def get_spatial_stat(self, stat, axis=None):
-        """
 
-        :param stat: DESCRIPTION
-        :type stat: TYPE
-        :param axis: DESCRIPTION, defaults to None
-        :type axis: TYPE, optional
-        :return: DESCRIPTION
-        :rtype: TYPE
+    def get_spatial_stat(self, 
+                         stat: str, 
+                         axis: str | int | tuple[int]=None
+                         ) -> tilupy.read.TemporalResults0D | tilupy.read.TemporalResults1D:
+        """Statistical analysis along spatial dimension for 2D results.
 
+        Parameters
+        ----------
+        stat : str
+            Statistical operator to apply. Must be implemented in NP_OPERATORS.
+        axis : tuple[int]
+            Axis where to do the analysis. 
+            If axis is string, replace 'x' by 1, 'y' by 0 and 'xy' by (0, 1). 
+            If axis is int, only use 0 or 1.
+            If None use (0, 1). By default None.
+            
+        Returns
+        -------
+        tilupy.TemporalResults0D or tilupy.TemporalResults1D
+            Instance of TemporalResults0D or TemporalResults1D.
         """
         if axis is None:
             axis = (0, 1)
@@ -490,7 +854,10 @@ class TemporalResults2D(TemporalResults):
         notation = notations.add_operator(self.notation, stat, axis=axis_str)
 
         if axis == (0, 1):
-            return TemporalResults0D(new_name, dnew, self.t, notation=notation)
+            return TemporalResults0D(new_name, 
+                                     dnew, 
+                                     self.t, 
+                                     notation=notation)
         else:
             if axis == 0:
                 coords = self.x
@@ -498,32 +865,200 @@ class TemporalResults2D(TemporalResults):
             else:
                 coords = self.x
                 coords_name = "y"
-            return TemporalResults1D(
-                new_name,
-                dnew,
-                self.t,
-                coords,
-                coords_name=coords_name,
-                notation=notation,
-            )
+            return TemporalResults1D(new_name,
+                                     dnew,
+                                     self.t,
+                                     coords,
+                                     coords_name=coords_name,
+                                     notation=notation)
 
 
 class StaticResults(AbstractResults):
-    """Result of simulation without time dependence"""
+    """Abstract class for result of simulation without time dependence.
 
-    def __init__(self, name, d, notation=None):
+    Attributes:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : tilupy.Notation
+            Instance of the class Notation.
+            
+    Parameters:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : dict, optional
+            Dictionnary of argument for creating an instance of the class Notation. 
+            If None use the function get_notation. By default None.
+    """
+    def __init__(self, name: str, d: np.ndarray, notation: dict=None):
         super().__init__(name, d, notation=notation)
         # x and y arrays
 
     def plot(self):
-        raise NotImplementedError()
+        """Abstract method to plot the results."""
+        pass
 
     def save(self):
-        raise NotImplementedError()
+        """Abstract method to save the results."""
+        pass
+
+
+class StaticResults0D(StaticResults):
+    """
+    Class for simulation results described where the data is one or multiple scalar. 
+    Inherits from StaticResults.
+    
+    Attributes:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : tilupy.Notation
+            Instance of the class Notation.
+            
+    Parameters:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : dict, optional
+            Dictionnary of argument for creating an instance of the class Notation. 
+            If None use the function get_notation. By default None.
+    """
+    def __init__(self, name: str, d: np.ndarray, notation: dict=None):
+        super().__init__(name, d, notation=notation)
+
+
+class StaticResults1D(StaticResults):
+    """
+    Class for simulation results described by one dimension for space. 
+    Inherits from StaticResults.
+    
+    Attributes:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : tilupy.Notation
+            Instance of the class Notation.
+        coords: numpy.ndarray
+            Spatial coordinates.
+        coords_name: str
+            Spatial coordinates name.
+    
+    Parameters:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        coords: numpy.ndarray
+            Spatial coordinates.
+        coords_name: str
+            Spatial coordinates name.
+        notation : dict, optional
+            Dictionnary of argument for creating an instance of the class Notation. 
+            If None use the function get_notation. By default None.
+    """
+    def __init__(self, 
+                 name: str, 
+                 d: np.ndarray, 
+                 coords: np.ndarray=None, 
+                 coords_name: list[str]=None, 
+                 notation: dict=None
+                 ):
+        super().__init__(name, d, notation=notation)
+        # x and y arrays
+        self.coords = coords
+        self.coords_name = coords_name
+
+
+    def plot(self, 
+             axe: matplotlib.axes._axes.Axes=None, 
+             figsize: tuple[float]=None, **kwargs
+             ) -> matplotlib.axes._axes.Axes:
+        """Plot the 1D results.
+
+        Parameters
+        ----------
+        axe : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib window, if None create one. By default None.
+        figsize : tuple[float], optional
+            Size of the figure, by default None.
+
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            The created plot.
+        """
+        if axe is None:
+            fig, axe = plt.subplots(
+                1, 1, figsize=figsize, layout="constrained"
+            )
+
+        if isinstance(self.d, np.ndarray):
+            data = self.d.T
+        else:
+            data = self.d
+        axe.plot(self.coords, data, label=self.scalar_names)
+        axe.set_xlabel(notations.get_label(self.coords_name))
+        axe.set_ylabel(notations.get_label(self.notation))
+
+        return axe
 
 
 class StaticResults2D(StaticResults):
-    def __init__(self, name, d, x=None, y=None, z=None, notation=None):
+    """
+    Class for simulation results described by a two dimensional space result. 
+    Inherits from StaticResults.
+    
+    Attributes:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        notation : tilupy.Notation
+            Instance of the class Notation.
+        x : numpy.ndarray
+            X coordinate values.
+        y : numpy.ndarray
+            X coordinate values.
+        z : numpy.ndarray
+            Elevation values of the surface.
+    
+    Parameters:
+    -----------
+        name : str
+            Name of the property.
+        d : numpy.ndarray
+            Values of the property.
+        x : numpy.ndarray
+            X coordinate values.
+        y : numpy.ndarray
+            X coordinate values.
+        z : numpy.ndarray
+            Elevation values of the surface.
+        notation : dict, optional
+            Dictionnary of argument for creating an instance of the class Notation. 
+            If None use the function get_notation. By default None.
+    """
+    def __init__(self, 
+                 name: str, 
+                 d: np.ndarray, 
+                 x: np.ndarray=None, 
+                 y: np.ndarray=None, 
+                 z: np.ndarray=None, 
+                 notation: dict=None
+                 ):
         super().__init__(name, d, notation=notation)
         # x and y arrays
         self.x = x
@@ -531,23 +1066,49 @@ class StaticResults2D(StaticResults):
         # topography
         self.z = z
 
-    def plot(
-        self,
-        axe=None,
-        figsize=None,
-        x=None,
-        y=None,
-        z=None,
-        sup_plt_fn=None,
-        sup_plt_fn_args=None,
-        **kwargs
-    ):
-        """Plot results as map"""
+    def plot(self,
+             axe=None,
+             figsize=None,
+             x=None,
+             y=None,
+             z=None,
+             sup_plt_fn=None,
+             sup_plt_fn_args=None,
+             **kwargs
+             ) -> matplotlib.axes._axes.Axes:
+        """Plot the 2D results using pytopomap.plot_data_on_topo.
 
+        Parameters
+        ----------
+        axe : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib window, if None create one. By default None
+        figsize : tuple[float], optional
+            Size of the figure, by default None
+        x : numpy.ndarray, optional
+            X coordinate values, if None use self.x. By default None.
+        y : numpy.ndarray, optional
+            Y coordinate values, if None use self.y. By default None.
+        z : numpy.ndarray, optional
+            Elevation values, if None use self.z. By default None.
+        sup_plt_fn : callable, optional
+            A custom function to apply additional plotting on the axes, by default None.
+        sup_plt_fn_args : dict, optional
+            Arguments to pass to "sup_plt_fn", by default None.
+        kwargs
+            Additional arguments to pass to "pytopomap.plot_data_on_topo".
+            
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            The created plot.
+
+        Raises
+        ------
+        TypeError
+            If no value for x, y.
+        """
         if axe is None:
-            fig, axe = plt.subplots(
-                1, 1, figsize=figsize, layout="constrained"
-            )
+            fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
 
         if x is None:
             x = self.x
@@ -565,9 +1126,13 @@ class StaticResults2D(StaticResults):
             clabel = notations.get_label(self.notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
 
-        axe = plt_fn.plot_data_on_topo(
-            x, y, z, self.d, axe=axe, figsize=figsize, **kwargs
-        )
+        axe = plt_fn.plot_data_on_topo(x, 
+                                       y, 
+                                       z, 
+                                       self.d, 
+                                       axe=axe, 
+                                       figsize=figsize, 
+                                       **kwargs)
         if sup_plt_fn is not None:
             if sup_plt_fn_args is None:
                 sup_plt_fn_args = dict()
@@ -575,16 +1140,35 @@ class StaticResults2D(StaticResults):
 
         return axe
 
-    def save(
-        self,
-        folder=None,
-        file_name=None,
-        fmt="txt",
-        time=None,
-        x=None,
-        y=None,
-        **kwargs
-    ):
+
+    def save(self,
+             folder: str=None,
+             file_name: str=None,
+             fmt: str="txt",
+             x: np.ndarray=None,
+             y: np.ndarray=None,
+             **kwargs
+             ) -> None:
+        """Save the 2D results.
+
+        Parameters
+        ----------
+        folder : str, optional
+            Path to the output folder, if None create a folder with self.name. By default None.
+        file_name : str, optional
+            Base name for the output image files, if None use self.name. By default None.
+        fmt : str, optional
+            File format for saving result, by default "txt".
+        x : np.ndarray, optional
+            X coordinate values, if None use self.x. By default None.
+        y : np.ndarray, optional
+            Y coordinate values, if None use self.y. By default None.
+
+        Raises
+        ------
+        ValueError
+            If no value for x, y.
+        """
         if x is None:
             x = self.x
         if y is None:
@@ -601,15 +1185,27 @@ class StaticResults2D(StaticResults):
 
         tilupy.raster.write_raster(x, y, self.d, file_name, fmt=fmt, **kwargs)
 
-    def get_spatial_stat(self, stat, axis=None):
-        """
 
-        :param stat: DESCRIPTION
-        :type stat: TYPE
-        :param axis: DESCRIPTION, defaults to None
-        :type axis: TYPE, optional
-        :return: DESCRIPTION
-        :rtype: TYPE
+    def get_spatial_stat(self, 
+                         stat: str, 
+                         axis=None
+                         ) -> tilupy.read.StaticResults0D | tilupy.read.StaticResults1D:
+        """Statistical analysis along spatial dimension for 2D results.
+
+        Parameters
+        ----------
+        stat : str
+            Statistical operator to apply. Must be implemented in NP_OPERATORS.
+        axis : tuple[int]
+            Axis where to do the analysis. 
+            If axis is string, replace 'x' by 1, 'y' by 0 and 'xy' by (0, 1). 
+            If axis is int, only use 0 or 1.
+            If None use (0, 1). By default None.
+
+        Returns
+        -------
+        tilupy.StaticResults0D or tilupy.StaticResults1D
+            Instance of StaticResults0D or StaticResults1D.
 
         """
         if axis is None:
@@ -652,7 +1248,9 @@ class StaticResults2D(StaticResults):
         notation = notations.add_operator(self.notation, stat, axis=axis_str)
 
         if axis == (0, 1):
-            return StaticResults0D(new_name, dnew, notation=notation)
+            return StaticResults0D(new_name, 
+                                   dnew, 
+                                   notation=notation)
         else:
             if axis == 0:
                 coords = self.x
@@ -660,56 +1258,11 @@ class StaticResults2D(StaticResults):
             else:
                 coords = self.y
                 coords_name = "y"
-            return StaticResults1D(
-                new_name,
-                dnew,
-                coords,
-                coords_name=coords_name,
-                notation=notation,
-            )
-
-
-class StaticResults1D(StaticResults):
-    def __init__(self, name, d, coords=None, coords_name=None, notation=None):
-        """Constructor method."""
-        super().__init__(name, d, notation=notation)
-        # x and y arrays
-        self.coords = coords
-        self.coords_name = coords_name
-
-    def plot(self, axe=None, figsize=None, **kwargs):
-        """Plot results.
-
-        :param axe: DESCRIPTION, defaults to None
-        :type axe: TYPE, optional
-        :param figsize: DESCRIPTION, defaults to None
-        :type figsize: TYPE, optional
-        :param **kwargs: DESCRIPTION
-        :type **kwargs: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
-
-        """
-
-        if axe is None:
-            fig, axe = plt.subplots(
-                1, 1, figsize=figsize, layout="constrained"
-            )
-
-        if isinstance(self.d, np.ndarray):
-            data = self.d.T
-        else:
-            data = self.d
-        axe.plot(self.coords, data, label=self.scalar_names)
-        axe.set_xlabel(notations.get_label(self.coords_name))
-        axe.set_ylabel(notations.get_label(self.notation))
-
-        return axe
-
-
-class StaticResults0D(StaticResults):
-    def __init__(self, d, name, notation=None):
-        super().__init__(name, d, notation=notation)
+            return StaticResults1D(new_name,
+                                   dnew,
+                                   coords,
+                                   coords_name=coords_name,
+                                   notation=notation,)
 
 
 class Results:
@@ -878,7 +1431,7 @@ class Results:
             notation=None,
         )
         return res
-    
+
     def get_volume(self, h_thresh=None):
         dx = self.x[1] - self.x[0]
         dy = self.y[1] - self.y[0]
@@ -888,11 +1441,11 @@ class Results:
         w = h2 / self.costh[:, :, np.newaxis] * dx * dy
         vol = np.nansum(w, axis=(0, 1))
         res = TemporalResults0D(
-                    "volume",
-                    vol,
-                    self.tim,
-                    notation=None,
-                )
+            "volume",
+            vol,
+            self.tim,
+            notation=None,
+        )
         return res
 
     def plot(
