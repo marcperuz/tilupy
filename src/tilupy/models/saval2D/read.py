@@ -93,9 +93,7 @@ class Results(tilupy.read.Results):
         return t_list            
     
     
-    def read_resfile(
-        self,
-    ):  
+    def read_resfile(self,):  
         h_list = []
         ux_list = []
         uy_list = []
@@ -117,8 +115,9 @@ class Results(tilupy.read.Results):
             qu_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuqu{t+1}.asc"))
             qv_t = self.extract_saval_ascii(os.path.join(self.folder_outputs, f"resuqv{t+1}.asc"))
             
-            qu_t[qu_t<0.001] = 0
-            qv_t[qv_t<0.001] = 0
+            # qu_t[qu_t<0.001] = 0
+            # qv_t[qv_t<0.001] = 0
+            h_t[h_t<0.0001] = 0
             
             ux_t = np.divide(qu_t, h_t, out=np.zeros_like(qu_t), where=h_t != 0)
             uy_t = np.divide(qv_t, h_t, out=np.zeros_like(qv_t), where=h_t != 0)
