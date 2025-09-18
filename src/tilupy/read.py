@@ -22,7 +22,6 @@ import tilupy.plot as plt_tlp
 import tilupy.raster
 
 
-
 RAW_STATES = ["hvert", "h", "ux", "uy"]
 """Raw states at the output of a model.
 
@@ -163,27 +162,19 @@ Implemented operators :
     - int : Integrated value
 """
 
-COMPUTED_STATIC_DATA_2D = []
-"""Intermediate calculation list for STATIC_DATA_2D."""
 for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
-        COMPUTED_STATIC_DATA_2D.append(name + "_" + stat)
-STATIC_DATA_2D += COMPUTED_STATIC_DATA_2D
+        STATIC_DATA_2D.append(name + "_" + stat)
 
-COMPUTED_SPAT_1D_DATA = []
-"""Intermediate calculation list for TEMPORAL_DATA_1D."""
+for stat in NP_OPERATORS + OTHER_OPERATORS:
+    for name in TEMPORAL_DATA_2D:
+        TEMPORAL_DATA_0D.append(name + "_" + stat + "_xy")
+        
 for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
         for axis in ["x", "y"]:
-            COMPUTED_SPAT_1D_DATA.append(name + "_" + stat + "_" + axis)
-TEMPORAL_DATA_1D += COMPUTED_SPAT_1D_DATA
-
-COMPUTED_SPAT_0D_DATA = []
-"""Intermediate calculation list for TEMPORAL_DATA_0D."""
-for stat in NP_OPERATORS + OTHER_OPERATORS:
-    for name in TEMPORAL_DATA_2D:
-        COMPUTED_SPAT_0D_DATA.append(name + "_" + stat + "_xy")
-TEMPORAL_DATA_0D += COMPUTED_SPAT_0D_DATA
+            TEMPORAL_DATA_1D.append(name + "_" + stat + "_" + axis)
+        
 
 TEMPORAL_DATA = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
 """Assembling all temporal data.
@@ -191,11 +182,10 @@ TEMPORAL_DATA = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
 TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D
 """
 
-STATIC_DATA = STATIC_DATA_0D + STATIC_DATA_1D + \
-    STATIC_DATA_2D + COMPUTED_STATIC_DATA_2D
+STATIC_DATA = STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
 """Assembling all static data.
 
-STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D + COMPUTED_STATIC_DATA_2D
+STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
 """
 
 DATA_NAMES = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D + STATIC_DATA_0D + STATIC_DATA_1D + STATIC_DATA_2D
