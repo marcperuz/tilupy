@@ -134,15 +134,15 @@ def test_centermass(gaussian_temporal_results):
     simu = tiread.Results()
     simu._h = gaussian_temporal_results.d
     simu._zinit = gaussian_temporal_results.d[:, :, 0] * 0
-    simu.tim = gaussian_temporal_results.t
-    simu.x = gaussian_temporal_results.x
-    simu.y = gaussian_temporal_results.y
+    simu._tim = gaussian_temporal_results.t
+    simu._x = gaussian_temporal_results.x
+    simu._y = gaussian_temporal_results.y
     # print(simu._zinit.shape)
     # print(len(simu.x), len(simu.y))
-    Dx = simu.x[-1] - simu.x[0]
-    Dy = simu.y[-1] - simu.y[0]
+    Dx = simu._x[-1] - simu._x[0]
+    Dy = simu._y[-1] - simu._y[0]
     nt = len(simu.tim)
-    res = simu.get_center_of_mass()
+    res = simu.center_of_mass()
     meanx = np.linspace(simu.x[0] + 0.2 * Dx, simu.x[-1] - 0.4 * Dx, nt)
     meany = np.linspace(simu.y[0] + 0.3 * Dy, simu.x[-1] - 0.3 * Dy, nt)
     maxdiffx = np.max(np.abs(res.d[0, :] - meanx))

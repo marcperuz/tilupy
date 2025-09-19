@@ -1459,86 +1459,135 @@ class Results:
         code : string
             Name of code from which results must be read.
         """
-        self._h_max = None
         self._h = None
+        self._h_max = None
+        self._u = None
+        self._u_max = None
         self._costh = None
+
+        self._folder = None
+        self._folder_output = None
+        self._z = None
         self._zinit = None
-        self.folder_output = None
-        self.tim = None
+        self._tim = None
+        self._x = None
+        self._y = None
 
-    @property
-    def zinit(self):
-        """Get initial topography"""
-        return self._zinit
 
-    @property
-    def z(self):
-        """Alias for zinit"""
-        return self.zinit
-
-    @property
-    def h(self):
-        """Get thickness"""
-        if self._h is None:
-            self._h = self.get_output("h").d
-        return self._h
-
-    @property
-    def h_max(self):
-        """Get maximum thickness"""
-        if self._h_max is None:
-            self._h_max = self.get_output("h_max").d
-        return self._h_max
-
-    def get_costh(self):
+    def compute_costh(self):
         """Get cos(slope) of topography"""
-        [Fx, Fy] = np.gradient(self.zinit, np.flip(self.y), self.x)
+        [Fx, Fy] = np.gradient(self._zinit, np.flip(self._y), self._x)
         costh = 1 / np.sqrt(1 + Fx**2 + Fy**2)
         return costh
 
-    @property
-    def costh(self):
-        """Compute or get cos(slope) of topography"""
-        if self._costh is None:
-            self._costh = self.get_costh()
-        return self._costh
 
-    def get_output(self, output_name, from_file=True, **kwargs):
+    def center_of_mass(self, h_thresh=None):
+        """
+        Compute center of mass coordinates depending on time
+        :param h_thresh: DESCRIPTION, defaults to None
+        :type h_thresh: TYPE, optional
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+        dx = self._x[1] - self._x[0]
+        dy = self._y[1] - self._y[0]
+        # Make meshgrid
+        X, Y = np.meshgrid(self._x, np.flip(self._y))
+
+        # Weights for coordinates average (volume in cell / total volume)
+        h2 = self._h.copy()
+        if h_thresh is not None:
+            h2[h2 < h_thresh] = 0
+        if self._costh is None:
+            self._costh = self.compute_costh()
+        w = h2 / self._costh[:, :, np.newaxis] * dx * dy
+        vol = np.nansum(w, axis=(0, 1))
+        w = w / vol[np.newaxis, np.newaxis, :]
+        # Compute center of mass coordinates
+        nt = h2.shape[2]
+        coord = np.zeros((3, nt))
+        tmp = X[:, :, np.newaxis] * w
+        coord[0, :] = np.nansum(tmp, axis=(0, 1))
+        tmp = Y[:, :, np.newaxis] * w
+        coord[1, :] = np.nansum(tmp, axis=(0, 1))
+        tmp = self._zinit[:, :, np.newaxis] * w
+        coord[2, :] = np.nansum(tmp, axis=(0, 1))
+        # Make TemporalResults
+        res = TemporalResults0D(
+            "centermass",
+            coord,
+            self._tim,
+            scalar_names=["X", "Y", "z"],
+            notation=None,
+        )
+        return res
+
+
+    def volume(self, h_thresh=None):
+        dx = self._x[1] - self._x[0]
+        dy = self._y[1] - self._y[0]
+        
+        if self._h is None:
+            self._h = self.get_output("h").d
+        h2 = self._h.copy()
+        if h_thresh is not None:
+            h2[h2 < h_thresh] = 0
+        if self._costh is None:
+            self._costh = self.compute_costh()
+        w = h2 / self._costh[:, :, np.newaxis] * dx * dy
+        vol = np.nansum(w, axis=(0, 1))
+        res = TemporalResults0D(
+            "volume",
+            vol,
+            self._tim,
+            notation=None,
+        )
+        return res
+
+
+    def get_output(self, output_name, from_file=True, **kwargs):        
         # Specific case of center of mass
         if output_name == "centermass":
-            return self.get_center_of_mass(**kwargs)
+            return self.center_of_mass(**kwargs)
 
+        # Specific case of volume
+        if output_name == "volume":
+            return self.volume(**kwargs)
+        
         strs = output_name.split("_")
         n_strs = len(strs)
 
+        res = None
+        
         # get topography
         if output_name in TOPO_DATA_2D:
-            res = StaticResults2D(
-                output_name,
-                getattr(self, output_name),
-                x=self.x,
-                y=self.y,
-                z=self.z,
-                notation=None,
-            )
+            if output_name == "z":
+                output_name = "zinit"
+            output_name = '_' + output_name
+            res = StaticResults2D(output_name,
+                                  getattr(self, output_name),
+                                  x=self._x,
+                                  y=self._y,
+                                  z=self._z,
+                                  notation=None,
+                                  )
             return res
 
-        # If no operator is called, call directly _get_output
+        # If no operator is called, call directly extract_output
         if n_strs == 1:
-            res = self._get_output(output_name, **kwargs)
+            res = self._extract_output(output_name, **kwargs)
             return res
 
         # Otherwise, get name, operator and axis (optional)
         name = strs[0]
         operator = strs[1]
-        if n_strs == 3:
+        axis = None
+        if n_strs == 3 :
             axis = strs[2]
-        else:
-            axis = None
-
-        res = None
+        
         # If processed output is read directly from file, call the child method
-        # _read_from_file.
+        # read_from_file.
         if from_file:
             res = self._read_from_file(name, operator, axis=axis, **kwargs)
             # res is None in case of function failure
@@ -1547,7 +1596,7 @@ class Results:
         # processed by tilupy
         if res is None:
             # Get output from name
-            res = self._get_output(name, x=self.x, y=self.y, **kwargs)
+            res = self._extract_output(name, x=self._x, y=self._y, **kwargs)
             if axis is None:
                 # If no axis is given, the operator operates over time by
                 # default
@@ -1560,67 +1609,14 @@ class Results:
 
         return res
 
-    def _get_output(self):
-        raise NotImplementedError
 
-    def _read_from_file(self):
-        raise NotImplementedError
-
-    def get_center_of_mass(self, h_thresh=None):
-        """
-        Compute center of mass coordinates depending on time
-        :param h_thresh: DESCRIPTION, defaults to None
-        :type h_thresh: TYPE, optional
-        :return: DESCRIPTION
-        :rtype: TYPE
-
-        """
-        dx = self.x[1] - self.x[0]
-        dy = self.y[1] - self.y[0]
-        # Make meshgrid
-        X, Y = np.meshgrid(self.x, np.flip(self.y))
-
-        # Weights for coordinates average (volume in cell / total volume)
-        h2 = self.h.copy()
-        if h_thresh is not None:
-            h2[h2 < h_thresh] = 0
-        w = h2 / self.costh[:, :, np.newaxis] * dx * dy
-        vol = np.nansum(w, axis=(0, 1))
-        w = w / vol[np.newaxis, np.newaxis, :]
-        # Compute center of mass coordinates
-        nt = h2.shape[2]
-        coord = np.zeros((3, nt))
-        tmp = X[:, :, np.newaxis] * w
-        coord[0, :] = np.nansum(tmp, axis=(0, 1))
-        tmp = Y[:, :, np.newaxis] * w
-        coord[1, :] = np.nansum(tmp, axis=(0, 1))
-        tmp = self.zinit[:, :, np.newaxis] * w
-        coord[2, :] = np.nansum(tmp, axis=(0, 1))
-        # Make TemporalResults
-        res = TemporalResults0D(
-            "centermass",
-            coord,
-            self.tim,
-            scalar_names=["X", "Y", "z"],
-            notation=None,
-        )
-        return res
-
-    def get_volume(self, h_thresh=None):
-        dx = self.x[1] - self.x[0]
-        dy = self.y[1] - self.y[0]
-        h2 = self.h.copy()
-        if h_thresh is not None:
-            h2[h2 < h_thresh] = 0
-        w = h2 / self.costh[:, :, np.newaxis] * dx * dy
-        vol = np.nansum(w, axis=(0, 1))
-        res = TemporalResults0D(
-            "volume",
-            vol,
-            self.tim,
-            notation=None,
-        )
-        return res
+    def clear_quick_results(self):
+        self._h = None
+        self._h_max = None
+        self._u = None
+        self._u_max = None
+        self._costh = None
+    
 
     def plot(
         self,
@@ -1636,39 +1632,6 @@ class Results:
         display_plot=True,
         **kwargs
     ):
-        """
-
-
-        Parameters
-        ----------
-        name : TYPE
-            DESCRIPTION.
-        save : TYPE, optional
-            DESCRIPTION. The default is True.
-        folder_out : TYPE, optional
-            DESCRIPTION. The default is None.
-        dpi : TYPE, optional
-            DESCRIPTION. The default is 150.
-        fmt : TYPE, optional
-            DESCRIPTION. The default is "png".
-        h_thresh : TYPE, optional
-            DESCRIPTION. The default is None.
-        from_file : TYPE, optional
-            DESCRIPTION. The default is False.
-        display_plot : TYPE, optional
-            DESCRIPTION. The default is True.
-        **kwargs : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        axe : TYPE
-            DESCRIPTION.
-        fig : TYPE
-            DESCRIPTION.
-
-        """
-
         if not display_plot:
             backend = plt.get_backend()
             plt.close("all")
@@ -1701,9 +1664,9 @@ class Results:
         if save:
             if folder_out is None:
                 assert (
-                    self.folder_output is not None
+                    self._folder_output is not None
                 ), "folder_output attribute must be set"
-                folder_out = os.path.join(self.folder_output, "plots")
+                folder_out = os.path.join(self._folder_output, "plots")
             os.makedirs(folder_out, exist_ok=True)
 
         if folder_out is not None and isinstance(data, TemporalResults2D):
@@ -1735,6 +1698,7 @@ class Results:
 
         return axe
 
+
     def save(
         self,
         name,
@@ -1746,9 +1710,9 @@ class Results:
     ):
         if folder_out is None:
             assert (
-                self.folder_output is not None
+                self._folder_output is not None
             ), "folder_output attribute must be set"
-            folder_out = os.path.join(self.folder_output, "processed")
+            folder_out = os.path.join(self._folder_output, "processed")
             os.makedirs(folder_out, exist_ok=True)
 
         if name in DATA_NAMES:
@@ -1766,15 +1730,93 @@ class Results:
         elif name in TOPO_DATA_2D:
             if file_name is None:
                 file_name = name
+            name = "_" + name
             file_out = os.path.join(folder_out, file_name)
             tilupy.raster.write_raster(
-                self.x,
-                self.y,
+                self._x,
+                self._y,
                 getattr(self, name),
                 file_out,
                 fmt=fmt,
                 **kwargs
             )
+
+
+    @abstractmethod
+    def _extract_output(self):
+        pass
+
+
+    @abstractmethod
+    def _read_from_file(self):
+        pass
+
+
+    @property
+    def zinit(self):
+        """Get initial topography"""
+        return self._zinit
+
+
+    @property
+    def z(self):
+        """Alias for zinit"""
+        return self._zinit
+
+
+    @property
+    def x(self):
+        return self._x
+
+
+    @property
+    def y(self):
+        return self._y
+    
+    
+    @property
+    def tim(self):
+        return self._tim
+    
+    
+    @property
+    def h(self):
+        """Get thickness"""
+        if self._h is None:
+            self._h = self.get_output("h").d
+        return self._h
+
+
+    @property
+    def h_max(self):
+        """Get maximum thickness"""
+        if self._h_max is None:
+            self._h_max = self.get_output("h_max").d
+        return self._h_max
+
+
+    @property
+    def u(self):
+        """Get velocity"""
+        if self._u is None:
+            self._u = self.get_output("u").d
+        return self._u
+
+
+    @property
+    def u_max(self):
+        """Get maximum velocity"""
+        if self._u_max is None:
+            self._u_max = self.get_output("u_max").d
+        return self._u_max
+    
+    
+    @property
+    def costh(self):
+        """Compute or get cos(slope) of topography"""
+        if self._costh is None:
+            self._costh = self.compute_costh()
+        return self._costh
 
 
 def get_results(code, **kwargs):
