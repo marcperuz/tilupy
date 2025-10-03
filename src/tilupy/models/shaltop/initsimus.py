@@ -15,15 +15,21 @@ from tilupy.utils import format_path_linux
 import tilupy.notations
 import tilupy.raster
 
+
 README_PARAM_MATCH = dict(tmax="tmax", CFL="cflhyp", h_min="eps0", dt_im_output="dt_im")
+"""Dictionary of correspondence between parameters in read_me file and param file."""
 
 SHALTOP_LAW_ID = dict(No_Friction=1, Herschel_Bulkley=61, Voellmy=8, Bingham=6, Coulomb=1, Coulomb_muI=7)
+"""Dictionary of correspondence between the name of rheological laws and the corresponding ID in SHALTOP."""
 
 
-def raster_to_shaltop_txtfile(file_in: str, file_out: str, folder_out: str=None) -> dict:
+def raster_to_shaltop_txtfile(file_in: str, 
+                              file_out: str, 
+                              folder_out: str=None
+                              ) -> dict:
     """Convert a raster file to a Shaltop ASCII text format.
 
-    Reads a raster (formats readable by tilupy.raster) and saves it as a 
+    Reads a raster (formats readable by :func:`tilupy.raster.read_raster`) and saves it as a 
     ASCII text file with values flattened column-wise and rows flipped vertically. 
 
     Parameters
@@ -51,20 +57,24 @@ def raster_to_shaltop_txtfile(file_in: str, file_out: str, folder_out: str=None)
         file_out = os.path.join(folder_out, file_out)
 
     x, y, rast = tilupy.raster.read_raster(file_in)
-    np.savetxt(
-        file_out,
-        np.reshape(np.flip(rast, axis=0), (rast.size, 1)),
-        fmt="%.12G",
-    )
+    np.savetxt(file_out,
+               np.reshape(np.flip(rast, axis=0), (rast.size, 1)),
+               fmt="%.12G")
 
-    res = dict(
-        x0=x[0], y0=y[0], dx=x[1] - x[0], dy=y[1] - y[0], nx=len(x), ny=len(y)
-    )
+    res = dict(x0=x[0], 
+               y0=y[0], 
+               dx=x[1] - x[0], 
+               dy=y[1] - y[0], 
+               nx=len(x), 
+               ny=len(y))
 
     return res
 
 
-def write_params_file(params: dict, directory: str=None, file_name: str="params.txt") -> None:
+def write_params_file(params: dict, 
+                      directory: str=None, 
+                      file_name: str="params.txt"
+                      ) -> None:
     """Write a dictionary of parameters to a text file.
 
     Each key-value pair in the dictionary is written on a separate line.
@@ -86,21 +96,22 @@ def write_params_file(params: dict, directory: str=None, file_name: str="params.
     """
     if directory is None:
         directory = os.getcwd()
+        
     with open(os.path.join(directory, file_name), "w") as file_params:
         for name in params:
             val = params[name]
-            if (
-                isinstance(val, int)
+            if (isinstance(val, int)
                 or isinstance(val, np.int64)
                 or isinstance(val, np.int32)
-            ):
+                ):
                 file_params.write("{:s} {:d}\n".format(name, val))
-            if (
-                isinstance(val, float)
+                
+            if (isinstance(val, float)
                 or isinstance(val, np.float64)
                 or isinstance(val, np.float32)
-            ):
+                ):
                 file_params.write("{:s} {:.8G}\n".format(name, val))
+                
             if isinstance(val, str):
                 file_params.write("{:s} {:s}\n".format(name, val))
 
@@ -162,21 +173,19 @@ def write_simu(raster_topo: str,
     if rheology_type not in SHALTOP_LAW_ID:
         raise ValueError(f"Wrong law, choose in: {SHALTOP_LAW_ID}")
     
-    params = dict(
-        nx=len(x),
-        ny=len(y),
-        per=x[-1],
-        pery=y[-1],
-        tmax=tmax,
-        dt_im=dt_im,
-        initz=0,
-        file_z_init="z.d",
-        ipr=0,
-        file_m_init="m.d",
-        folder_output="data2",
-        icomp=SHALTOP_LAW_ID[rheology_type],
-        **rheology_params,
-    )
+    params = dict(nx=len(x),
+                  ny=len(y),
+                  per=x[-1],
+                  pery=y[-1],
+                  tmax=tmax,
+                  dt_im=dt_im,
+                  initz=0,
+                  file_z_init="z.d",
+                  ipr=0,
+                  file_m_init="m.d",
+                  folder_output="data2",
+                  icomp=SHALTOP_LAW_ID[rheology_type],
+                  **rheology_params)
     write_params_file(params, directory=folder_out, file_name="params.txt")
 
 
@@ -288,7 +297,12 @@ def write_job_files(dirs: list[str],
         job_file.write(line.format(ntasks, path_conf_in_job))
 
 
-def make_simus(law: str, rheol_params: dict, folder_data: str, folder_out: str, readme_file: str)  -> None:
+def make_simus(law: str, 
+               rheol_params: dict, 
+               folder_data: str, 
+               folder_out: str, 
+               readme_file: str
+               )  -> None:
     """Write shaltop initial file for simple slope test case
 
     Reads topography and initial mass files in ASCII format,
@@ -299,7 +313,7 @@ def make_simus(law: str, rheol_params: dict, folder_data: str, folder_out: str, 
     Parameters
     ----------
     law : str
-        Name of the rheological law to use (must match a key in SHALTOP_LAW_ID).
+        Name of the rheological law to use (must match a key in :data:`SHALTOP_LAW_ID`).
     rheol_params : dict of list
         Dictionary of rheology parameters. Each key corresponds to a parameter
         name and its value is a list of parameter values to simulate.
@@ -357,16 +371,12 @@ def make_simus(law: str, rheol_params: dict, folder_data: str, folder_out: str, 
             fid.write("# Except this file")
             fid.write("!.gitignore")
 
-        write_params_file(
-            params, directory=folder_law, file_name=simu_text + ".txt"
-        )
+        write_params_file(params, directory=folder_law, file_name=simu_text + ".txt")
         file_txt += "start_time=`date +%s`\n"
         file_txt += 'shaltop "" ' + simu_text + ".txt\n"
         file_txt += "end_time=`date +%s`\n"
         file_txt += "elapsed_time=$(($end_time - $start_time))\n"
-        file_txt += (
-            'string_time="${start_time} ' + simu_text + ' ${elapsed_time}"\n'
-        )
+        file_txt += ('string_time="${start_time} ' + simu_text + ' ${elapsed_time}"\n')
         file_txt += "echo ${string_time} >> simulation_duration.txt\n\n"
 
     with open(run_shaltop_file, "w") as fid:

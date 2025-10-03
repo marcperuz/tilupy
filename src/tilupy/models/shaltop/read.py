@@ -24,14 +24,43 @@ LOOKUP_NAMES = dict(h="rho",
                     ep="ep",
                     etot="etot",
                     )
+"""Dictionary of correspondance."""
 
 # Classify results
 STATES_OUTPUT = ["h", "ux", "uy", "hvert"]
+"""State variables of the flow available with shaltop.
 
-tmp = ["facc", "fcurv", "ffric", "fgrav", "finert", "fpression"]
+Implemented states:
+
+    - h : flow thickness (normal to the surface)
+    - ux : velocity component in X direction
+    - uy : velocity component in Y direction
+    - hvert : true vertical flow thickness
+"""
 
 FORCES_OUTPUT = []
-for force in tmp:
+"""Force-related output variables, including components in x, y, and additional forces.
+   
+   Generated from:
+   
+        - facc : acceleration force
+        - fcurv : curvature force
+        - ffric : friction force
+        - fgrav : gravitational force
+        - finert : inertial force
+        - fpression : pressure force
+    For each, both X and Y components are included.
+    
+   Additional variables:
+    
+        - shearx, sheary, shearz : shear stresses
+        - normalx, normaly, normalz : normal stresses
+        - pbottom : basal pressure
+        - pcorrdt : pressure correction (time step)
+        - pcorrdiv : pressure correction (divergence)
+"""
+ 
+for force in ["facc", "fcurv", "ffric", "fgrav", "finert", "fpression"]:
     FORCES_OUTPUT.append(force + "x")
     FORCES_OUTPUT.append(force + "y")
 
@@ -46,22 +75,27 @@ FORCES_OUTPUT += ["shearx",
                   "pcorrdiv"]
 
 INTEGRATED_OUTPUT = ["ek", "ep", "etot"]
+"""Integrated energy quantities.
 
+Implemented energy:
 
-def read_params(file):
-    """
-    Read simulation parameters from file.
+    - ek : kinetic energy
+    - ep : potential energy
+    - etot : total energy
+"""
+
+def read_params(file: str) -> dict:
+    """Read simulation parameters from file.
 
     Parameters
     ----------
     file : str
-        Parameters file.
+        Path to the parameters file.
 
     Returns
     -------
     params : dict
         Dictionnary with parameters
-
     """
     if file is None:
         params = None
@@ -81,8 +115,26 @@ def read_params(file):
     return params
 
 
-def read_file_bin(file, nx, ny):
-    """Read shaltop .bin result file."""
+def read_file_bin(file: str, 
+                  nx: int, 
+                  ny: int
+                  ) -> np.ndarray:
+    """Read shaltop .bin result file.
+
+    Parameters
+    ----------
+    file : str
+        Path to the .bin file.
+    nx : int
+        Number of cells in the X direction.
+    ny : int
+        Number of cells in the Y direction.
+
+    Returns
+    -------
+    numpy.ndarray
+        Values in the .bin file.
+    """
     data = np.fromfile(file, dtype=np.float32)
     nbim = int(np.size(data) / nx / ny)
     data = np.reshape(data, (nx, ny, nbim), order="F")
@@ -90,8 +142,23 @@ def read_file_bin(file, nx, ny):
     return data
 
 
-def read_file_init(file, nx, ny):
-    """Read shaltop initial .d files."""
+def read_file_init(file: str, nx: int, ny: int) -> np.ndarray:
+    """Read shaltop initial .d files.
+
+    Parameters
+    ----------
+    file : str
+        Path to the .d file.
+    nx : int
+        Number of cells in the X direction.
+    ny : int
+        Number of cells in the Y direction.
+
+    Returns
+    -------
+    numpy.ndarray
+        Values in the .d file.
+    """
     data = np.loadtxt(file)
     data = np.reshape(data, (nx, ny), order="F")
     data = np.transpose(np.flip(data, axis=1), (1, 0))
@@ -99,17 +166,72 @@ def read_file_init(file, nx, ny):
 
 
 class Results(tilupy.read.Results):
-    """Results of shaltop simulations."""
-    def __init__(self, file_params=None, folder=None, **varargs):
-        """
-        Init simulation results.
+    """Results of shaltop simulations.
 
-        Parameters
-        ----------
-        file_params : str
-            File where simulation parameters will be read
-
-        """
+    This class is the results class for shaltop. Reading results from shaltop outputs 
+    are done in this class.
+    
+    This class has all the global and quick attributes of the parent class. The quick 
+    attributes are only computed if needed and can be deleted to clean memory.
+    
+    In addition to these attributes, there are those necessary for the operation of 
+    reading the shaltop results.
+    
+    Global attributes:
+    ------------------
+        _code : str
+            Name of the code that generated the result.
+        _folder : str
+            Path to find code files (like parameters).
+        _folder_output :
+            Path to find the results of the code.
+        _zinit : numpy.ndarray
+            Surface elevation of the simulation.
+        _tim : list
+            Lists of recorded time steps.
+        _x : numpy.ndarray
+            X-coordinates of the simulation.
+        _y : numpy.ndarray
+            Y-coordinates of the simulation.
+    
+    Quick access attributes:
+    ------------------------
+        _h : tilupy.read.TemporalResults2D
+            Fluid height over time.
+        _h_max : tilupy.read.TemporalResults0D
+            Max fluid hieght over time.
+        _u : tilupy.read.TemporalResults2D
+            Norm of fluid velocity over time.
+        _u_max : tilupy.read.TemporalResults0D
+            Max norm of fluid velocity over time.
+        _costh : numpy.ndarray
+            Value of cos[theta] at any point on the surface.
+            
+    Specific attributes:
+    --------------------
+        _htype : str
+            Always "normal".
+        _tforces : list
+            Times of output.
+        _params : dict
+            Dictionary of the simulation parameters.
+        _dx : float
+            Cell size in the X direction.
+        _dy : float
+            Cell size in the Y direction.
+        _nx : int
+            Number of cells in the X direction.
+        _ny : int
+            Number of cells in the Y direction.
+        
+    Parameters:
+    -----------
+    folder : str
+        Path to the folder containing the simulation files.
+    file_params : str
+        Name of the simulation parameters file.
+    """
+    def __init__(self, folder=None, file_params=None, **varargs):
         super().__init__()
         self._code = "shaltop"
         
@@ -158,8 +280,14 @@ class Results(tilupy.read.Results):
             self._tforces = []
 
 
-    def get_zinit(self, zinit=None):
-        """Set zinit, initial topography."""
+    def get_zinit(self, zinit=None) -> np.ndarray:
+        """Get zinit, the initial topography.
+
+        Returns
+        -------
+        numpy.ndarray
+            The initial topography.
+        """
         path_zinit = os.path.join(self._folder_output, "z.bin")
         if not os.path.isfile(path_zinit) and "file_z_init" in self._params:
             path_zinit = os.path.join(self._folder, self._params["file_z_init"])
@@ -169,8 +297,18 @@ class Results(tilupy.read.Results):
         return zinit
 
 
-    def get_axes(self, **varargs):
-        """Set x and y axes."""
+    def get_axes(self, **varargs) -> tuple[np.ndarray, np.ndarray]:
+        """Get X and Y axes.
+
+        varargs : dict
+            All parameters needed to compute the axes :
+            x0, y0, nx, ny, per, pery and coord_pos.
+        
+        Returns
+        -------
+        tuple[numpy.ndarray, numpy.ndarray]
+            Values of X and Y axes.
+        """
         if "x0" in varargs:
             x0 = varargs["x0"]
         else:
@@ -208,8 +346,14 @@ class Results(tilupy.read.Results):
         return x, y
 
 
-    def get_u(self):
-        """Compute velocity norm from results"""
+    def get_u(self) -> np.ndarray:
+        """Compute velocity norm from results.
+
+        Returns
+        -------
+        numpy.ndarray
+            Values of flow velocity (norm).
+        """
         file = os.path.join(self._folder_output, "u" + ".bin")
         u = read_file_bin(file, self._nx, self._ny)
         file = os.path.join(self._folder_output, "ut" + ".bin")
@@ -230,7 +374,28 @@ class Results(tilupy.read.Results):
         return d
 
 
-    def _read_from_file(self, name, operator, axis=None, **kwargs):
+    def _read_from_file(self, 
+                        name: str, 
+                        operator: str, 
+                        axis: str=None, 
+                        **kwargs
+                        ) -> tilupy.read.StaticResults2D | tilupy.read.TemporalResults0D:
+        """Read output from specific files.
+
+        Parameters
+        ----------
+        name : str
+            Wanted output. Can access to : "u", "momentum", "h" and "hu2".
+        operator : str
+            Wanted operator. Can be "max" for every output except "hu2" or "int" only for "hu2".
+        axis : str, optional
+            Optional axis. Can be "t". By default None.
+
+        Returns
+        -------
+        tilupy.read.StaticResults2D | tilupy.read.TemporalResults0D
+            Wanted output.
+        """
         res = None
 
         if name in ["u", "momentum", "h"]:
@@ -253,7 +418,23 @@ class Results(tilupy.read.Results):
         return res
 
 
-    def _extract_output(self, name, **kwargs):
+    def _extract_output(self, 
+                        name: str, 
+                        **kwargs
+                        )-> tilupy.read.TemporalResults2D | tilupy.read.TemporalResults0D | tilupy.read.AbstractResults:
+        """Result extraction for lave2D files.
+
+        Parameters
+        ----------
+        name : str
+            Wanted output. Can access to variables in :data:`STATES_OUTPUT`, :data:`INTEGRATED_OUTPUT`, 
+            :data:`FORCES_OUTPUT`, "u", "hu" and "hu2".
+
+        Returns
+        -------
+        tilupy.read.TemporalResults2D | tilupy.read.TemporalResults0D | tilupy.read.AbstractResults
+            Wanted output. If no output computed, return an object of :class:`tilupy.read.AbstractResults`.
+        """
         # Read thicknesses or velocity components
         d = None
         t = None
