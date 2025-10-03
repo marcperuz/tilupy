@@ -55,7 +55,7 @@ class Depth_result(ABC):
                   x: float | np.ndarray, 
                   t: float | np.ndarray
                   ) -> None:
-        """Virtual function that compute the flow height 'h' at given space and time.
+        """Virtual function that compute the flow height :attr:`_h` at given space and time.
 
         Parameters
         ----------
@@ -72,7 +72,7 @@ class Depth_result(ABC):
                   x: float | np.ndarray,
                   t: float | np.ndarray
                   ) -> None:
-        """Virtual function that compute the flow velocity 'u' at given space and time.
+        """Virtual function that compute the flow velocity :attr:`_u` at given space and time.
 
         Parameters
         ----------
@@ -90,8 +90,8 @@ class Depth_result(ABC):
         
         Returns
         -------
-        self._h : np.ndarray
-            Flow height in self._x at self._t. If None, no solution computed.
+        :attr:`_h` : numpy.ndarray
+            Flow height in :attr:`_x` at :attr:`_t`. If None, no solution computed.
         """
         return self._h
 
@@ -102,8 +102,8 @@ class Depth_result(ABC):
         
         Returns
         -------
-        self._u : np.ndarray
-            Flow velocity in self._x at self._t. If None, no solution computed.
+        :attr:`_u` : numpy.ndarray
+            Flow height in :attr:`_x` at :attr:`_t`. If None, no solution computed.
         """
         return self._u
 
@@ -114,7 +114,7 @@ class Depth_result(ABC):
         
         Returns
         -------
-        self._x : np.ndarray
+        :attr:`_x` : numpy.ndarray
             Spatial distribution of the computed solution. If None, no solution computed.
         """
         return self._x
@@ -126,7 +126,7 @@ class Depth_result(ABC):
         
         Returns
         -------
-        self._t : float or np.ndarray
+        :attr:`_t` : float or np.ndarray
             Time instant of the computed solution. If None, no solution computed.
         """
         return self._t
@@ -146,9 +146,9 @@ class Depth_result(ABC):
         Parameters
         ----------
         show_h : bool, optional
-            If True, plot the flow height ('h') curve.
+            If True, plot the flow height (:attr:`_h`) curve.
         show_u : bool, optional
-            If True, plot the flow velocity ('u') curve.
+            If True, plot the flow velocity (:attr:`_u`) curve.
         show_surface : bool, optional
             If True, plot the slop of the surface.
         linestyles : list[str], optional
@@ -326,7 +326,7 @@ class Ritter_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -374,7 +374,7 @@ class Ritter_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -520,21 +520,21 @@ class Stoker_SWASHES_wet(Depth_result):
         Parameters
         ----------
         cm : float
-            Trial value for cm.
+            Trial value for :data:`cm`.
 
         Returns
         -------
         float
-            Residual of the equation. Zero when cm satisfies the system.
+            Residual of the equation. Zero when :data:`cm` satisfies the system.
         """
         return -8 * self._g * self._hr * cm**2 * (self._g * self._h0 - cm**2)**2 + (cm**2 - self._g * self._hr)**2 * (cm**2 + self._g * self._hr)
 
 
     def compute_cm(self) -> None:
-        r"""Solves the non-linear equation to compute the critical velocity 'cm'.
+        r"""Solves the non-linear equation to compute the critical velocity :data:`cm`.
 
         Uses numerical root-finding to find a valid value of cm that separates
-        the flow regimes. Sets self._cm if a valid solution is found.
+        the flow regimes. Sets :attr:`_cm` if a valid solution is found.
         """
         guesses = np.linspace(0.01, 1000, 1000)
         solutions = []
@@ -585,7 +585,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if self._cm is not None:
             if isinstance(x, float):
@@ -652,7 +652,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if self._cm is not None:
             if isinstance(x, float):
@@ -703,7 +703,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Stoker's equation.
     
-    Sarkhosh, P., 2021, Stoker solution package, version 1.0.0, Zenodo. https://doi.org/10.5281/zenodo.5598374
+    Sarkhosh, P., 2021, Stoker solution package, version 1.0.0, Zenodo. https://doi.org/10.5281/zenodo.5598374
     
     Stoker, J.J., 1957, Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, vol. 4, Interscience Publishers, New York, USA.
 
@@ -858,7 +858,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -918,7 +918,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1097,7 +1097,7 @@ class Mangeney_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1147,7 +1147,7 @@ class Mangeney_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1373,7 +1373,7 @@ class Dressler_dry(Depth_result):
             
         Notes
         -----        
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1597,7 +1597,7 @@ class Chanson_dry(Depth_result):
 
         Notes
         -----        
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1646,8 +1646,7 @@ class Chanson_dry(Depth_result):
                   x: float | np.ndarray, 
                   T: float | np.ndarray
                   ) -> None:
-        r"""Not implemented
-        """
+        r"""No solution"""
         self._u = None
 
 
@@ -1689,8 +1688,8 @@ class Shape_result(ABC):
         
         Returns
         -------
-        self._h : np.ndarray
-            Flow height in self._x. If None, no solution computed.
+        :attr:`_h` : np.ndarray
+            Flow height in :attr:`_x`. If None, no solution computed.
         """
         return self._h
 
@@ -1701,7 +1700,7 @@ class Shape_result(ABC):
         
         Returns
         -------
-        self._x : np.ndarray
+        :attr:`_x` : np.ndarray
             Spatial distribution of the computed solution. If None, no solution computed.
         """
         return self._x
@@ -1712,7 +1711,7 @@ class Shape_result(ABC):
         
         Returns
         -------
-        self._y : np.ndarray
+        :attr:`_y` : np.ndarray
             Lateral spatial distribution of the computed solution. If None, no solution computed.
         """
         return self._y
@@ -1925,7 +1924,7 @@ class Coussot_shape(Shape_result):
         h_init : float, optional
             The initial flow depth, necessary if `\theta = 0`, by default None (replace by 1).
         h_final : float, optional
-            The final flow depth, necessary if `\theta = 0`. If None, estimated using compute_slump_test_hf, by default None.
+            The final flow depth, necessary if `\theta = 0`. If None, estimated using :meth:`compute_slump_test_hf`, by default None.
         H_size : int, optional
             Number of value wanted in the H array, by default 100.
         """
