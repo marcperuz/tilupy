@@ -129,7 +129,7 @@ class Benchmark:
         t_idx = None
         
         # If no data extracted, stop the program
-        if field_all is None:
+        if isinstance(field_all, tilupy.read.AbstractResults) and not isinstance(field_all, tilupy.read.TemporalResults):
             return direction_index
         
         
@@ -515,7 +515,7 @@ class Benchmark:
         else:
             t_idx = u_2d_all.d.shape[2]-1
         
-        if u_2d_all is not None:
+        if isinstance(u_2d_all, tilupy.read.TemporalResults):
             t_idx = u_2d_all.d.shape[2]-1 if t_idx is None or t_idx >= u_2d_all.d.shape[2] or isinstance(t_idx, float) else t_idx
             u_2d_t = u_2d_all.d[:, :, t_idx]
             
@@ -525,7 +525,7 @@ class Benchmark:
             else:
                 self._u_num_2d[t] = [(model, u_2d_t)]
         
-        if ux_2d_all is not None:
+        if isinstance(ux_2d_all, tilupy.read.TemporalResults):
             t_idx = ux_2d_all.d.shape[2]-1 if t_idx is None or t_idx >= ux_2d_all.d.shape[2] or isinstance(t_idx, float) else t_idx
             u_2d_t = ux_2d_all.d[:, :, t_idx]
             
@@ -535,7 +535,7 @@ class Benchmark:
             else:
                 self._ux_num_2d[t] = [(model, u_2d_t)]
         
-        if uy_2d_all is not None:
+        if isinstance(uy_2d_all, tilupy.read.TemporalResults):
             t_idx = uy_2d_all.d.shape[2]-1 if t_idx is None or t_idx >= uy_2d_all.d.shape[2] or isinstance(t_idx, float) else t_idx
             u_2d_t = uy_2d_all.d[:, :, t_idx]
             
