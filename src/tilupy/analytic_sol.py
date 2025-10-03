@@ -1717,28 +1717,6 @@ class Shape_result(ABC):
         return self._y
 
 
-    def show_res(self, 
-                 x_unit:str = "m",
-                 h_unit:str = "m",
-                ):
-        """Plot the shape results.
-
-        Parameters
-        ----------
-        x_unit: str
-            Space unit.
-        h_unit: str
-            Height unit.
-        """
-        if self._x is not None and self._h is not None:
-            plt.plot(self._x, self._h, color='black', linewidth=1)
-            
-            plt.title("Front flow shape")
-            plt.xlabel(f"x [{x_unit}]")
-            plt.ylabel(f"h [{h_unit}]")
-            plt.show()
-
-
 class Coussot_shape(Shape_result):
     r"""Shape solution on an inclined dry domain without friction.
 
