@@ -17,6 +17,63 @@ import pytopomap.plot as pyplt
 
 
 class Benchmark:
+    """Benchmark of simulation results.
+    
+    This class groups together all the methods for processing and analyzing 
+    the results of various simulation models, allowing, among other things, 
+    the comparison of results between models.
+    
+    Global Attributes:
+    ------------------
+        _allowed_model : list[str]
+            List of implemented models in tilupy. 
+            For now, this list allows reading the results of:
+            "shaltop", "lave2D", "saval2D".
+        _current_model : str
+            Last model loaded in the class.
+        _current_result : list[tilupy.read.Results]
+            Last result of :attr:`_current_model` loaded in the class.
+        _x : numpy.ndarray
+            X-coordinates of the simulation.
+        _y : numpy.ndarray
+            Y-coordinates of the simulation.
+        _z : numpy.ndarray
+            Initial topographic elevation of the simulation.
+    
+    Extracted Attributes:
+    ---------------------
+        These attributes correspond to dictionaries storing the results extracted from model simulations.
+        Their name is constructed as follows:
+        
+        :data:`_{property}_num_{dimension}_{axis} = (model_name, list_values)`
+        
+        :data:`property`:
+            - :data:`h` for the fluid thickness (normal to the surface)
+            - :data:`u` for the fluid velocity (norm)
+            - :data:`ux` for the X component of the fluid velocity
+            - :data:`uy` for the Y component of the fluid velocity
+        
+        :data:`dimension`:
+            - :data:`1d` is for profile extraction. It is associated with an axis according 
+              to the profile that was extracted and with a parameters dictionary containing the
+              extraction details of the profiles (indexes of the extracted profiles) and the 
+              indexes of the maximal lateral extension for each profiles. The parameters dictionary
+              is constructed like so :
+            
+              :data:`_{property}_num_1d_params[time_step] = (model_name, direction_index, list_limit_index)`
+
+            - :data:`2d` is for surface extraction.
+        
+    Computed Attributes:
+    --------------------
+        These attributes correspond to list storing the results of computed analytical solutions, constructed as follows:
+        
+        :data:`_{property}_as_1d = [(time_step, list_values)]`
+
+        :data:`property`:
+            - :data:`h` for the fluid thickness (normal to the surface)
+            - :data:`u` for the fluid velocity (norm)
+    """
     def __init__(self):
         self._allowed_model = ["shaltop", "lave2D", "saval2D"]
         
@@ -55,12 +112,12 @@ class Benchmark:
                               **kwargs,
                               ) -> None:
         """
-        Load numerical simulation results for a given model.
+        Load numerical simulation results using :func:`tilupy.read.get_results` for a given model.
 
         Parameters
         ----------
         model : str
-            Name of the model to load. Must be one of the allowed models: ['shaltop', 'lave2D', 'saval2D'].
+            Name of the model to load. Must be one of the :attr:`_allowed_model`.
         **kwargs
             Keyword arguments passed to the result reader for the specific model.
 
@@ -68,6 +125,11 @@ class Benchmark:
         ------
         ValueError
             If the provided model is not in the allowed list.
+        
+        Notes
+        -----
+        Store x, y and z property of the result in :attr:`_x`, :attr:`_y`, :attr:`_z`. The result (instance of :class:`tilupy.read.Results`) is  
+        store in :attr:`_current_result`.
         """
         if model in self._allowed_model:
             self._current_model = model
@@ -96,14 +158,14 @@ class Benchmark:
         model : str
             Model to extract the profile.
         field_name : str
-            Data field. Can be: 'h', 'u', 'ux' or 'uy'.
+            Data field. Can be: "h", "u", "ux", "uy".
         storage_dict_X : dict
             Dictionary to save the X axis profile. 
         storage_dict_Y : dict
             Dictionary to save the Y axis profile.
         storage_params : dict
             Dictionary to save the parameters of the profiles.
-        t_val : float
+        t : float
             Value of the time to extract the profiles.
         direction_index : str | list[float]
             Index along each axis to extract the profile from: (X, Y). If None, it is detected automatically based on the farthest flow front 
@@ -345,7 +407,7 @@ class Benchmark:
     def extract_velocity_profiles(self,
                                   model: str = None,
                                   t: float = None,
-                                  direction_index: list[int] = None,
+                                  direction_index: list[float] | str = None,
                                   flow_velocity_threshold: float = 1e-3,
                                   show_message: bool = False
                                   ) -> None:
@@ -358,9 +420,11 @@ class Benchmark:
             Wanted model to extract profiles, if None take the currently loaded model.
         t : float, optional
             Time index to extract. If None, uses the last available time step.
-        direction_index : tuple[int], optional
-            Index along each axis to extract the profile from: (X, Y). If None, it is detected automatically based on the farthest flow front 
-            and the position of maximum fluid velocity.
+        direction_index : list[float] or str, optional
+            Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
+                - list[float]: position (in meter) of the wanted profiles.
+                - str: 'max' for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
+                - None: select the medians.
         flow_velocity_threshold : float, optional
             Minimum velocity to consider as part of the flow, by default 1e-3.
         show_message : bool, optional
@@ -557,7 +621,7 @@ class Benchmark:
         Parameters
         ----------
         model : Callable
-            Callable object representing the analytic solution model (model from tilupy.analytic_sol)
+            Callable object representing the analytic solution model (model from :class:`tilupy.analytic_sol.Depth_results`)
         T : float | list[float]
             Time or list of times at which to compute the analytic solution.
         **kwargs
@@ -583,8 +647,8 @@ class Benchmark:
                             model_to_plot: str,
                             axis: str = "X",
                             time_steps: float | list[float] = None,
-                            direction_index = None,
-                            flow_height_threshold = 0.001,
+                            direction_index: list[float] | str = None,
+                            flow_height_threshold: float = 0.001,
                             linestyles: list[str] = None,
                             ax: matplotlib.axes._axes.Axes = None,
                             x_unit:str = "m",
@@ -597,12 +661,19 @@ class Benchmark:
         Parameters
         ----------
         model_to_plot : str
-            Model name to plot ('shaltop', 'lave2D', 'saval2D', or 'as' for analytic solution).
+            Model name to plot (in :attr:`_allowed_model`, or 'as' for analytic solution).
         axis : str, optional
             Allows to choose the profile according to the desired axis, by default 'X'.
         time_steps : float or list[float], optional
             List of time steps required to extract and display profiles. If None displays the profiles already extracted. Only available for
             models.
+        direction_index : list[float] or str, optional
+            Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
+                - list[float]: position (in meter) of the wanted profiles.
+                - str: 'max' for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
+                - None: select the medians.
+        flow_height_threshold : float, optional
+            Minimum height to consider as part of the flow, by default 1e-3.
         linestyles : list[str], optional
             Custom linestyles for each time step. If None, colors and styles are auto-assigned.
         ax : matplotlib.axes._axes.Axes, optional
@@ -728,10 +799,9 @@ class Benchmark:
                               velocity_axis: str='ux',
                               axis: str="X",
                               time_steps: float | list[float] = None,
-                              direction_index = None,
-                              flow_velocity_threshold = 0.001,
-                              flow_velocity_threshold_value = 0.0,
-                              velocity_threshold: float=1e-6,
+                              direction_index: list[float] | str = None,
+                              flow_velocity_threshold: float = 0.001,
+                              flow_velocity_threshold_value: float = 0.0,
                               linestyles: list[str]=None,
                               ax: matplotlib.axes._axes.Axes = None,
                               x_unit:str = "m",
@@ -744,16 +814,23 @@ class Benchmark:
         Parameters
         ----------
         model_to_plot : str
-            Model name to plot ('shaltop', 'lave2D', 'saval2D', or 'as' for analytic solution).
+            Model name to plot (in :attr:`_allowed_model`, or 'as' for analytic solution).
         velocity_axis : str, optional
-            Velocity direction to use for the plot, by default 'U' (along X axis).
+            Velocity direction to use for the plot ("u", "ux" or "uy"), by default 'u' (norm).
         axis : str, optional
             Allows to choose the profile according to the desired axis, by default 'X'.
         time_steps : float or list[float], optional
             List of time steps required to extract and display profiles. If None displays the profiles already extracted. Only available for
             models.
-        velocity_threshold : float, optional
-            Threshold value where lower values will be replaced by Nan, by default 1e-6.
+        direction_index : list[float] or str, optional
+            Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
+                - list[float]: position (in meter) of the wanted profiles.
+                - str: 'max' for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
+                - None: select the medians.
+        flow_velocity_threshold : float, optional
+            Minimum velocity to consider as part of the flow, by default 1e-3.
+        flow_velocity_threshold_value : float, optional
+            Value to replace the velocity under the :data:`flow_velocity_threshold`, by default 0.0.
         linestyles : list[str], optional
             Custom linestyles for each time step. If None, colors and styles are auto-assigned.
         ax : matplotlib.axes._axes.Axes, optional
@@ -888,7 +965,7 @@ class Benchmark:
                 cmap = plt.cm.copper
                 norm = plt.Normalize(vmin=min(t for t, _ in u_plot), vmax=max(t for t, _ in u_plot))
             for idx, (t_val, profile) in enumerate(u_plot):
-                profile[profile <= velocity_threshold] = flow_velocity_threshold_value
+                profile[profile <= flow_velocity_threshold] = flow_velocity_threshold_value
                 if linestyles and len(linestyles) == len(u_plot):
                     l_style = linestyles[idx]
                     color = "black" if t_val != 0 else "red"
@@ -897,7 +974,7 @@ class Benchmark:
                     l_style = "-" if t_val != 0 else (0, (1, 4))
                 ax.plot(absci, profile, color=color, linestyle=l_style, label=f"t={t_val}s")
         else:
-            u_plot[u_plot <= velocity_threshold] = flow_velocity_threshold_value
+            u_plot[u_plot <= flow_velocity_threshold] = flow_velocity_threshold_value
             ax.plot(absci, u_plot, color='black', linewidth=1, label=f"t={t_val}s")
 
 
@@ -1170,7 +1247,7 @@ class Benchmark:
         Parameters
         ----------
         models_to_plot : list[str]
-            List of model names to compare ('shaltop', 'lave2D', 'saval2D').
+            List of model names to compare (in :attr:`_allowed_model`).
         time_step : float
             Time step for the plot.
         axis : str, optional
@@ -1331,15 +1408,15 @@ class Benchmark:
         Parameters
         ----------
         models_to_plot : list[str]
-            List of model names to compare ('shaltop', 'lave2D', 'saval2D').
+            List of model names to compare (in :attr:`_allowed_model`).
         time_step : float
             Time step for the plot.
         velocity_axis : str, optional
-            Velocity direction to use for the plot, by default 'U' (along X axis).
+            Velocity direction to use for the plot ("u", "ux" or "uy"), by default 'u' (norm).
         axis : str, optional
             Allows to choose the profile according to the desired axis, by default 'X'.
         velocity_threshold : float, optional
-            Threshold value where lower values ​​will be replaced by Nan, by default 1e-6.
+            Threshold value where lower values will be replaced by Nan, by default 1e-6.
         plot_as : bool, optional
             Whether to include the analytic solution, by default False.
         nbr_point : int, optional
@@ -1570,7 +1647,7 @@ class Benchmark:
         Parameters
         ----------
         model_to_plot : str
-            Model name to plot ('shaltop', 'lave2D', 'saval2D').
+            Model name to plot (in :attr:`_allowed_model`).
         t : float
             Time step to plot.
         ax : matplotlib.axes._axes.Axes, optional
@@ -1616,11 +1693,11 @@ class Benchmark:
         Parameters
         ----------
         model_to_plot : str
-            Model name to plot ('shaltop', 'lave2D', 'saval2D').
+            Model name to plot (in :attr:`_allowed_model`).
         t : float
             Time step to plot.
         velocity_axis : str, optional
-            Velocity direction to use for the plot, by default 'U' (along X axis).
+            Velocity direction to use for the plot ("u", "ux" or "uy"), by default 'u' (norm).
         ax : matplotlib.axes._axes.Axes, optional
             Existing matplotlib window.
         show_plot : bool, optional
