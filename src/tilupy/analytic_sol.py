@@ -7,6 +7,7 @@ Created on Fri Aug  4 12:09:41 2023
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import matplotlib
 
 from scipy.optimize import fsolve
 
@@ -132,15 +133,17 @@ class Depth_result(ABC):
         return self._t
 
 
-    def show_res(self, 
-                 show_h: bool=False, 
-                 show_u: bool=False,
-                 show_surface: bool=False,
-                 linestyles: list[str]=None,
-                 x_unit:str = "m",
-                 h_unit:str = "m",
-                 u_unit:str = "m/s"
-                 ) -> None:
+    def plot(self, 
+             show_h: bool=False, 
+             show_u: bool=False,
+             show_surface: bool=False,
+             linestyles: list[str]=None,
+             x_unit:str = "m",
+             h_unit:str = "m",
+             u_unit:str = "m/s",
+             show_plot:bool = True,
+             figsize:tuple = None,
+             ) -> matplotlib.axes._axes.Axes:
         """Plot the simulation results.
 
         Parameters
@@ -160,12 +163,31 @@ class Depth_result(ABC):
             Height unit.
         u_unit: str
             Velocity unit.
+        show_plot: bool, optional
+            If True, show the resulting plot. By default True.
+        figsize: tuple, optional
+            Size of the wanted plot, by default None.
+        
+        Return
+        ------
+        matplotlib.axes._axes.Axes
+            Resulting plot.
+        
+        Raises
+        ------
+        ValueError
+            If no solution computed (:attr:`_h` and :attr:`_u` are None).
         """
         z_surf = [0, 0]
-
+        
+        if self._h is None and self._u is None:
+            raise ValueError("No solution computed.")
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        
         if show_h and self._h is not None:
             if self._h.ndim == 1:
-                plt.plot(self._x, self._h, color='black', linewidth=1)
+                ax.plot(self._x, self._h, color='black', linewidth=1)
             else:
                 if linestyles is None or len(linestyles)!=(len(self._t)):
                     norm = plt.Normalize(vmin=min(self._t), vmax=max(self._t))
@@ -179,25 +201,27 @@ class Depth_result(ABC):
                     else:
                         color = "black" if t_val != 0 else "red"
                         l_style = linestyles[h_idx] if t_val != 0 else (0, (1, 4))    
-                    plt.plot(self._x, h_val, color=color, linestyle=l_style, label=f"t={t_val}s")
+                    ax.plot(self._x, h_val, color=color, linestyle=l_style, label=f"t={t_val}s")
             
             if show_surface:
-                plt.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
+                ax.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
             
-            plt.grid(which='major')
-            plt.grid(which='minor', alpha=0.5)
-            plt.xlim(left=min(self._x), right=max(self._x))
+            ax.grid(which='major')
+            ax.grid(which='minor', alpha=0.5)
+            ax.set_xlim(left=min(self._x), right=max(self._x))
             
-            plt.title(f"Flow height for t={self._t}")
-            plt.xlabel(f"x [{x_unit}]")
-            plt.ylabel(f"h [{h_unit}]")
-            plt.legend(loc='upper right')
-            plt.show()
-
+            ax.set_title(f"Flow height for t={self._t}")
+            ax.set_xlabel(f"x [{x_unit}]")
+            ax.set_ylabel(f"h [{h_unit}]")
+            ax.legend(loc='upper right')
+            if show_plot:
+                plt.show()
+            
+            return ax
 
         if show_u and self._u is not None:
             if self._u.ndim == 1:
-                plt.plot(self._x, self._u, color='black', linewidth=1)
+                ax.plot(self._x, self._u, color='black', linewidth=1)
                 
             else:
                 if linestyles is None or len(linestyles)!=(len(self._t)):
@@ -214,20 +238,20 @@ class Depth_result(ABC):
                     else:
                         color = "black"
                         l_style = linestyles[u_idx]
-                    plt.plot(self._x, u_val, color=color, linestyle=l_style, label=f"t={t_val}s")
+                    ax.plot(self._x, u_val, color=color, linestyle=l_style, label=f"t={t_val}s")
 
-            plt.grid(which='major')
-            plt.grid(which='minor', alpha=0.5)
-            plt.xlim(left=min(self._x), right=max(self._x))
+            ax.grid(which='major')
+            ax.grid(which='minor', alpha=0.5)
+            ax.set_xlim(left=min(self._x), right=max(self._x))
             
-            plt.title(f"Flow velocity for t={self._t}")
-            plt.xlabel(f"x [{x_unit}]")
-            plt.ylabel(f"u [{u_unit}]")
-            plt.legend(loc='best')
-            plt.show()
-        
-        if self._h is None and self._u is None:
-            print("No solution computed")
+            ax.set_title(f"Flow velocity for t={self._t}")
+            ax.set_xlabel(f"x [{x_unit}]")
+            ax.set_ylabel(f"u [{u_unit}]")
+            ax.legend(loc='best')
+            if show_plot:
+                plt.show()
+            
+            return ax
 
 
 class Ritter_dry(Depth_result):
