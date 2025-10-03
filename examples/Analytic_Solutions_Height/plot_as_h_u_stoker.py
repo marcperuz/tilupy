@@ -95,13 +95,13 @@ case = Stoker_SARKHOSH_wet(h_0=0.5, h_r=0.025)
 # %%
 # Compute and plot fluid height at times :math:`t = {0, 0.5, 1, 1.5, 2} s`.
 case.compute_h(x, [0, 0.5, 1, 1.5, 2])
-case.show_res(show_h=True,  linestyles=["", ":", "-.", "--", "-"])
+ax = case.plot(show_h=True,  linestyles=["", ":", "-.", "--", "-"])
 
 
 # %%
 # Compute and plot fluid velocity at times :math:`t = {0, 0.5, 1, 1.5, 2} s`.
 case.compute_u(x, [0, 0.5, 1, 1.5, 2])
-case.show_res(show_u=True,  linestyles=["", ":", "-.", "--", "-"])
+ax = case.plot(show_u=True,  linestyles=["", ":", "-.", "--", "-"])
 
 # %%
 # 

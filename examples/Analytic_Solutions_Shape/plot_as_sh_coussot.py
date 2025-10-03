@@ -33,10 +33,12 @@ Implementation
 # First import required packages and define the context. For this example we will use a fluid with a density of :math:`\rho = 1000 kg/m^3`: 
 # and :math:`\tau_c = 50 Pa`, with a slope of :math:`\theta = 10°`:
 from tilupy.analytic_sol import Coussot_shape
+import matplotlib.pyplot as plt
 
 case_1 = Coussot_shape(rho=1000, tau=50, theta=10)
 case_1.compute_rheological_test_front_morpho()
-case_1.show_res()
+plt.plot(case_1.x, case_1.h, color="black")
+plt.show()
 
 # %%
 # If :math:`\theta = 0°`, the equations are slightly different:
@@ -51,7 +53,8 @@ case_1.show_res()
 
 case_2 = Coussot_shape(rho=1000, tau=50, theta=0)
 case_2.compute_rheological_test_front_morpho(h_final=1)
-case_2.show_res()
+plt.plot(case_2.x, case_2.h, color="black")
+plt.show()
 
 # %%
 # Original reference:

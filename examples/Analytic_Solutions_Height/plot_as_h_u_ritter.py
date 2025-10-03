@@ -86,13 +86,13 @@ case_1 = Ritter_dry(x_0=0, h_0=0.5)
 # %%
 # Compute and plot fluid height at times :math:`t = {0, 2, 4, 6, 8, 10} s`.
 case_1.compute_h(x, [0, 2, 4, 6, 8])
-case_1.show_res(show_h=True, linestyles=["", ":", "-.", "--", "-"])
+ax = case_1.plot(show_h=True, linestyles=["", ":", "-.", "--", "-"])
 
 
 # %%
 # Compute and plot fluid velocity at times :math:`t = {0, 2, 4, 6, 8, 10} s`.
 case_1.compute_u(x, [0, 2, 4, 6, 8])
-case_1.show_res(show_u=True, linestyles=["", ":", "-.", "--", "-"])
+ax = case_1.plot(show_u=True, linestyles=["", ":", "-.", "--", "-"])
 
 # %%
 # 
@@ -105,7 +105,7 @@ x = np.linspace(0, 10, 1000)
 
 case_2 = Ritter_dry(x_0=5, h_0=0.005)
 case_2.compute_h(x, 6.0)
-case_2.show_res(show_h=True, linestyles=["-"])
+ax = case_2.plot(show_h=True, linestyles=["-"])
 
 # %%
 # 
