@@ -9,11 +9,19 @@ Created on Wed Jun  2 16:16:39 2021
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import seaborn as sns
 import pytopomap.plot as pyplt
 
-def plot_shotgather(x, t, data, xlabel="X (m)", ylabel=None, **kwargs):
-    """
+def plot_shotgather(x: np.ndarray, 
+                    t: np.ndarray, 
+                    data: np.ndarray, 
+                    xlabel: str="X (m)", 
+                    ylabel: str="Time (s)", 
+                    **kwargs
+                    ) -> matplotlib.axes._axes.Axes:
+    """Plot shotgather image.
+    
     Plot shotgather like image, with vertical axis as time and horizontal axis
     and spatial dimension. This is a simple call to plot_shotgather, but
     input data is transposed because in tilupy the last axis is time by
@@ -21,49 +29,92 @@ def plot_shotgather(x, t, data, xlabel="X (m)", ylabel=None, **kwargs):
 
     Parameters
     ----------
-    x : NX-array
-        spatial coordinates
-    t : NT-array
-        time array (assumed in seconds)
-    data : TYPE
-        NX*NT array of data to be plotted
-    spatial_label : string, optional
-        label for y-axis. The default is "X (m)"
+    x : numpy.ndarray
+        Spatial coordinates, size NX.
+    t : numpy.ndarray
+        Time array (assumed in seconds), size NT.
+    data : numpy.ndarray
+        NX*NT array of data to be plotted.
+    xlabel : string, optional
+        Label for x-axis, by default "X (m)".
+    ylabel : string, optional
+        Label for x-axis, by default "Time (s)".
     **kwargs : dict, optional
-        parameters passed on to plot_imshow
+        parameters passed on to :func:`pytopomap.plot.plot_imshow`.
 
     Returns
     -------
-    axe : Axes
+    matplotlib.axes._axes.Axes
         Axes instance where data is plotted
-
     """
     if "aspect" not in kwargs:
         kwargs["aspect"] = "auto"
     axe = pyplt.plot_imshow(x, t[::-1], data.T, **kwargs)
     axe.set_adjustable("box")
-    if ylabel is None:
-        ylabel = "Time (s)"
     axe.set_ylabel(ylabel)
     axe.set_xlabel(xlabel)
 
     return axe
 
 
-def plot_heatmaps(
-    df,
-    values,
-    index,
-    columns,
-    aggfunc="mean",
-    figsize=None,
-    ncols=3,
-    heatmap_kws=None,
-    notations=None,
-    best_values=None,
-    plot_best_value="point",
-    text_kwargs=None,
-):
+def plot_heatmaps(df,
+                  values,
+                  index,
+                  columns,
+                  aggfunc="mean",
+                  figsize=None,
+                  ncols=3,
+                  heatmap_kws=None,
+                  notations=None,
+                  best_values=None,
+                  plot_best_value="point",
+                  text_kwargs=None,
+                  ) -> matplotlib.figure.Figure:
+    """Plot one or several heatmaps from a pandas DataFrame.
+
+    Each heatmap is created by pivoting the DataFrame with the given
+    `index`, `columns`, and a variable from `values`.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input DataFrame containing the data.
+    values : list[str]
+        Column names in :data:`df` to plot as separate heatmaps.
+    index : str
+        Column name to use as rows of the pivot table.
+    columns : str
+        Column name to use as columns of the pivot table.
+    aggfunc : str or callable, optional
+        Aggregation function applied when multiple values exist for
+        a given (index, column) pair. By default "mean".
+    figsize : tuple of float, optional
+        Size of the matplotlib figure, by default None.
+    ncols : int, optional
+        Maximum number of heatmaps per row, by default 3.
+    heatmap_kws : dict or dict[dict], optional
+        Keyword arguments passed to :data:`seaborn.heatmap`.
+        If dict of dict, keys must match the values in :data:`values`.
+    notations : dict, optional
+        Mapping from variable names to readable labels
+        (used for axis and colorbar labels).
+    best_values : dict, optional
+        Mapping from variable names to selection criterion:
+        "min", "min_abs", or "max".
+    plot_best_value : {"point", "text"}, optional
+        How to highlight best values:
+        - "point" : mark with circles
+        - "text" : display numeric values
+        By default "point".
+    text_kwargs : dict, optional
+        Keyword arguments passed to :data:`matplotlib.axes.Axes.text` when
+        annotating best values. Only used if :data:`plot_best_value="text"`.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        The matplotlib Figure containing the heatmaps.
+    """
     nplots = len(values)
     ncols = min(nplots, ncols)
     nrows = int(np.ceil(nplots / ncols))
