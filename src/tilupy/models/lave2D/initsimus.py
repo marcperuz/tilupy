@@ -121,16 +121,20 @@ class ModellingDomain:
     -----------
         raster : numpy.ndarray, str, or None, optional
             - If numpy.ndarray: used directly as the elevation grid (z).
-            - If str: path to a raster file readable by "tilupy.raster.read_raster".
-            - If None: grid is generated from nx, ny, dx, dy.
+            - If str: path to a raster file readable by :func:`tilupy.raster.read_raster`.
+            - If None: grid is generated from :data:`nx`, :data:`ny`, :data:`dx`, :data:`dy`.
         xmin : float, optional
-            Minimum X coordinate of the grid, used if raster is None, by default 0.0.
+            Minimum X coordinate of the grid, used if :data:`raster` is None, 
+            by default 0.0.
         ymin : float, optional
-            Minimum Y coordinate of the grid, used if raster is None, by default 0.0.
+            Minimum Y coordinate of the grid, used if :data:`raster` is None, 
+            by default 0.0.
         nx : int, optional
-            Number of grid points in the X direction, used if raster is None.
+            Number of grid points in the X direction, used if :data:`raster` is None, 
+            by default None.
         ny : int, optional
-            Number of grid points in the Y direction, used if raster is None.
+            Number of grid points in the Y direction, used if :data:`raster` is None, 
+            by default None.
         dx : float, optional
             Grid spacing along X, by default 1.0.
         dy : float, optional
@@ -152,12 +156,13 @@ class ModellingDomain:
                 self._ny = raster.shape[0]
                 self._dx = dx
                 self._dy = dy
-                self._x = np.arange(
-                    xmin, xmin + (self._nx - 1) * self._dx + self._dx / 2, self._dx
-                )
-                self._y = np.arange(
-                    ymin, ymin + (self._ny - 1) * self._dy + self._dy / 2, self._dy
-                )
+                self._x = np.arange(xmin, 
+                                    xmin + (self._nx - 1) * self._dx + self._dx / 2, 
+                                    self._dx)
+                self._y = np.arange(ymin, 
+                                    ymin + (self._ny - 1) * self._dy + self._dy / 2, 
+                                    self._dy)
+                
             if isinstance(raster, str):
                 self._x, self._y, self._z = tilupy.raster.read_raster(raster)
                 self._nx = len(self._x)
@@ -170,8 +175,7 @@ class ModellingDomain:
             self._ny = ny
             self._dx = dx
             self._dy = dy
-            if (
-                xmin is not None
+            if (xmin is not None
                 and ymin is not None
                 and nx is not None
                 and ny is not None
@@ -191,9 +195,9 @@ class ModellingDomain:
     def set_edges(self) -> None:
         """Compute and assign horizontal and vertical edge number.
         
-        Calls "make_edges_matrices()" to build the edge numbering
+        Calls :func:`tilupy.initsimus.make_edges_matrices` to build the edge numbering
         for the grid defined by nx and ny. 
-        Results are stored in attributes "h_edges" and "v_edges".
+        Results are stored in attributes :attr:`_h_edges` and :attr:`v_edges`.
         
         Returns
         -------
@@ -213,10 +217,10 @@ class ModellingDomain:
             Y coordinate of the point.
         cardinal : str
             Cardinal direction of the edge ('N', 'S', 'E', 'W'):
-            - 'N': top edge of the cell
-            - 'S': bottom edge of the cell
-            - 'E': right edge of the cell
-            - 'W': left edge of the cell
+                - 'N': top edge of the cell
+                - 'S': bottom edge of the cell
+                - 'E': right edge of the cell
+                - 'W': left edge of the cell
         
         Returns
         -------
@@ -226,7 +230,7 @@ class ModellingDomain:
         Raises
         ------
         AssertionError
-            If "set_edges()" has not been called before (i.e. h_edges and v_edges are None).
+            If :meth:`set_edges` has not been called before (i.e. :attr:`_h_edges` and :attr:`v_edges` are None).
         """
         assert (self._h_edges is not None) and (self._v_edges is not None), "h_edges and v_edges must be computed to get edge number"
         ix = np.argmin(np.abs(self._x[:-1] + self._dx / 2 - xcoord))
@@ -244,19 +248,19 @@ class ModellingDomain:
     def get_edges(self, xcoords: np.ndarray, ycoords: np.ndarray, cardinal: str, from_extremities: bool=True) -> dict[str: list[int]]:
         """Get edges numbers for a set of coordinates and cardinals direction.
         
-        If from_extremities is True, xcoords and ycoords are treated as the extremities of a segment. 
+        If :data:`from_extremities` is True, xcoords and ycoords are treated as the extremities of a segment. 
 
         Parameters
         ----------
         xcoords : np.ndarray or list
-            X coordinates of points. If from_extremities is True, indicated (xmin, xmax).
+            X coordinates of points. If :data:`from_extremities` is True, indicated (xmin, xmax).
         ycoords : np.ndarray or list
-            Y coordinates of points. If from_extremities is True, indicated (ymin, ymax).
+            Y coordinates of points. If :data:`from_extremities` is True, indicated (ymin, ymax).
         cardinal : str
             Cardinal directions to extract, any combination of {'N', 'S', 'E', 'W'}.
             Example: "NS" will return both north and south edges.
         from_extremities : bool, optional
-            If True, `xcoords` and `ycoords` are considered as the endpoints
+            If True, :data:`xcoords` and :data:`ycoords` are considered as the endpoints
             of a line, by default True
 
         Returns
@@ -266,15 +270,16 @@ class ModellingDomain:
             sorted lists of unique edge numbers.
         """
         if from_extremities:
-            d = np.sqrt(
-                (xcoords[1] - xcoords[0]) ** 2 + (ycoords[1] - ycoords[0]) ** 2
-            )
+            d = np.sqrt((xcoords[1] - xcoords[0]) ** 2 + (ycoords[1] - ycoords[0]) ** 2)
             npts = int(np.ceil(d / min(self._dx, self._dy)))
             xcoords = np.linspace(xcoords[0], xcoords[1], npts + 1)
             ycoords = np.linspace(ycoords[0], ycoords[1], npts + 1)
+            
         if self._h_edges is None or self._v_edges is None:
             self.set_edges
+            
         res = dict()
+        
         # cardinal is a string with any combination of cardinal directions
         for card in cardinal:
             edges_num = []
@@ -282,6 +287,7 @@ class ModellingDomain:
                 edges_num.append(self.get_edge(xcoord, ycoord, card))
             res[card] = list(set(edges_num))  # Duplicate edges are removed
             res[card].sort()
+            
         return res
 
 
@@ -336,9 +342,9 @@ class Simu:
         z : ndarray or str
             Topography values as a 2D NumPy array, or path to a raster file.
         x : ndarray, optional
-            X coordinates of the grid, ignored if z is a file path.
+            X coordinates of the grid, ignored if :data:`z` is a file path.
         y : ndarray, optional
-            Y coordinates of the grid, ignored if z is a file path.
+            Y coordinates of the grid, ignored if :data:`z` is a file path.
         file_out : str, optional
             Output filename (add ".asc"), by defaults "toposimu.asc".
             Filenames are truncated or padded to 8 characters.
@@ -357,22 +363,22 @@ class Simu:
         else:
             fname = file_out.split(".")[0]
             if len(fname) > 8:
-                warnings.warns(
-                    """Topography file name is too long,
-                    only 8 first characters are retained"""
-                )
+                warnings.warns("""Topography file name is too long,
+                               only 8 first characters are retained"""
+                               )
                 fname = fname[:8]
             elif len(fname) < 8:
-                warnings.warns(
-                    """Topography file name is too short and is adapted,
-                    exactly 8 characters needed"""
-                )
+                warnings.warns("""Topography file name is too short and is adapted,
+                               exactly 8 characters needed"""
+                               )
                 fname = fname.ljust(8, "0")
             file_out = fname + ".asc"
 
-        tilupy.raster.write_ascii(
-            self._x, self._y, self._z, os.path.join(self._folder, file_out)
-        )
+        tilupy.raster.write_ascii(self._x, 
+                                  self._y, 
+                                  self._z, 
+                                  os.path.join(self._folder, file_out))
+
 
     def set_numeric_params(self,
                            tmax: float,
@@ -410,38 +416,26 @@ class Simu:
         self._dtsorties = dtsorties
 
         with open(os.path.join(self._folder, "DONLEDD1.DON"), "w") as fid:
-            fid.write(
-                "paray".ljust(34, " ") + "{:.12f}\n".format(paray).lstrip("0")
-            )
+            fid.write("paray".ljust(34, " ") + "{:.12f}\n".format(paray).lstrip("0"))
             fid.write("tmax".ljust(34, " ") + "{:.12f}\n".format(tmax))
             fid.write("dtinit".ljust(34, " ") + "{:.12f}\n".format(dtinit))
-            fid.write(
-                "cfl constante ?".ljust(34, " ") + "{:.0f}\n".format(cfl_const)
-            )
+            fid.write("cfl constante ?".ljust(34, " ") + "{:.0f}\n".format(cfl_const))
             fid.write("CFL".ljust(34, " ") + "{:.12f}\n".format(CFL))
             fid.write("Go,VaLe1,VaLe2".ljust(34, " ") + "{:.0f}\n".format(3))
             fid.write("secmbr0/1".ljust(34, " ") + "{:.0f}\n".format(1))
-            fid.write(
-                "CL variable (si=0) ?".ljust(34, " ") + "{:d}\n".format(0)
-            )
-            fid.write(
-                "dtsorties".ljust(34, " ") + "{:.12f}\n".format(dtsorties)
-            )
-            fid.write(
-                "alpha cor pentes".ljust(34, " ")
-                + "{:.12f}".format(alpha_cor_pente)
-            )
+            fid.write("CL variable (si=0) ?".ljust(34, " ") + "{:d}\n".format(0))
+            fid.write("dtsorties".ljust(34, " ") + "{:.12f}\n".format(dtsorties))
+            fid.write("alpha cor pentes".ljust(34, " ") + "{:.12f}".format(alpha_cor_pente))
+
 
     def set_rheology(self, tau_rho: float, K_tau: float=0.3) -> None:
         r"""Set Herschel-Bulkley rheology parameters
 
         Rheological parameters are tau/rho and K/tau. See :
         
-        - Coussot, P., 1994. Steady, laminar, flow of concentrated mud suspensions in open channel. Journal of Hydraulic Research 32, 535-559.
-        doi.org/10.1080/00221686.1994.9728354 
+        - Coussot, P., 1994. Steady, laminar, flow of concentrated mud suspensions in open channel. Journal of Hydraulic Research 32, 535-559. doi.org/10.1080/00221686.1994.9728354 
             --> Eq 8 and text after eq 22 for the default value of K/tau
-        - Rickenmann, D. et al., 2006. Comparison of 2D debris-flow simulation models with field events. Computational Geosciences 10,
-        241-264. doi.org/10.1007/s10596-005-9021-3 
+        - Rickenmann, D. et al., 2006. Comparison of 2D debris-flow simulation models with field events. Computational Geosciences 10, 241-264. doi.org/10.1007/s10596-005-9021-3 
             --> Eq 9
 
         tau_rho : float
@@ -480,7 +474,7 @@ class Simu:
         cardinal : str 
             Boundary orientation ('N', 'S', 'E', 'W').
         discharges : list or float
-            If times is None: interpreted as inflow volume (:math:`m^3`).
+            If :data:`times` is None: interpreted as inflow volume (:math:`m^3`).
             Else: Interpreted as discharge values (:math:`m^3/s`) at each time step.
         times : list, optional
             Time vector associated with discharges. If None, a synthetic
@@ -502,20 +496,19 @@ class Simu:
             If no topography not been set.
         """
         try:
-            modelling_domain = ModellingDomain(
-                self._z,
-                self._x[0],
-                self._y[0],
-                dx=self._x[1] - self._x[0],
-                dy=self._y[1] - self._y[0],
-            )
+            modelling_domain = ModellingDomain(self._z,
+                                               self._x[0],
+                                               self._y[0],
+                                               dx=self._x[1] - self._x[0],
+                                               dy=self._y[1] - self._y[0])
         except AttributeError:
             print("Simulation topography has not been set")
             raise
 
-        edges = modelling_domain.get_edges(
-            xcoords, ycoords, cardinal, from_extremities=True
-        )
+        edges = modelling_domain.get_edges(xcoords, 
+                                           ycoords, 
+                                           cardinal, 
+                                           from_extremities=True)
         edges = edges[cardinal]
 
         if times is None:
@@ -528,9 +521,7 @@ class Simu:
         n_times = len(times)
         n_edges = len(edges)
 
-        assert n_times == len(
-            discharges
-        ), "discharges and time vectors must be the same length"
+        assert n_times == len(discharges), "discharges and time vectors must be the same length"
 
         if thicknesses is None:
             thicknesses = [1 for i in range(n_times)]
@@ -541,20 +532,17 @@ class Simu:
             dd = self._x[1] - self._x[0]
 
         with open(os.path.join(self._folder, self._name + ".cli"), "w") as fid:
-            fid.write(
-                "{:d}\n".format(n_times)
-            )  # Number of time steps in the hydrogram
+            fid.write("{:d}\n".format(n_times))  # Number of time steps in the hydrogram
             for i, time in enumerate(times):
                 fid.write("{:.4f}\n".format(time))  # Write time
                 fid.write("{:d}\n".format(n_edges))  # Write n_edges
                 qn = discharges[i] / (n_edges * dd)
                 qt = 0
                 for i_edge, edge in enumerate(edges):
-                    fid.write(
-                        "\t{:d} {:.7E} {:.7E} {:.7E}\n".format(
-                            edge, thicknesses[i], qn, qt
-                        )
-                    )
+                    fid.write("\t{:d} {:.7E} {:.7E} {:.7E}\n".format(edge, 
+                                                                     thicknesses[i], 
+                                                                     qn, 
+                                                                     qt))
 
 
     def set_init_mass(self, mass_raster: str, h_min: float=0.01) -> None:
@@ -582,23 +570,19 @@ class Simu:
         
         y2 = y2[::-1]
         
-        fm = RegularGridInterpolator(
-            (y, x),
-            m,
-            method="linear",
-            bounds_error=False,
-            fill_value=None,
-        )
+        fm = RegularGridInterpolator((y, x),
+                                     m,
+                                     method="linear",
+                                     bounds_error=False,
+                                     fill_value=None)
         x_mesh, y_mesh = np.meshgrid(x2, y2)
         m2 = fm((y_mesh, x_mesh))
         m2[m2 < h_min] = h_min
-        np.savetxt(
-            os.path.join(self._folder, self._name + ".cin"),
-            m2.flatten(),
-            header="0.000000E+00",
-            comments="",
-            fmt="%.10E",
-        )
+        np.savetxt(os.path.join(self._folder, self._name + ".cin"),
+                   m2.flatten(),
+                   header="0.000000E+00",
+                   comments="",
+                   fmt="%.10E")
 
 
 def write_simu(raster_topo: str, 
@@ -656,14 +640,11 @@ def write_simu(raster_topo: str,
 
     os.makedirs(folder_out, exist_ok=True)
     
-    shutil.copy2(
-        os.path.join(lave2D_exe_folder, "Lave2_Arc.exe"),
-        folder_out,
-    )
-    shutil.copy2(
-        os.path.join(lave2D_exe_folder, "vf2marc.exe"), 
-        folder_out,
-    )
+    shutil.copy2(os.path.join(lave2D_exe_folder, "Lave2_Arc.exe"),
+                 folder_out)
+    shutil.copy2(os.path.join(lave2D_exe_folder, "vf2marc.exe"), 
+                 folder_out)
+    
     simu_lave2D = Simu(folder_out, simulation_name)
     simu_lave2D.set_topography(raster_topo)
     simu_lave2D.set_init_mass(raster_mass)
@@ -671,18 +652,16 @@ def write_simu(raster_topo: str,
     simu_lave2D.set_numeric_params(tmax, dt_im)
 
     ## Not used in simulation, but the .cli file is needed 
-    simu_lave2D.set_boundary_conditions(
-        [0, 0],  # X min and max coords for input flux
-        [1, 2],  # Y min and max coord for input flux
-        "W",  # Cardinal direction (Flow from East to West)
-        [0, 0],  # Discharge hydrogram
-        times=[0, tmax + 1],  # Corresponding times
-        thicknesses=[0, 0],  # Thickness hydrogramm
-    )
+    simu_lave2D.set_boundary_conditions([0, 0],  # X min and max coords for input flux
+                                        [1, 2],  # Y min and max coord for input flux
+                                        "W",  # Cardinal direction (Flow from East to West)
+                                        [0, 0],  # Discharge hydrogram
+                                        times=[0, tmax + 1],  # Corresponding times
+                                        thicknesses=[0, 0],  # Thickness hydrogramm
+                                        )
 
 
 """
-
 if __name__ == "__main__":
     h_edges, v_edges = make_edges_matrices(1, 1)
 
@@ -691,6 +670,4 @@ if __name__ == "__main__":
     domain = ModellingDomain(xmin=0, ymin=0, nx=4, ny=3, dx=1, dy=1)
     domain.set_edges()
     res = domain.get_edges([1.5, 2.5], [0, 0], "S")
-
-
 """
