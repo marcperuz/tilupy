@@ -8,40 +8,47 @@ Created on Fri Aug  4 19:27:09 2023
 import numpy as np
 
 
-def calotte(x, y, z, x0, y0, radius, norm_offset=0, res_type='projected_normal'):
-    """
-    Construct mass on topography as volume between sphere and topography.
+def calotte(x: np.ndarray, 
+            y: np.ndarray, 
+            z: np.ndarray, 
+            x0: float, 
+            y0: float, 
+            radius: float, 
+            norm_offset: float = 0, 
+            res_type: str = 'projected_normal'
+            ) -> np.ndarray:
+    """Construct mass on topography as volume between sphere and topography.
 
     Parameters
     ----------
-    x : np.array
-        xaxis array, with length nx
-    y : np.array
-        yaxis array, with length ny
-    z : np.array
-        array of altitudes, of size (ny, nx). z[0, 0] has coordinates
-        (x[0], y[-1])
+    x : numpy.ndarray
+        X-axis array, with length nx.
+    y : numpy.ndarray
+        Y-axis array, with length ny.
+    z : numpy.ndarray
+        Array of altitudes, of size (ny, nx). z[0, 0] has coordinates
+        (x[0], y[-1]).
     x0 : float
-        x position of the calotte
+        X position of the calotte.
     y0 : float
-        y position of the calotte
+        Y position of the calotte.
     radius : float
-        radius of the shpere
+        Radius of the shpere.
     norm_offset : float, optional
-        downwards offset between the sphere center and the topography, in the
-        direction normal to the topography. The default is 0.
+        Downwards offset between the sphere center and the topography, in the
+        direction normal to the topography, by default 0.
     res_type : string, optional
-        Type of thickness output. 'true_normal': real thickness in the
-        direction normal to the topography. 'vertical': Thickness in the
-        vertical direction. 'projected_normal': Thickness normal to the
-        topography is computed from the vertical thickness projected on 
-        the axe normal to the topography. The default is 'projected_normal'.
+        Type of thickness output: 
+            - 'true_normal': Real thickness in the direction normal to the topography. 
+            - 'vertical': Thickness in the vertical direction. 
+            - 'projected_normal': Thickness normal to the topography is computed from the vertical 
+              thickness projected on the axe normal to the topography. 
+        The default is 'projected_normal'.
 
     Returns
     -------
-    m : np.array
-        array of mass height, in the direction normal to topography
-
+    m : numpy.ndarray
+        Array of mass height, in the direction normal to topography.
     """
     z = np.flip(z, axis=0).T
 
@@ -70,8 +77,7 @@ def calotte(x, y, z, x0, y0, radius, norm_offset=0, res_type='projected_normal')
     dist_to_mass = (xmesh-x0)**2+(ymesh-y0)**2
     ind = (dist_to_mass <= radius**2)
 
-    B = 2*(Fx*(xmesh-x0)+Fy *
-           (ymesh-y0)+Fz*(z-z0))
+    B = 2*(Fx*(xmesh-x0)+Fy * (ymesh-y0)+Fz*(z-z0))
     C = (xmesh-x0)**2+(ymesh-y0)**2+(z-z0)**2-radius**2
     D = B**2-4*C
 
