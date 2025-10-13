@@ -11,9 +11,6 @@ import numpy as np
 import tilupy.make_topo
 import tilupy.make_mass
 import tilupy.raster
-import pytopomap.plot
-
-import matplotlib.pyplot as plt
 
 
 '''def make_constant_slope(
