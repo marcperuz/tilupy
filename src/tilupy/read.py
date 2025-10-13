@@ -7,6 +7,7 @@ Created on Tue Jun  1 14:20:52 2021
 """
 from __future__ import annotations
 from abc import abstractmethod
+from typing import Callable
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -543,7 +544,13 @@ class TemporalResults1D(TemporalResults):
 
 
     def plot(self, 
-             coords=None, 
+             coords = None,
+             plot_type: str = "simple",
+             figsize: tuple[float] = None,
+             ax: matplotlib.axes._axes.Axes = None,
+             linestyles: list[str] = None,
+             cmap: str = 'viridis',
+             highlighted_curve: bool = False,
              **kwargs
              ) -> matplotlib.axes._axes.Axes:
         """Plot the temporal evolution of the 1D results.
@@ -553,6 +560,25 @@ class TemporalResults1D(TemporalResults):
         coords : numpy.ndarray, optional
             Specified coordinates, if None uses the coordinates implemented when creating the instance (:attr:`_coords`). 
             By default None.
+        plot_type: str, optional
+            Wanted plot :
+                - "simple" : Every curve in the same graph
+                - "multiples" : Every curve in separate graph
+                - "'shotgather" : Shotgather graph
+            By default "simple".
+        ax : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib window, if None create one. By default None
+        linestyles : list[str], optional
+            Custom linestyles for each time step. If None, colors and styles are auto-assigned. 
+            Used only for "simple". By default None.
+        cmap : str, optional
+            Color map for the ploted curves. Used only for "simple". By default "viridis".
+        hightlighted_curved : bool, optional
+            Option to display all time steps on each graph of the multiples and 
+            highlight the curve corresponding to the time step of the subgraph. Used only for "multiples". 
+            By default False.
+        kwargs: dict, optional
+            Additional arguments for plot functions.
 
         Returns
         -------
@@ -566,26 +592,86 @@ class TemporalResults1D(TemporalResults):
         """
         if coords is None:
             coords = self._coords
+            if coords is None:
+                raise TypeError("coords data missing")
 
-        if coords is None:
-            raise TypeError("coords data missing")
+        if ax is None and plot_type != "multiples":
+            fig, ax = plt.subplots(1, 1, figsize=figsize, layout="constrained")
+        
+        if plot_type == "shotgather":
+            xlabel = notations.get_label(self._coords_name, with_unit=True)
+            
+            if "colorbar_kwargs" not in kwargs:
+                kwargs["colorbar_kwargs"] = dict()
+            if "label" not in kwargs["colorbar_kwargs"]:
+                clabel = notations.get_label(self._notation)
+                kwargs["colorbar_kwargs"]["label"] = clabel
 
-        xlabel = notations.get_label(self._coords_name, with_unit=True)
-        if "colorbar_kwargs" not in kwargs:
-            kwargs["colorbar_kwargs"] = dict()
-        if "label" not in kwargs["colorbar_kwargs"]:
-            clabel = notations.get_label(self._notation)
-            kwargs["colorbar_kwargs"]["label"] = clabel
+            ax = plt_tlp.plot_shotgather(self._coords,
+                                          self._t,
+                                          self._d,
+                                          xlabel=xlabel,
+                                          ylabel=notations.get_label("t"),
+                                          **kwargs)
+        
+        if plot_type == "simple":
+            if linestyles is None or len(linestyles)!=(len(self._t)):
+                norm = plt.Normalize(vmin=0, vmax=len(self._t)-1)
+                cmap = plt.cm.get_cmap(cmap)
+                
+            for i in range(self._d.shape[1]):
+                if linestyles is None or len(linestyles)!=(len(self._t)):
+                    color = cmap(norm(i)) if self._t[i] != 0 else "red"
+                    l_style = "-" if self._t[i] != 0 else (0, (1, 4))
+                else:
+                    color = "black" if self._t[i] != 0 else "red"
+                    l_style = linestyles[i] if self._t[i] != 0 else (0, (1, 4))
+                    
+                ax.plot(self._coords, self._d[:, i], label=f"t={self._t[i]}s", color=color, linestyle=l_style, **kwargs)
+            
+            ax.grid(True, alpha=0.3)
+            ax.set_xlim(left=min(self._coords), right=max(self._coords))
+            
+            ax.set_xlabel(notations.get_label(self._coords_name))
+            ax.set_ylabel(notations.get_label(self._notation))
+            
+        if plot_type == "multiples":
+            row_nb = len(self._t) // 3
+            if len(self._t) % 3 != 0:
+                row_nb += 1
+            
+            fig, axes = plt.subplots(nrows=row_nb, 
+                                     ncols=3, 
+                                     figsize=figsize, 
+                                     layout="constrained", 
+                                     sharex=True, 
+                                     sharey=True)
+            axes = axes.flatten()
+            
+            for i in range(self._d.shape[1]):
+                if highlighted_curve:
+                    for j in range(self._d.shape[1]):
+                        if i == j:
+                            axes[i].plot(self._coords, self._d[:, j], color="black", linewidth=1.5, **kwargs)
+                        else:
+                            axes[i].plot(self._coords, self._d[:, j], color="gray", alpha=0.5, linewidth=0.5, **kwargs)
+                else:
+                    axes[i].plot(self._coords, self._d[:, i], color="black", **kwargs)
+                
+                axes[i].grid(True, alpha=0.3)
+                axes[i].set_xlim(left=min(self._coords), right=max(self._coords))
+                
+                axes[i].set_xlabel(notations.get_label(self._coords_name))
+                axes[i].set_ylabel(notations.get_label(self._notation))
+                
+                axes[i].set_title(f"t={self._t[i]}s", loc='left')
 
-        axe = plt_tlp.plot_shotgather(self._coords,
-                                      self._t,
-                                      self._d,
-                                      xlabel=xlabel,
-                                      ylabel=notations.get_label("t"),
-                                      **kwargs
-                                      )
-
-        return axe
+            for i in range(len(self._t), len(axes)):
+                fig.delaxes(axes[i])
+            
+            return axes
+            
+        return ax
 
 
     def save(self):
@@ -709,16 +795,17 @@ class TemporalResults2D(TemporalResults):
 
 
     def plot(self,
-             x: np.ndarray=None,
-             y: np.ndarray=None,
-             z: np.ndarray=None,
-             file_name: str=None,
-             folder_out: str=None,
-             figsize: tuple[float]=None,
-             dpi: int=None,
-             fmt: str="png",
-             sup_plt_fn=None,
-             sup_plt_fn_args=None,
+             x: np.ndarray = None,
+             y: np.ndarray = None,
+             z: np.ndarray = None,
+             plot_multiples: bool = False,
+             file_name: str = None,
+             folder_out: str = None,
+             figsize: tuple[float] = None,
+             dpi: int = None,
+             fmt: str = "png",
+             sup_plt_fn = None,
+             sup_plt_fn_args = None,
              **kwargs
              ) -> None:
         """Plot the temporal evolution of the 2D results using :func:`pytopomap.plot.plot_maps`.
@@ -770,13 +857,46 @@ class TemporalResults2D(TemporalResults):
 
         if z is None:
             warnings.warn("No topography given.")
-
+        
         if "colorbar_kwargs" not in kwargs:
             kwargs["colorbar_kwargs"] = dict()
         if "label" not in kwargs["colorbar_kwargs"]:
             clabel = notations.get_label(self._notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
+            
+        if plot_multiples:
+            row_nb = len(self._t) // 3
+            if len(self._t) % 3 != 0:
+                row_nb += 1
+            
+            fig, axes = plt.subplots(nrows=row_nb, 
+                                     ncols=3, 
+                                     figsize=figsize, 
+                                     layout="constrained", 
+                                     sharex=True, 
+                                     sharey=True)
+            axes = axes.flatten()
+            
+            for i in range(len(self._t)):
+                plt_fn.plot_data_on_topo(x=x,
+                                         y=y,
+                                         z=z,
+                                         data=self._d[:, :, i],
+                                         axe=axes[i],
+                                         plot_colorbar=False,
+                                         **kwargs)
 
+                axes[i].set_title(f"t={self._t[i]}s", loc='left')
+
+            for i in range(len(self._t), len(axes)):
+                fig.delaxes(axes[i])
+            
+            
+            mappable = axes[0].images[1]
+            fig.colorbar(mappable, ax=axes, orientation='vertical', **kwargs["colorbar_kwargs"])
+            
+            return axes
+        
         plt_fn.plot_maps(x,
                          y,
                          z,
@@ -1091,35 +1211,37 @@ class StaticResults1D(StaticResults):
 
 
     def plot(self, 
-             axe: matplotlib.axes._axes.Axes=None, 
-             figsize: tuple[float]=None, **kwargs
+             ax: matplotlib.axes._axes.Axes = None,
+             **kwargs
              ) -> matplotlib.axes._axes.Axes:
         """Plot the 1D results.
 
         Parameters
         ----------
-        axe : matplotlib.axes._axes.Axes, optional
+        ax : matplotlib.axes._axes.Axes, optional
             Existing matplotlib window, if None create one. By default None.
-        figsize : tuple[float], optional
-            Size of the figure, by default None.
 
         Returns
         -------
         matplotlib.axes._axes.Axes
             The created plot.
         """
-        if axe is None:
-            fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, layout="constrained")
 
         if isinstance(self._d, np.ndarray):
             data = self._d.T
         else:
             data = self._d
-        axe.plot(self._coords, data, label=self._name) # self._name replace self.scalar_names that wasnt implemented in this class
-        axe.set_xlabel(notations.get_label(self._coords_name))
-        axe.set_ylabel(notations.get_label(self._notation))
+            
+        ax.plot(self._coords, data, **kwargs) 
+        
+        ax.grid(True, alpha=0.3)
+        ax.set_xlim(left=min(self._coords), right=max(self._coords))
+        ax.set_xlabel(notations.get_label(self._coords_name))
+        ax.set_ylabel(notations.get_label(self._notation))
 
-        return axe
+        return ax
 
 
     @property
@@ -1198,21 +1320,19 @@ class StaticResults2D(StaticResults):
         self._z = z
 
     def plot(self,
-             axe=None,
-             figsize=None,
-             x=None,
-             y=None,
-             z=None,
-             sup_plt_fn=None,
-             sup_plt_fn_args=None,
+             figsize: tuple[float] = None,
+             x: np.ndarray = None,
+             y: np.ndarray = None,
+             z: np.ndarray = None,
+             sup_plt_fn: Callable = None,
+             sup_plt_fn_args: dict = None,
+             ax: matplotlib.axes._axes.Axes = None,
              **kwargs
              ) -> matplotlib.axes._axes.Axes:
         """Plot the 2D results using :func:`pytopomap.plot.plot_data_on_topo`.
 
         Parameters
         ----------
-        axe : matplotlib.axes._axes.Axes, optional
-            Existing matplotlib window, if None create one. By default None
         figsize : tuple[float], optional
             Size of the figure, by default None
         x : numpy.ndarray, optional
@@ -1225,6 +1345,8 @@ class StaticResults2D(StaticResults):
             A custom function to apply additional plotting on the axes, by default None.
         sup_plt_fn_args : dict, optional
             Arguments to pass to :data:`sup_plt_fn`, by default None.
+        ax : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib window, if None create one. By default None
         kwargs
             Additional arguments to pass to :func:`pytopomap.plot.plot_data_on_topo`.
             
@@ -1238,8 +1360,8 @@ class StaticResults2D(StaticResults):
         TypeError
             If no value for x, y.
         """
-        if axe is None:
-            fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=figsize, layout="constrained")
 
         if x is None:
             x = self._x
@@ -1257,19 +1379,19 @@ class StaticResults2D(StaticResults):
             clabel = notations.get_label(self._notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
 
-        axe = plt_fn.plot_data_on_topo(x, 
-                                       y, 
-                                       z, 
-                                       self._d, 
-                                       axe=axe, 
-                                       figsize=figsize, 
-                                       **kwargs)
+        ax = plt_fn.plot_data_on_topo(x, 
+                                      y, 
+                                      z, 
+                                      self._d, 
+                                      axe=ax, 
+                                      figsize=figsize, 
+                                      **kwargs)
         if sup_plt_fn is not None:
             if sup_plt_fn_args is None:
                 sup_plt_fn_args = dict()
-            sup_plt_fn(axe, **sup_plt_fn_args)
+            sup_plt_fn(ax, **sup_plt_fn_args)
 
-        return axe
+        return ax
 
 
     def save(self,
