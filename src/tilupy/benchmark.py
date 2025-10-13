@@ -12,8 +12,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import tilupy.read
-import tilupy.analytic_sol as AS
-import pytopomap.plot as pyplt
+# import tilupy.analytic_sol as AS
+# import pytopomap.plot as pyplt
 
 
 class Benchmark:
