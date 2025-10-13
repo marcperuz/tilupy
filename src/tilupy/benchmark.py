@@ -712,7 +712,7 @@ class Benchmark:
         plot_kwargs = {} if plot_kwargs is None else plot_kwargs
         
         # Recover the position of the extracted profiles
-        absci = self._y if axis == 'Y' else self._x
+        # absci = self._y if axis == 'Y' else self._x
         inv_axis = 'X' if axis == 'Y' else 'Y'
         profil_coord = self._x if axis == 'Y' else self._y
         if profil_idx:
