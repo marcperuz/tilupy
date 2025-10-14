@@ -250,10 +250,10 @@ class Results(tilupy.read.Results):
         qy_list.append(np.zeros_like(h_init))
         q_list.append(np.zeros_like(h_init))
         
-        for t in range(len(t_list)):
-            h_t = extract_saval_ascii(os.path.join(self._simu_outputs, f"resuh{t+1}.asc"))
-            qu_t = extract_saval_ascii(os.path.join(self._simu_outputs, f"resuqu{t+1}.asc"))
-            qv_t = extract_saval_ascii(os.path.join(self._simu_outputs, f"resuqv{t+1}.asc"))
+        for T in range(len(t_list)):
+            h_t = extract_saval_ascii(os.path.join(self._simu_outputs, f"resuh{T+1}.asc"))
+            qu_t = extract_saval_ascii(os.path.join(self._simu_outputs, f"resuqu{T+1}.asc"))
+            qv_t = extract_saval_ascii(os.path.join(self._simu_outputs, f"resuqv{T+1}.asc"))
 
             h_t[h_t<0.0001] = 0
             
@@ -273,7 +273,7 @@ class Results(tilupy.read.Results):
             qy_list.append(qv_t)
             q_list.append(q_t)
             
-            tim.append(t_list[t])
+            tim.append(t_list[T])
 
         self._tim = tim
     
