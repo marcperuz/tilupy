@@ -13,27 +13,25 @@ case_error.extract_field("u", "shaltop", 0.0)
 
 def test_error_load_numerical_result():
     with pytest.raises(ValueError): 
-        case_error.load_numerical_result("sheltopz")
+        case_error.load_numerical_result("sheltopz") # Invalid model name
     
-def test_error_model_not_load():
+def test_error_extract_invalid_model(): # Invalid model name
     with pytest.raises(ValueError): 
         case_error.extract_profiles("h", "sheltopz")
     with pytest.raises(ValueError): 
-        case_error.extract_profiles("u", "sheltopz")
+        case_error.extract_field("h", "sheltopz") 
+        
+def test_error_extract_invalid_output(): # Invalid output name
+    with pytest.raises(ValueError):     
+        case_error.extract_profiles("xx", "shaltop") 
     with pytest.raises(ValueError): 
-        case_error.extract_field("h", "sheltopz")
-    with pytest.raises(ValueError): 
-        case_error.extract_field("u", "sheltopz")
+        case_error.extract_field("xx", "shaltop")
 
-def test_error_invalid_time_step():
+def test_error_invalid_time_step(): # Invalid time step
     with pytest.raises(ValueError): 
         case_error.extract_profiles("h", "shaltop", 99.0)
     with pytest.raises(ValueError): 
-        case_error.extract_profiles("u", "shaltop", 99.0)
-    with pytest.raises(ValueError): 
         case_error.extract_field("h", "shaltop", 99.0)
-    with pytest.raises(ValueError): 
-        case_error.extract_field("u", "shaltop", 99.0)
     
 def test_error_show_profiles():
     with pytest.raises(ValueError): 
@@ -41,14 +39,17 @@ def test_error_show_profiles():
     with pytest.raises(ValueError): 
         case_error.show_profile("h", "sheltopz") # Invalid model
     with pytest.raises(ValueError): 
+        case_error.show_profile("xx", "shaltop") # Invalid output
+    with pytest.raises(ValueError): 
         case_error.show_profile("h", "shaltop", "Z") # Invalid axis
     
-@pytest.mark.skip(reason="Ajouter raise error")
 def test_error_show_field():
     with pytest.raises(ValueError): 
-        case_error.show_field("h", "sheltopz") # Invalid model
+        case_error.show_field("h", "sheltopz", 0.0) # Invalid model
     with pytest.raises(ValueError): 
-        case_error.show_field("u", "sheltopz") # Invalid model
+        case_error.show_field("xx", "shaltop", 0.0) # Invalid output
+    with pytest.raises(ValueError): 
+        case_error.show_field("h", "shaltop", 99.0) # Invalid time step
 
 # def test_error_show_compare():
 #     with pytest.raises(ValueError): 
