@@ -12,8 +12,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import tilupy.read
-# import tilupy.analytic_sol as AS
-# import pytopomap.plot as pyplt
+import tilupy.notations as notations
 
 
 class Benchmark:
@@ -81,6 +80,7 @@ class Benchmark:
         
         self._current_model = None
         self._loaded_results = {}
+        self._models_tim = {}
         self._x, self._y, self._z = None, None, None
         
         self._allowed_extracting_outputs = ["h", "u", "ux", "uy"]
@@ -125,6 +125,8 @@ class Benchmark:
             self._current_model = model
             if model not in self._loaded_results:
                 self._loaded_results[model] = tilupy.read.get_results(model, **kwargs)
+                self._models_tim[model] = self._loaded_results[model].tim
+                
             if self._x is None and self._y is None and self._z is None:
                 self._x, self._y, self._z = self._loaded_results[model].x, self._loaded_results[model].y, self._loaded_results[model].z
             
@@ -199,7 +201,9 @@ class Benchmark:
                                                                             d=solution.h[i],
                                                                             coords=self._x,
                                                                             coords_name='x')))
-        
+            else:
+                raise ValueError("No analytic solution for fluid height.")
+            
         if output == 'u':
             solution.compute_u(self._x, T)
             
@@ -210,8 +214,10 @@ class Benchmark:
                                                                             d=solution.u[i],
                                                                             coords=self._x,
                                                                             coords_name='x')))
-    
-    
+            else:
+                raise ValueError("No analytic solution for fluid velocity.")
+
+
     def process_data_field(self, 
                            model: str, 
                            field_name: str, 
@@ -328,7 +334,7 @@ class Benchmark:
 
         # Extract data and time
         field_all = self._loaded_results[model].get_output(field_name)
-        tim = self._loaded_results[model].tim
+        tim = self._models_tim[model]
         t_idx = None
         
         
@@ -473,7 +479,7 @@ class Benchmark:
                 - str: 'max' for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
                 - None: select the medians.
         flow_threshold : float, optional
-            Minimum height to consider as part of the flow, by default 1e-3.
+            Minimum value to consider as part of the flow, by default 1e-3.
         show_message : bool, optional
             If True, print the indexes and the front positions saved. 
 
@@ -517,6 +523,28 @@ class Benchmark:
                       model: str = None,
                       t: float = None
                       ):
+        """Extract and store 2D data field at a given time step and store it for future use.
+
+        Parameters
+        ----------
+        output : str
+            Wanted data field. Can be: "h", "u", "ux", "uy".
+        model : str, optional
+           Wanted model to extract data field, if None take the currently loaded model. By default None.
+        t : float, optional
+           Time index to extract. If None, uses the last available time step. By default None
+
+        Raises
+        ------
+        ValueError
+            If the model has not been loaded.
+        ValueError
+            If the output asked is not allowed.
+        UserWarning
+            If the output variable is not accessible from the model.
+        ValueError
+            If invalid time step.
+        """
         if model is None:
             model = self._current_model
 
@@ -600,8 +628,8 @@ class Benchmark:
             Allows to choose the profile according to the desired axis, by default "X".
         time_steps : float | list[float], optional
             Value or list of time steps required to extract and display profiles. 
-            If None displays the profiles already extracted. Only available for
-            models. By default None.
+            If None displays the profiles for all recorded time steps in the model's result. 
+            Only available for models. By default None.
         direction_index : list[float] | str, optional
             Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
                 - list[float]: position (in meter) of the wanted profiles.
@@ -629,7 +657,7 @@ class Benchmark:
         Returns
         -------
         matplotlib.axes._axes.Axes
-            _description_
+            The created plot.
 
         Raises
         ------
@@ -673,15 +701,18 @@ class Benchmark:
         
         # For models profile
         elif model in self._allowed_models:
-            # If time_steps is given, first extract the wanted profiles at specified time
-            if isinstance(time_steps, float):
+            if time_steps is None:
+                time_steps = self._models_tim[model]
+                        
+            # First extract the wanted profiles at specified time
+            if isinstance(time_steps, float) or isinstance(time_steps, int):
                     self.extract_profiles(output, 
                                           model, 
                                           time_steps, 
                                           direction_index, 
                                           flow_threshold)
                 
-            elif isinstance(time_steps, list):
+            elif isinstance(time_steps, list) or isinstance(time_steps, np.ndarray):
                 for t in time_steps:
                     self.extract_profiles(output,
                                           model, 
@@ -706,7 +737,7 @@ class Benchmark:
                 raise ValueError(" -> Incorrect axis: 'X' or 'Y'.")
         
         # Create fig if not given
-        if ax is None and not plot_multiples:
+        if ax is None and (isinstance(time_steps, float) or isinstance(time_steps, int)):
             fig, ax = plt.subplots(figsize=figsize, layout="constrained")
         
         plot_kwargs = {} if plot_kwargs is None else plot_kwargs
@@ -777,6 +808,39 @@ class Benchmark:
                    show_plot: bool = True,
                    **plot_kwargs,
                    ) -> matplotlib.axes._axes.Axes:
+        """Plot 2D surfaces for a given model.
+
+        Parameters
+        ----------
+        output : str
+            Wanted data field. Can be: "h", "u", "ux", "uy".
+        model : str
+           Wanted model to show the data field.
+        t : float | list[float]
+            Value or list of time steps required to extract and display data fields. 
+            If None displays the data fields for all recorded time steps in the model's result. 
+            By default None.
+        ax : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib window, by default None.
+        figsize : tuple[float], optional
+            Size of the plotted figure if no ax is given (Width, Height; in inch). By default None.
+        show_plot : bool, optional
+            If True, show the plot, by default True
+
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            The created plot.
+
+        Raises
+        ------
+        ValueError
+            If the output asked is not allowed.
+        ValueError
+            If model is not loaded.
+        ValueError
+            If the solution is not extracted.
+        """
         if output not in self._allowed_extracting_outputs:
             raise ValueError(" -> Invalid output. See _allowed_extracting_outputs.")
         
@@ -788,8 +852,11 @@ class Benchmark:
                         "ux" : self._ux_num_2d,
                         "uy" : self._uy_num_2d}
         
+        if t is None:
+            t = self._models_tim[model]
+        
         # Extract output if not already done
-        if isinstance(t, float):
+        if isinstance(t, float) or isinstance(t, int):
             if t not in outputs_dict[output]:
                 self.extract_field(output=output,
                                    model=model, 
@@ -800,7 +867,7 @@ class Benchmark:
                                   model=model, 
                                   t=t)
         
-        elif isinstance(t, list):
+        elif isinstance(t, list) or isinstance(t, np.ndarray):
             for T in t:
                 if T not in outputs_dict[output]:
                     self.extract_field(output=output,
@@ -812,7 +879,7 @@ class Benchmark:
                                        model=model, 
                                        t=T)
         
-        if isinstance(t, float):
+        if isinstance(t, float) or isinstance(t, int):
             if ax is None:
                 fig, ax = plt.subplots(figsize=figsize, layout="constrained")
             
@@ -847,12 +914,186 @@ class Benchmark:
                                                             z=self._z)
             
             axes = temporal_output.plot(plot_multiples=True,
+                                        figsize=figsize,
                                         **plot_kwargs)
-            
+
             if show_plot:
                 plt.show()
 
             return axes
+
+
+    def show_multiple_profiles(self,
+                               output: str,
+                               models: list[str],
+                               analytic_solution: dict = None,
+                               axis: str = "X",
+                               time_steps: float | list[float] = None,
+                               direction_index: list[float] | str = None,
+                               flow_threshold: float = 0.001,
+                               axes: matplotlib.axes._axes.Axes = None,
+                               rows_nb: int = None,
+                               cols_nb: int = None,
+                               figsize: tuple[float] = None,
+                               colors: list = None,
+                               linestyles: list[str] = None,
+                               plot_kwargs: dict = None,
+                               as_kwargs: dict = None,
+                               show_plot: bool = True,
+                               )-> matplotlib.axes._axes.Axes:
+        if output not in self._allowed_extracting_outputs:
+            raise ValueError(" -> Invalid output. See _allowed_extracting_outputs.")
+        
+        for model in models:
+            if model not in self._loaded_results.keys():
+                raise ValueError(" -> First load model using load_numerical_result.")
+        
+        axis = axis.upper()
+        
+        if axis not in ['X', 'Y']:
+            raise ValueError(" -> Incorrect axis: 'X' or 'Y'.")
+        
+        outputs_dict = {"h" : [self._h_num_1d_X, self._h_num_1d_Y, self._h_num_1d_params],
+                        "u" : [self._u_num_1d_X, self._u_num_1d_Y, self._u_num_1d_params],
+                        "ux" : [self._ux_num_1d_X, self._ux_num_1d_Y, self._ux_num_1d_params],
+                        "uy" : [self._uy_num_1d_X, self._uy_num_1d_Y, self._uy_num_1d_params]}
+        
+        as_dict = {"h" : self._h_as_1d,
+                   "u" : self._u_as_1d}
+        
+        plot_kwargs = {} if plot_kwargs is None else plot_kwargs
+        as_kwargs = {} if as_kwargs is None else as_kwargs
+        
+        if time_steps is None:
+            time_steps = self._models_tim[models[0]]
+            
+        # If no profile for the time_step, extract it
+        if isinstance(time_steps, float) or isinstance(time_steps, int):
+            if time_steps not in outputs_dict[output]:
+                for model in models:
+                    self.extract_profiles(output=output,
+                                          model=model,
+                                          t=time_steps,
+                                          direction_index=direction_index,
+                                          flow_threshold=flow_threshold)
+                    
+        elif isinstance(time_steps, list) or isinstance(time_steps, np.ndarray):
+            for t in time_steps:
+                if t not in outputs_dict[output][0]:
+                    for model in models:
+                        self.extract_profiles(output=output,
+                                              model=model,
+                                              t=t,
+                                              direction_index=direction_index,
+                                              flow_threshold=flow_threshold)
+                
+        if analytic_solution is not None:
+            self.compute_analytic_solution(output=output,
+                                           T=time_steps,
+                                           **analytic_solution)
+        
+        result_dict = outputs_dict[output][0] if axis == "X" else outputs_dict[output][1]
+        
+        if isinstance(time_steps, float) or isinstance(time_steps, int):
+            time_steps = [time_steps]
+        
+        if axes is None:
+            if cols_nb is None:
+                cols_nb = len(time_steps) if len(time_steps) < 3 else 3
+            
+            if rows_nb is None:
+                rows_nb = len(time_steps) // cols_nb
+                if len(time_steps) % cols_nb != 0:
+                    rows_nb += 1
+                    
+            fig, axes = plt.subplots(nrows=rows_nb, 
+                                     ncols=cols_nb, 
+                                     figsize=figsize, 
+                                     layout="constrained", 
+                                     sharex=True, 
+                                     sharey=True)
+            if isinstance(axes, plt.Axes):
+                axes = np.array([axes])
+            else:
+                axes = axes.flatten()   
+        
+        for T in range(len(time_steps)) :
+            profil_coord = self._x if axis == 'X' else self._y
+    
+            # Plot models
+            for i in range(len(models)):
+                if any(res[0] == models[i] for res in result_dict[time_steps[T]]):
+                    for m, d in result_dict[time_steps[T]]:
+                        if models[i] == m:
+                            if axis == 'X':
+                                profil_idx = [idx[1] for t, lst in outputs_dict[output][2].items() for label, idx, front in lst if label == m]
+                            else:
+                                profil_idx = [idx[0] for t, lst in outputs_dict[output][2].items() for label, idx, front in lst if label == m]
+                            if colors is not None and len(colors) > i:
+                                color = colors[i]
+                            else:
+                                color = "black"
+                            if linestyles is not None and len(linestyles) > i:
+                                linestyle = linestyles[i]
+                            else:
+                                linestyle = None
+                            
+                            if "alpha" not in plot_kwargs:
+                                plot_kwargs["alpha"] = 0.8
+                            if "linewidth" not in plot_kwargs:
+                                plot_kwargs["linewidth"] = 1.5
+                            
+                            axes[T].plot(profil_coord, d.d, color=color, linestyle=linestyle, label=models[i], **plot_kwargs)
+            
+            # Plot analytic solution
+            if analytic_solution is not None:
+                if any(res[0] == time_steps[T] for res in as_dict[output]):
+                    for t, d in as_dict[output]:
+                        if t == time_steps[T]:
+                            if "color" not in as_kwargs:
+                                as_kwargs["color"] = "red"
+                            if "alpha" not in as_kwargs:
+                                as_kwargs["alpha"] = 0.9
+                            if "linewidth" not in as_kwargs:
+                                as_kwargs["linewidth"] = 1
+                            
+                            axes[T].plot(profil_coord, d.d, label=f"{str(analytic_solution["model"]).split('.')[-1][:-2]}", **as_kwargs)
+                            break
+                else:
+                    raise ValueError(" -> Time step not computed in analytical solution.")
+            
+            if profil_idx:
+                profil_positions = [float(profil_coord[i]) for i in profil_idx]
+            
+            # Formatting fig                
+            if axis == "X":
+                inv_axis = "Y"
+                axes[T].set_xlim(left=min(self._x), right=max(self._x))
+                
+            else:
+                inv_axis = "X"
+                axes[T].set_xlim(left=min(self._y), right=max(self._y))
+                
+            axes[T].grid(True, alpha=0.3)
+            
+            if len(time_steps) == 1:
+                axes[T].set_title(f"{inv_axis}={profil_positions[T]}m  |  t={time_steps[T]}s")
+            else:
+                axes[T].set_title(f"t={time_steps[T]}s", loc="left")
+                axes[T].set_title(f"{inv_axis}={profil_positions[T]}m", loc="right")
+                
+            axes[T].set_xlabel(notations.get_label(axis.lower()))
+            axes[T].set_ylabel(notations.get_label(output))
+            axes[T].legend(loc='upper right')
+
+        for i in range(len(time_steps), len(axes)):
+            fig.delaxes(axes[i])    
+        
+        if show_plot:
+            plt.show()
+        
+        return axes
+                   
 
 '''
     def show_height_profile_comparison(self,
