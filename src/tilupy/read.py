@@ -452,7 +452,15 @@ class TemporalResults0D(TemporalResults):
             data = self._d.T
         else:
             data = self._d
-        axe.plot(self._t, data, label=self._scalar_names)
+            
+        if "color" not in kwargs:
+            color = "black"
+            kwargs["color"] = color
+        
+        axe.plot(self._t, data, **kwargs) # Remove label=self._scalar_names
+
+        axe.grid(True, alpha=0.3)
+        axe.set_xlim(left=min(self._t), right=max(self._t))
         axe.set_xlabel(notations.get_label("t"))
         axe.set_ylabel(notations.get_label(self._notation))
 
@@ -617,7 +625,7 @@ class TemporalResults1D(TemporalResults):
         if plot_type == "simple":
             if linestyles is None or len(linestyles)!=(len(self._t)):
                 norm = plt.Normalize(vmin=0, vmax=len(self._t)-1)
-                cmap = plt.cm.get_cmap(cmap)
+                cmap = plt.get_cmap(cmap)
                 
             for i in range(self._d.shape[1]):
                 if linestyles is None or len(linestyles)!=(len(self._t)):
@@ -636,12 +644,16 @@ class TemporalResults1D(TemporalResults):
             ax.set_ylabel(notations.get_label(self._notation))
             
         if plot_type == "multiples":
+            cols_nb = 3
+            if len(self._t) < 3:
+                cols_nb = len(self._t)
+                
             row_nb = len(self._t) // 3
             if len(self._t) % 3 != 0:
                 row_nb += 1
             
             fig, axes = plt.subplots(nrows=row_nb, 
-                                     ncols=3, 
+                                     ncols=cols_nb, 
                                      figsize=figsize, 
                                      layout="constrained", 
                                      sharex=True, 
@@ -865,14 +877,18 @@ class TemporalResults2D(TemporalResults):
             kwargs["colorbar_kwargs"]["label"] = clabel
             
         if plot_multiples:
+            cols_nb = 3
+            if len(self._t) < 3:
+                cols_nb = len(self._t)
+                
             row_nb = len(self._t) // 3
             if len(self._t) % 3 != 0:
                 row_nb += 1
             
             fig, axes = plt.subplots(nrows=row_nb, 
-                                     ncols=3, 
-                                     figsize=figsize, 
-                                     layout="constrained", 
+                                     ncols=cols_nb, 
+                                     figsize=figsize,
+                                     layout="constrained",
                                      sharex=True, 
                                      sharey=True)
             axes = axes.flatten()
@@ -1233,7 +1249,11 @@ class StaticResults1D(StaticResults):
             data = self._d.T
         else:
             data = self._d
-            
+        
+        if "color" not in kwargs:
+            color = "black"
+            kwargs["color"] = color
+        
         ax.plot(self._coords, data, **kwargs) 
         
         ax.grid(True, alpha=0.3)
