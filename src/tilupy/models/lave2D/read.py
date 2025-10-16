@@ -155,6 +155,9 @@ class Results(tilupy.read.Results):
                 else:
                     value = float(value)
                 self._params[name] = value
+        
+        # Create self._tim
+        self._extract_output("X")
 
 
     def _extract_output(self, 
@@ -238,8 +241,9 @@ class Results(tilupy.read.Results):
                 else:
                     h[:, :, i_time + 1] = h_out
                     u[:, :, i_time + 1] = u_out
-            
-        self._tim = tim
+        
+        if self._tim is None: 
+            self._tim = tim
         
         available_outputs = {"h": h[:],
                              "u": u[:],

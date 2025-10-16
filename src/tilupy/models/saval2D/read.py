@@ -154,8 +154,11 @@ class Results(tilupy.read.Results):
         self._params["tau/rho"] = rheol[0]
         self._params["mu"] = rheol[1]
         self._params["xi"] = rheol[2]
-    
 
+        # Create self._tim
+        self._extract_output("X")
+
+        
     def get_rheological_parameters(self, path_to_log: str) -> list[str]:
         """Get rheological parameters of a saval2D simulation.
 
@@ -275,7 +278,8 @@ class Results(tilupy.read.Results):
             
             tim.append(t_list[T])
 
-        self._tim = tim
+        if self._tim is None:
+            self._tim = tim
     
         available_outputs = {"h": h_list,
                              "u": u_list,
