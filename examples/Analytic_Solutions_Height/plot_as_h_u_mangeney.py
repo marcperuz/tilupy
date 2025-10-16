@@ -143,13 +143,13 @@ case_1 = Mangeney_dry(h_0=20, x_0= 0, theta=30, delta=0)
 # %%
 # Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15} s`.
 case_1.compute_h(x, [0, 5, 10, 15])
-case_1.show_res(show_h=True, linestyles=["", ":", "--", "-"])
+ax = case_1.plot(show_h=True, linestyles=["", ":", "--", "-"])
 
 
 # %%
 # Compute and plot the fluid velocity at times :math:`t = {0, 5, 10, 15} s`.
 case_1.compute_u(x, [0, 5, 10, 15])
-case_1.show_res(show_u=True, linestyles=["", ":", "--", "-"])
+ax = case_1.plot(show_u=True, linestyles=["", ":", "--", "-"])
 
 # %%
 # 
@@ -163,7 +163,7 @@ case_2 = Mangeney_dry(h_0=20, x_0= 0, theta=30, delta=20)
 # %%
 # Compute and plot the fluid height at times :math:`t = {0, 5, 10, 15} s`.
 case_2.compute_h(x, [0, 5, 10, 15])
-case_2.show_res(show_h=True, linestyles=["", ":", "--", "-"])
+ax = case_2.plot(show_h=True, linestyles=["", ":", "--", "-"])
 
 
 # %%

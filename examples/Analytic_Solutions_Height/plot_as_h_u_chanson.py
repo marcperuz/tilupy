@@ -138,7 +138,7 @@ case = Chanson_dry(h_0=10, x_0 = 0, f=0.05)
 # %%
 # Compute and plot fluid height at times :math:`t = {0, 1, 20, 30, 50} s`.
 case.compute_h(x, [0, 1, 20, 30, 50])
-case.show_res(show_h=True, linestyles=["", ":", "-.", "--", "-"])
+ax = case.plot(show_h=True, linestyles=["", ":", "-.", "--", "-"])
 
 
 # %%

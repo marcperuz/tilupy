@@ -11,9 +11,6 @@ import numpy as np
 import tilupy.make_topo
 import tilupy.make_mass
 import tilupy.raster
-import pytopomap.plot
-
-import matplotlib.pyplot as plt
 
 
 '''def make_constant_slope(
@@ -190,18 +187,48 @@ def create_topo_constant_slope(folder_out: str,
     return folder_path, x, y, z, m
 
 
-def gray99_topo_mass(
-    dx=0.1, dy=0.1, save=False, folder_out=None, res_type="true_normal"
-):
+def gray99_topo_mass(dx: float = 0.1, 
+                     dy: float = 0.1, 
+                     res_type: str = "true_normal"
+                     ) -> list[np.ndarray]:
+    """Create Gray99 topographic and mass test.
+    
+    Create an initial spherical calotte above the topography, resulting as a mass with a 
+    height of 0.22 m and a radius of 0.32 m (more precisely it is the length in the downslope 
+    direction), following the indications in Gray et al 99 (p. 1859). 
+    The correspondig radius of the sphere, and the offset from the topography in the topography 
+    normal direction (norm_offset) are deduced from these parameters. 
+    
+    See also Gig 3 in Wieland, Gray and Hutter (1999)
+    
+    Parameters
+    ----------
+    dx : float, optional
+        Cell size of the x axis, by default 0.1
+    dy : float, optional
+        Cell size of the y axis, by default 0.1
+    res_type : str, optional
+        Type of thickness output: 
+            - 'true_normal': Real thickness in the direction normal to the topography. 
+            - 'vertical': Thickness in the vertical direction. 
+            - 'projected_normal': Thickness normal to the topography is computed from the vertical 
+              thickness projected on the axe normal to the topography. 
+        The default is 'true_normal'.
+
+    Returns
+    -------
+    [X, Y, Z, M] :
+        X : numpy.ndarray
+            Mesh of X coordinates in the cartesian frame (nx*ny).
+        Y : numpy.ndarray
+            Mesh of Y coordinates in the cartesian frame (nx*ny).
+        Z : numpy.ndarray
+            Mesh of Z coordinates in the cartesian frame (nx*ny).
+        M : numpy.ndarray
+            Array of mass height, in the direction normal to topography.
+    """
     # Initiate topography
     X, Y, Z = tilupy.make_topo.gray99(dx=dx, dy=dy)
-
-    # Initiate initial mass. It is a spherical calotte above the topography,
-    # in Gray et al 99 (p. 1859) the resulting mass has a height of 0.22 m and a radius
-    # of 0.32 m (more precisely it is the length in the downslope direction)
-    # The correspondig radius of the sphere, and the offset from the topography
-    # in the topography normal direction (norm_offset) are deduced from these
-    # parameters. See also Gig 3 in Wieland, Gray and Hutter (1999)
 
     x0 = 0.06 * np.cos(np.deg2rad(40))
     hmass = 0.22
@@ -209,14 +236,22 @@ def gray99_topo_mass(
     radius = (wmass**2 + hmass**2) / (2 * hmass)
     norm_offset = (wmass**2 - hmass**2) / (2 * hmass)
     # Z = -np.tile(X, [len(Y), 1])*np.tan(np.deg2rad(20))
-    M = tilupy.make_mass.calotte(
-        X, Y, Z, x0, 0, radius, norm_offset=norm_offset, res_type=res_type
-    )
+    
+    M = tilupy.make_mass.calotte(X, 
+                                 Y, 
+                                 Z, 
+                                 x0, 
+                                 0, 
+                                 radius, 
+                                 norm_offset=norm_offset, 
+                                 res_type=res_type)
 
     return X, Y, Z, M
 
 
+"""
 if __name__ == "__main__":
     x, y, z, m = gray99_topo_mass(dx=0.01, dy=0.01)
     axe = pytopomap.plot.plot_data_on_topo(x, y, z, m, topo_kwargs=dict(level_min=0.1))
     plt.show()
+"""

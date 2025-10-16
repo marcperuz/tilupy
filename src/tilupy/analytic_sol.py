@@ -7,6 +7,7 @@ Created on Fri Aug  4 12:09:41 2023
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import matplotlib
 
 from scipy.optimize import fsolve
 
@@ -55,7 +56,7 @@ class Depth_result(ABC):
                   x: float | np.ndarray, 
                   t: float | np.ndarray
                   ) -> None:
-        """Virtual function that compute the flow height 'h' at given space and time.
+        """Virtual function that compute the flow height :attr:`_h` at given space and time.
 
         Parameters
         ----------
@@ -72,7 +73,7 @@ class Depth_result(ABC):
                   x: float | np.ndarray,
                   t: float | np.ndarray
                   ) -> None:
-        """Virtual function that compute the flow velocity 'u' at given space and time.
+        """Virtual function that compute the flow velocity :attr:`_u` at given space and time.
 
         Parameters
         ----------
@@ -90,8 +91,8 @@ class Depth_result(ABC):
         
         Returns
         -------
-        self._h : np.ndarray
-            Flow height in self._x at self._t. If None, no solution computed.
+        :attr:`_h` : numpy.ndarray
+            Flow height in :attr:`_x` at :attr:`_t`. If None, no solution computed.
         """
         return self._h
 
@@ -102,8 +103,8 @@ class Depth_result(ABC):
         
         Returns
         -------
-        self._u : np.ndarray
-            Flow velocity in self._x at self._t. If None, no solution computed.
+        :attr:`_u` : numpy.ndarray
+            Flow height in :attr:`_x` at :attr:`_t`. If None, no solution computed.
         """
         return self._u
 
@@ -114,7 +115,7 @@ class Depth_result(ABC):
         
         Returns
         -------
-        self._x : np.ndarray
+        :attr:`_x` : numpy.ndarray
             Spatial distribution of the computed solution. If None, no solution computed.
         """
         return self._x
@@ -126,29 +127,31 @@ class Depth_result(ABC):
         
         Returns
         -------
-        self._t : float or np.ndarray
+        :attr:`_t` : float or np.ndarray
             Time instant of the computed solution. If None, no solution computed.
         """
         return self._t
 
 
-    def show_res(self, 
-                 show_h: bool=False, 
-                 show_u: bool=False,
-                 show_surface: bool=False,
-                 linestyles: list[str]=None,
-                 x_unit:str = "m",
-                 h_unit:str = "m",
-                 u_unit:str = "m/s"
-                 ) -> None:
+    def plot(self, 
+             show_h: bool=False, 
+             show_u: bool=False,
+             show_surface: bool=False,
+             linestyles: list[str]=None,
+             x_unit:str = "m",
+             h_unit:str = "m",
+             u_unit:str = "m/s",
+             show_plot:bool = True,
+             figsize:tuple = None,
+             ) -> matplotlib.axes._axes.Axes:
         """Plot the simulation results.
 
         Parameters
         ----------
         show_h : bool, optional
-            If True, plot the flow height ('h') curve.
+            If True, plot the flow height (:attr:`_h`) curve.
         show_u : bool, optional
-            If True, plot the flow velocity ('u') curve.
+            If True, plot the flow velocity (:attr:`_u`) curve.
         show_surface : bool, optional
             If True, plot the slop of the surface.
         linestyles : list[str], optional
@@ -160,12 +163,31 @@ class Depth_result(ABC):
             Height unit.
         u_unit: str
             Velocity unit.
+        show_plot: bool, optional
+            If True, show the resulting plot. By default True.
+        figsize: tuple, optional
+            Size of the wanted plot, by default None.
+        
+        Return
+        ------
+        matplotlib.axes._axes.Axes
+            Resulting plot.
+        
+        Raises
+        ------
+        ValueError
+            If no solution computed (:attr:`_h` and :attr:`_u` are None).
         """
         z_surf = [0, 0]
-
+        
+        if self._h is None and self._u is None:
+            raise ValueError("No solution computed.")
+        
+        fig, ax = plt.subplots(figsize=figsize)
+        
         if show_h and self._h is not None:
             if self._h.ndim == 1:
-                plt.plot(self._x, self._h, color='black', linewidth=1)
+                ax.plot(self._x, self._h, color='black', linewidth=1)
             else:
                 if linestyles is None or len(linestyles)!=(len(self._t)):
                     norm = plt.Normalize(vmin=min(self._t), vmax=max(self._t))
@@ -179,25 +201,27 @@ class Depth_result(ABC):
                     else:
                         color = "black" if t_val != 0 else "red"
                         l_style = linestyles[h_idx] if t_val != 0 else (0, (1, 4))    
-                    plt.plot(self._x, h_val, color=color, linestyle=l_style, label=f"t={t_val}s")
+                    ax.plot(self._x, h_val, color=color, linestyle=l_style, label=f"t={t_val}s")
             
             if show_surface:
-                plt.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
+                ax.plot([self._x[0], self._x[-1]], z_surf, color='black', linewidth=2)
             
-            plt.grid(which='major')
-            plt.grid(which='minor', alpha=0.5)
-            plt.xlim(left=min(self._x), right=max(self._x))
+            ax.grid(which='major')
+            ax.grid(which='minor', alpha=0.5)
+            ax.set_xlim(left=min(self._x), right=max(self._x))
             
-            plt.title(f"Flow height for t={self._t}")
-            plt.xlabel(f"x [{x_unit}]")
-            plt.ylabel(f"h [{h_unit}]")
-            plt.legend(loc='upper right')
-            plt.show()
-
+            ax.set_title(f"Flow height for t={self._t}")
+            ax.set_xlabel(f"x [{x_unit}]")
+            ax.set_ylabel(f"h [{h_unit}]")
+            ax.legend(loc='upper right')
+            if show_plot:
+                plt.show()
+            
+            return ax
 
         if show_u and self._u is not None:
             if self._u.ndim == 1:
-                plt.plot(self._x, self._u, color='black', linewidth=1)
+                ax.plot(self._x, self._u, color='black', linewidth=1)
                 
             else:
                 if linestyles is None or len(linestyles)!=(len(self._t)):
@@ -214,20 +238,20 @@ class Depth_result(ABC):
                     else:
                         color = "black"
                         l_style = linestyles[u_idx]
-                    plt.plot(self._x, u_val, color=color, linestyle=l_style, label=f"t={t_val}s")
+                    ax.plot(self._x, u_val, color=color, linestyle=l_style, label=f"t={t_val}s")
 
-            plt.grid(which='major')
-            plt.grid(which='minor', alpha=0.5)
-            plt.xlim(left=min(self._x), right=max(self._x))
+            ax.grid(which='major')
+            ax.grid(which='minor', alpha=0.5)
+            ax.set_xlim(left=min(self._x), right=max(self._x))
             
-            plt.title(f"Flow velocity for t={self._t}")
-            plt.xlabel(f"x [{x_unit}]")
-            plt.ylabel(f"u [{u_unit}]")
-            plt.legend(loc='best')
-            plt.show()
-        
-        if self._h is None and self._u is None:
-            print("No solution computed")
+            ax.set_title(f"Flow velocity for t={self._t}")
+            ax.set_xlabel(f"x [{x_unit}]")
+            ax.set_ylabel(f"u [{u_unit}]")
+            ax.legend(loc='best')
+            if show_plot:
+                plt.show()
+            
+            return ax
 
 
 class Ritter_dry(Depth_result):
@@ -326,7 +350,7 @@ class Ritter_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -374,7 +398,7 @@ class Ritter_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -520,21 +544,21 @@ class Stoker_SWASHES_wet(Depth_result):
         Parameters
         ----------
         cm : float
-            Trial value for cm.
+            Trial value for :data:`cm`.
 
         Returns
         -------
         float
-            Residual of the equation. Zero when cm satisfies the system.
+            Residual of the equation. Zero when :data:`cm` satisfies the system.
         """
         return -8 * self._g * self._hr * cm**2 * (self._g * self._h0 - cm**2)**2 + (cm**2 - self._g * self._hr)**2 * (cm**2 + self._g * self._hr)
 
 
     def compute_cm(self) -> None:
-        r"""Solves the non-linear equation to compute the critical velocity 'cm'.
+        r"""Solves the non-linear equation to compute the critical velocity :data:`cm`.
 
         Uses numerical root-finding to find a valid value of cm that separates
-        the flow regimes. Sets self._cm if a valid solution is found.
+        the flow regimes. Sets :attr:`_cm` if a valid solution is found.
         """
         guesses = np.linspace(0.01, 1000, 1000)
         solutions = []
@@ -585,7 +609,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if self._cm is not None:
             if isinstance(x, float):
@@ -652,7 +676,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if self._cm is not None:
             if isinstance(x, float):
@@ -703,7 +727,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
     It computes the flow height (took verticaly) and velocity over space and time, based on the equation implemanted
     in SWASHES, based on Stoker's equation.
     
-    Sarkhosh, P., 2021, Stoker solution package, version 1.0.0, Zenodo. https://doi.org/10.5281/zenodo.5598374
+    Sarkhosh, P., 2021, Stoker solution package, version 1.0.0, Zenodo. https://doi.org/10.5281/zenodo.5598374
     
     Stoker, J.J., 1957, Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, vol. 4, Interscience Publishers, New York, USA.
 
@@ -858,7 +882,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -918,7 +942,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1097,7 +1121,7 @@ class Mangeney_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1147,7 +1171,7 @@ class Mangeney_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal `_u`, `_x`, `_t` attributes with the computed result.
+        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1373,7 +1397,7 @@ class Dressler_dry(Depth_result):
             
         Notes
         -----        
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1597,7 +1621,7 @@ class Chanson_dry(Depth_result):
 
         Notes
         -----        
-        Updates the internal '_h', '_x', '_t' attributes with the computed result.
+        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1646,8 +1670,7 @@ class Chanson_dry(Depth_result):
                   x: float | np.ndarray, 
                   T: float | np.ndarray
                   ) -> None:
-        r"""Not implemented
-        """
+        r"""No solution"""
         self._u = None
 
 
@@ -1689,8 +1712,8 @@ class Shape_result(ABC):
         
         Returns
         -------
-        self._h : np.ndarray
-            Flow height in self._x. If None, no solution computed.
+        :attr:`_h` : np.ndarray
+            Flow height in :attr:`_x`. If None, no solution computed.
         """
         return self._h
 
@@ -1701,7 +1724,7 @@ class Shape_result(ABC):
         
         Returns
         -------
-        self._x : np.ndarray
+        :attr:`_x` : np.ndarray
             Spatial distribution of the computed solution. If None, no solution computed.
         """
         return self._x
@@ -1712,32 +1735,10 @@ class Shape_result(ABC):
         
         Returns
         -------
-        self._y : np.ndarray
+        :attr:`_y` : np.ndarray
             Lateral spatial distribution of the computed solution. If None, no solution computed.
         """
         return self._y
-
-
-    def show_res(self, 
-                 x_unit:str = "m",
-                 h_unit:str = "m",
-                ):
-        """Plot the shape results.
-
-        Parameters
-        ----------
-        x_unit: str
-            Space unit.
-        h_unit: str
-            Height unit.
-        """
-        if self._x is not None and self._h is not None:
-            plt.plot(self._x, self._h, color='black', linewidth=1)
-            
-            plt.title("Front flow shape")
-            plt.xlabel(f"x [{x_unit}]")
-            plt.ylabel(f"h [{h_unit}]")
-            plt.show()
 
 
 class Coussot_shape(Shape_result):
@@ -1925,7 +1926,7 @@ class Coussot_shape(Shape_result):
         h_init : float, optional
             The initial flow depth, necessary if `\theta = 0`, by default None (replace by 1).
         h_final : float, optional
-            The final flow depth, necessary if `\theta = 0`. If None, estimated using compute_slump_test_hf, by default None.
+            The final flow depth, necessary if `\theta = 0`. If None, estimated using :meth:`compute_slump_test_hf`, by default None.
         H_size : int, optional
             Number of value wanted in the H array, by default 100.
         """

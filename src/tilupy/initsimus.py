@@ -12,7 +12,8 @@ def write(model_name: str,
           **kwargs
           ):
     """
-    Main function to prepare the input files for a specified model.
+    Dynamically imports the corresponding initiation module from
+    `tilupy.models.<code>.initsimus` and use the corresponding `write_simu()` function.
 
     Parameters
     ----------
@@ -49,5 +50,4 @@ def write(model_name: str,
                       rheology_type=rheology_type,
                       rheology_params=rheology_params,
                       folder_out=folder_out,
-                      **kwargs
-                      )
+                      **kwargs)

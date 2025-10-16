@@ -31,6 +31,7 @@ extensions = [
     'sphinx_gallery.gen_gallery',
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon', # for Google/NumPy style docstrings
+    'sphinx.ext.intersphinx',
 ]
 
 autoapi_dirs = ['../../src']
@@ -68,6 +69,11 @@ autoapi_options = {
     "show-inheritance",
     "show-module-summary",
     "special-members",  # optionnel, si tu veux aussi les __init__ etc.
+}
+
+# intersphinx configuration
+intersphinx_mapping = {
+    'pytopomap': ("https://pytopomap.readthedocs.io/en/latest/", None),
 }
 
 templates_path = ['_templates']
