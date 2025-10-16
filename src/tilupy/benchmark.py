@@ -1057,7 +1057,7 @@ class Benchmark:
                             if "linewidth" not in as_kwargs:
                                 as_kwargs["linewidth"] = 1
                             
-                            axes[T].plot(profil_coord, d.d, label=f"{str(analytic_solution["model"]).split('.')[-1][:-2]}", **as_kwargs)
+                            axes[T].plot(profil_coord, d.d, label=f"{str(analytic_solution['model']).split('.')[-1][:-2]}", **as_kwargs)
                             break
                 else:
                     raise ValueError(" -> Time step not computed in analytical solution.")
