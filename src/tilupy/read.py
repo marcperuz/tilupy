@@ -65,8 +65,8 @@ Combine all the assembly possibilities between :data:`TEMPORAL_DATA_2D` and :dat
 `[TEMPORAL_DATA_2D]_[NP/OTHER_OPERATORS]_[x/y]`
 
 For instance with h :
-    - h_max_x
-    - h_max_y
+    - h_max_x [Maximum value of height integrating all time steps and value from the X axis -> hmax(y)]
+    - h_max_y [Maximum value of height integrating all time steps and value from the Y axis -> hmax(x)]
     - h_mean_x
     - h_mean_y
     - h_std_x
@@ -111,7 +111,7 @@ Combine all the assembly possibilities between :data:`TEMPORAL_DATA_2D` and :dat
 `[TEMPORAL_DATA_2D]_[NP/OTHER_OPERATORS]`
 
 For instance with h :
-    - h_max : Maximum value of fluid height
+    - h_max : Maximum value of fluid height [At each point on the map, write the maximum fluid height passed over this point, taking into account all the time steps]
     - h_mean : Mean of fluid height
     - h_std : Standard deviation of fluid height
     - h_sum : Sum of fluid height
@@ -1078,8 +1078,333 @@ class TemporalResults2D(TemporalResults):
                                      coords,
                                      coords_name=coords_name,
                                      notation=notation)
+
+    def get_profile(self,
+                    extraction_mode: str = "axis",
+                    data_threshold: float = 1e-3,
+                    **extraction_params,
+                    ) -> tuple[tilupy.read.TemporalResults1D, float | np.ndarray]:
+        """Extract profile with different modes and options.
+
+        Parameters
+        ----------
+        extraction_mode : str, optional
+            Method to extract profiles:
             
-    
+                - "axis": Extracts a profile along an axis.
+                - "coordinates": Extracts a profile along specified coordinates.
+                - "shapefile": Extracts a profile along a shapefile (polylines).
+            
+            Be default "axis".
+            
+        data_threshold : float, optional
+            Minimum value to consider as part of the profile, by default 1e-3.
+            
+        extraction_params : dict, optional
+            Different parameters to be entered depending on the extraction method chosen:
+            
+                - If :data:`extraction_mode == "axis"`:
+                
+                    - :data:`axis`: str, optional
+                        Axis where to extract the profile ['X', 'Y'], by default 'Y'.
+                    - :data:`profile_position`: float, optional
+                        Position where to extract the profile. If None choose the median.
+                        By default None.
+                    Must be read: profile in `axis` = `profile_position m`.
+                
+                - If :data:`extraction_mode == "coordinates"`:
+                
+                    - :data:`xcoord`: numpy.ndarray, optional
+                        X coordinates of the profile, by default :attr:`_x`.
+                    - :data:`ycoord`: numpy.ndarray, optional
+                        Y coordinates of the profile, by default :data:`[0., 0., ...]`.
+                
+                - If :data:`extraction_mode == "shapefile"`:
+                
+                    - :data:`path`: str
+                        Path to the shapefile.
+                    - :data:`x_origin`: float, optional
+                        Value of the X coordinate of the origin (top-left corner) in the shapefile's coordinate system, by default 0.0 (EPSG:2154).
+                    - :data:`y_origin`: float, optional
+                        Value of the y coordinate of the origin (top-left corner) in the shapefile's coordinate system, by default :data:`_y[-1]` (EPSG:2154).
+                    - :data:`x_pixsize`: float, optional
+                        Size of a pixel along the X coordinate in the shapefile's coordinate system, by default :data:`_x[1] - _x[0]` (EPSG:2154).
+                    - :data:`y_pixsize`: float, optional
+                        Size of a pixel along the Y coordinate in the shapefile's coordinate system, by default :data:`_y[1] - _y[0]` (EPSG:2154).
+                    - :data:`step`: float, optional
+                        Spatial step between profile points, by default 10.0.
+                        
+            By default None
+            
+        Returns
+        -------
+        tilupy.read.TemporalResults1D
+            Extracted profiles.
+        float or numpy.ndarray
+            Specific output depending on :data:`extraction_mode`:
+            
+                - If :data:`extraction_mode == "axis"`: float
+                    Position of the profile.
+                - If :data:`extraction_mode == "coordinates"`: tuple[numpy.ndarray]
+                    X coordinates, Y coordinates and distance values.
+                - If :data:`extraction_mode == "shapefile"`: numpy.ndarray
+                    Distance values.
+                                
+        Raises
+        ------
+        ValueError
+            If :data:`extraction_mode == "axis"` and if invalid :data:`axis`.
+        ValueError
+            If :data:`extraction_mode == "axis"` and if invalid format for :data:`profile_position`.
+        ValueError
+            If :data:`extraction_mode == "axis"` and if no value position found in axis.
+        ValueError
+            If :data:`extraction_mode == "coordinates"` and if invalid format for :data:`xcoord` or :data:`ycoord`.
+        ValueError
+            If :data:`extraction_mode == "coordinates"` and if invalid dimension for :data:`xcoord` or :data:`ycoord`.
+        ValueError
+            If :data:`extraction_mode == "coordinates"` and if :data:`xcoord` and :data:`ycoord` doesn't have same size.
+        ValueError
+            If :data:`extraction_mode == "shapefile"` and if no :data`path` is given.
+        ValueError
+            If :data:`extraction_mode == "shapefile"` and if invalid format for :data:`x_origin`, :data:`y_origin`, :data:`x_pixsize`, :data:`y_pixsize` or :data:`step`.
+        TypeError
+            If :data:`extraction_mode == "shapefile"` and if invalid geometry for the shapefile.
+        ValueError
+            If :data:`extraction_mode == "shapefile"` and if no linestring found in the shapefile.
+        ValueError
+            If invalid :data:`extraction_mode`.
+        """
+        y_size, x_size, = len(self._y), len(self._x)
+        data_field = self._d.copy()
+        
+        # Apply mask on data
+        data_field[data_field <= data_threshold] = 0
+
+        extraction_params = {} if extraction_params is None else extraction_params
+
+        if extraction_mode == "axis":
+            # Create specific params if not given
+            if "axis" not in extraction_params:
+                extraction_params["axis"] = 'Y'
+            if "profile_position" not in extraction_params:
+                extraction_params["profile_position"] = None
+
+            # Check errors
+            if extraction_params["axis"] not in ['x', 'X', 'y', 'Y']:
+                raise ValueError("Invalid axis: 'X' or 'Y'.")
+            extraction_params["axis"] = extraction_params["axis"].upper()
+            
+            # Depending on "profile_position" type, choose median or position value
+            if extraction_params["profile_position"] is None:
+                if extraction_params["axis"] == 'X':
+                    extraction_params["profile_index"] = x_size//2
+                else:
+                    extraction_params["profile_index"] = y_size//2
+            
+            elif isinstance(extraction_params["profile_position"], float) or isinstance(extraction_params["profile_position"], int):
+                coord_val = extraction_params["profile_position"]
+                x_index, y_index = None, None
+                
+                if extraction_params["axis"] == 'X':
+                    if not isinstance(self._x, np.ndarray):
+                        self._x = np.array(self._x)
+                    
+                    x_index = np.argmin(np.abs(self._x - coord_val))
+                    closest_value = self._x[x_index]
+                    
+                    if x_index is None:
+                        raise ValueError(f"Find no values, must be: {self._x}")
+                    extraction_params["profile_index"] = x_index
+                else:
+                    if not isinstance(self._y, np.ndarray):
+                        self._y = np.array(self._y)
+                    
+                    y_index = np.argmin(np.abs(self._y - coord_val))
+                    closest_value = self._y[y_index]
+                    
+                    if y_index is None:
+                        raise ValueError(f"Find no values, must be: {self._y}")
+                    extraction_params["profile_index"] = y_index
+            
+            else:
+                raise ValueError("Invalid format for 'profile_position'. Must be None or float position.")
+
+            # Return profiles
+            if extraction_params["axis"] == 'X':
+                return (TemporalResults1D(name=self._name,
+                                          d=data_field[:, extraction_params["profile_index"], :],
+                                          t=self._t,
+                                          coords=self._y,
+                                          coords_name='y',
+                                          notation=self._notation),
+                        closest_value)
+            else:
+                return (TemporalResults1D(name=self._name,
+                                          d=data_field[extraction_params["profile_index"], :, :],
+                                          t=self._t,
+                                          coords=self._x,
+                                          coords_name='x',
+                                          notation=self._notation),
+                        closest_value)
+            
+        elif extraction_mode == "coordinates":
+            if "xcoord" not in extraction_params:
+                extraction_params["xcoord"] = self._x[:]
+            if "ycoord" not in extraction_params:
+                extraction_params["ycoord"] = [0] * len(self._x)
+            
+            # Check errors
+            if not isinstance(extraction_params["xcoord"], np.ndarray):
+                if isinstance(extraction_params["xcoord"], list):
+                    extraction_params["xcoord"] = np.array(extraction_params["xcoord"])
+                else:
+                    raise ValueError("Invalid format for 'xcoord'. Must be a numpy array.")
+            if not isinstance(extraction_params["ycoord"], np.ndarray):
+                if isinstance(extraction_params["ycoord"], list):
+                    extraction_params["ycoord"] = np.array(extraction_params["ycoord"])
+                else:
+                    raise ValueError("Invalid format for 'ycoord'. Must be a numpy array.")
+            
+            if extraction_params["xcoord"].ndim != 1:
+                raise ValueError("Invild dimension. 'xcoord' must be a 1d array.")
+            if extraction_params["ycoord"].ndim != 1:
+                raise ValueError("Invild dimension. 'ycoord' must be a 1d array.")
+            
+            if len(extraction_params["xcoord"]) != len(extraction_params["ycoord"]):
+                raise ValueError(f"'xcoord' and 'ycoord' must have same size: ({len(extraction_params["xcoord"])}, {len(extraction_params["ycoord"])})")
+            
+            # Extract index from nearest value of xcoord and ycoord
+            x_distances = np.abs(self._x[None, :] - extraction_params["xcoord"][:, None])
+            y_distances = np.abs(self._y[None, :] - extraction_params["ycoord"][:, None])
+            
+            x_indexes = np.argmin(x_distances, axis=1)
+            y_indexes = np.argmin(y_distances, axis=1)
+
+            # Compute distance
+            x_values = self._x[x_indexes]
+            y_values = self._y[y_indexes]
+            
+            dx = np.diff(x_values)
+            dy = np.diff(y_values)
+            
+            distance = np.sqrt(dx**2 + dy**2)
+            distance = np.concatenate(([0], np.cumsum(distance)))
+
+            # Return profile
+            return (TemporalResults1D(name=self._name,
+                                      d=self._d[y_indexes, x_indexes, :],
+                                      t=self._t,
+                                      coords=distance,
+                                      coords_name='dist'),
+                    (x_values, 
+                     y_values, 
+                     distance))
+
+        elif extraction_mode == "shapefile" :
+            if "path" not in extraction_params:
+                extraction_params["path"] = None
+            if "x_origin" not in extraction_params:
+                extraction_params["x_origin"] = 0
+            if "y_origin" not in extraction_params:
+                extraction_params["y_origin"] = self._y[-1]
+            if "x_pixsize" not in extraction_params:
+                extraction_params["x_pixsize"] = self._x[1] - self._x[0]
+            if "y_pixsize" not in extraction_params:
+                extraction_params["y_pixsize"] = self._y[1] - self._y[0]
+            if "step" not in extraction_params:
+                extraction_params["step"] = 10
+            
+            # Check errors
+            if extraction_params["path"] is None:
+                raise ValueError("No path to the shape file given.")
+
+            if not isinstance(extraction_params["x_origin"], float) and not isinstance(extraction_params["x_origin"], int):
+                raise ValueError("'x_origin' must be float.")
+            if not isinstance(extraction_params["y_origin"], float) and not isinstance(extraction_params["y_origin"], int):
+                raise ValueError("'y_origin' must be float.")
+            if not isinstance(extraction_params["x_pixsize"], float) and not isinstance(extraction_params["x_pixsize"], int):
+                raise ValueError("'x_pixsize' must be float.")
+            if not isinstance(extraction_params["y_pixsize"], float) and not isinstance(extraction_params["y_pixsize"], int):
+                raise ValueError("'y_pixsize' must be float.")
+            
+            if not isinstance(extraction_params["step"], float) and not isinstance(extraction_params["step"], int):
+                raise ValueError("'step' must be float.")
+            
+            # Import specific module and define extraction function
+            from shapely.geometry import LineString, MultiLineString
+            from shapely.ops import linemerge
+            import geopandas as gpd
+            from affine import Affine
+            
+            def extract_lines_from_shp_file(shapefile_path):
+                """Extract LineString objects from a shapefile.
+                """
+                gdf = gpd.read_file(shapefile_path)
+                lines = []
+                for geom in gdf.geometry:
+                    if isinstance(geom, LineString):
+                        lines.append(geom)
+                    elif isinstance(geom, MultiLineString):
+                        lines.extend(list(geom))
+                    else:
+                        raise TypeError(f"Invalid geometry: {type(geom)}")
+                if not lines:
+                    raise ValueError("No Linestring found.")
+                return lines
+            
+            lines = extract_lines_from_shp_file(extraction_params["path"])
+            
+            # If multiple lines, merge them together
+            merged = linemerge(lines)
+            if isinstance(merged, LineString):
+                profile_line = merged
+            else:
+                profile_line = LineString([pt for line in merged for pt in line.coords])
+            
+            # Construct the affine transformation
+            transform = (Affine.translation(extraction_params["x_origin"], 
+                                            extraction_params["y_origin"]) 
+                         * Affine.scale(extraction_params["x_pixsize"], 
+                                        -extraction_params["y_pixsize"]))
+            inv = ~transform  # invert : (x, y) -> (row, col)
+
+            distances = np.arange(0, 
+                                  profile_line.length, 
+                                  extraction_params["step"])
+            points = [profile_line.interpolate(d) for d in distances]
+
+            # Conversion coordinates -> indexes
+            rowcols = [inv * (pt.x, pt.y) for pt in points]
+            rowcols = [(int(round(r)), int(round(c))) for c, r in rowcols]
+
+            # Extract values
+            all_values = []
+            for t in range(len(self._t)):
+                values = []
+                valid_distances = []
+                for d, (r, c) in zip(distances, rowcols):
+                    if 0 <= r < self._d.shape[0] and 0 <= c < self._d.shape[1]:
+                        values.append(self._d[r, c, t])
+                        valid_distances.append(d)
+                all_values.append(values)
+            
+            all_values = np.array(all_values)
+            valid_distances = np.array(valid_distances)
+
+            # Return profile
+            return (TemporalResults1D(name=self._name,
+                                      d=all_values.T,
+                                      t=self._t,
+                                      coords=valid_distances,
+                                      coords_name="dist",
+                                      notation=self._notation),
+                    valid_distances)
+        
+        else :
+            raise ValueError("Invalid 'extraction_mode': 'axis', 'coordinates' or 'shapefile'.")
+
+
     @property
     def x(self) -> np.ndarray:
         """Get X coordinates.
@@ -1339,6 +1664,7 @@ class StaticResults2D(StaticResults):
         # topography
         self._z = z
 
+
     def plot(self,
              figsize: tuple[float] = None,
              x: np.ndarray = None,
@@ -1539,6 +1865,324 @@ class StaticResults2D(StaticResults):
                                    notation=notation,)
 
 
+    def get_profile(self,
+                    extraction_mode: str = "axis",
+                    data_threshold: float = 1e-3,
+                    **extraction_params,
+                    ) -> tilupy.read.StaticResults1D:
+        """Extract profile with different modes and options.
+
+        Parameters
+        ----------
+        extraction_mode : str, optional
+            Method to extract profiles:
+            
+                - "axis": Extracts a profile along an axis.
+                - "coordinates": Extracts a profile along specified coordinates.
+                - "shapefile": Extracts a profile along a shapefile (polylines).
+            
+            Be default "axis".
+        
+        data_threshold : float, optional
+            Minimum value to consider as part of the profile, by default 1e-3.
+            
+        extraction_params : dict, optional
+            Different parameters to be entered depending on the extraction method chosen:
+            
+                - If :data:`extraction_mode == "axis"`:
+                
+                    - :data:`axis`: str, optional
+                        Axis where to extract the profile ['X', 'Y'], by default 'Y'.
+                    - :data:`profile_position`: float, optional
+                        Position where to extract the profile. If None choose the median.
+                        By default None.
+                    Must be read: profile in `axis` = `profile_position m`.
+                
+                - If :data:`extraction_mode == "coordinates"`:
+                
+                    - :data:`xcoord`: numpy.ndarray, optional
+                        X coordinates of the profile, by default :attr:`_x`.
+                    - :data:`ycoord`: numpy.ndarray, optional
+                        Y coordinates of the profile, by default :data:`[0., 0., ...]`.
+                
+                - If :data:`extraction_mode == "shapefile"`:
+                
+                    - :data:`path`: str
+                        Path to the shapefile.
+                    - :data:`x_origin`: float, optional
+                        Value of the X coordinate of the origin (top-left corner) in the shapefile's coordinate system, by default 0.0 (EPSG:2154).
+                    - :data:`y_origin`: float, optional
+                        Value of the y coordinate of the origin (top-left corner) in the shapefile's coordinate system, by default :data:`_y[-1]` (EPSG:2154).
+                    - :data:`x_pixsize`: float, optional
+                        Size of a pixel along the X coordinate in the shapefile's coordinate system, by default :data:`_x[1] - _x[0]` (EPSG:2154).
+                    - :data:`y_pixsize`: float, optional
+                        Size of a pixel along the Y coordinate in the shapefile's coordinate system, by default :data:`_y[1] - _y[0]` (EPSG:2154).
+                    - :data:`step`: float, optional
+                        Spatial step between profile points, by default 10.0.
+                        
+            By default None
+
+        Returns
+        -------
+        tilupy.read.TemporalResults1D
+            Extracted profiles.
+        float or numpy.ndarray
+            Specific output depending on :data:`extraction_mode`:
+            
+                - If :data:`extraction_mode == "axis"`: float
+                    Position of the profile.
+                - If :data:`extraction_mode == "coordinates"`: tuple[numpy.ndarray]
+                    X coordinates, Y coordinates and distance values.
+                - If :data:`extraction_mode == "shapefile"`: numpy.ndarray
+                    Distance values.
+                                
+        Raises
+        ------
+        ValueError
+            If :data:`extraction_mode == "axis"` and if invalid :data:`axis`.
+        ValueError
+            If :data:`extraction_mode == "axis"` and if invalid format for :data:`profile_position`.
+        ValueError
+            If :data:`extraction_mode == "axis"` and if no value position found in axis.
+        ValueError
+            If :data:`extraction_mode == "coordinates"` and if invalid format for :data:`xcoord` or :data:`ycoord`.
+        ValueError
+            If :data:`extraction_mode == "coordinates"` and if invalid dimension for :data:`xcoord` or :data:`ycoord`.
+        ValueError
+            If :data:`extraction_mode == "coordinates"` and if :data:`xcoord` and :data:`ycoord` doesn't have same size.
+        ValueError
+            If :data:`extraction_mode == "shapefile"` and if no :data`path` is given.
+        ValueError
+            If :data:`extraction_mode == "shapefile"` and if invalid format for :data:`x_origin`, :data:`y_origin`, :data:`x_pixsize`, :data:`y_pixsize` or :data:`step`.
+        TypeError
+            If :data:`extraction_mode == "shapefile"` and if invalid geometry for the shapefile.
+        ValueError
+            If :data:`extraction_mode == "shapefile"` and if no linestring found in the shapefile.
+        ValueError
+            If invalid :data:`extraction_mode`.
+        """
+        y_size, x_size = len(self._y), len(self._x)
+        data_field = self._d.copy()
+        
+        # Apply mask on data
+        data_field[data_field <= data_threshold] = 0
+
+        extraction_params = {} if extraction_params is None else extraction_params
+
+        if extraction_mode == "axis":
+            # Create specific params if not given
+            if "axis" not in extraction_params:
+                extraction_params["axis"] = 'Y'
+            if "profile_position" not in extraction_params:
+                extraction_params["profile_position"] = None
+
+            # Check errors
+            if extraction_params["axis"] not in ['x', 'X', 'y', 'Y']:
+                raise ValueError("Invalid axis: 'X' or 'Y'.")
+            extraction_params["axis"] = extraction_params["axis"].upper()
+            
+            # Depending on "profile_position" type, choose median or position value
+            if extraction_params["profile_position"] is None:
+                if extraction_params["axis"] == 'X':
+                    extraction_params["profile_index"] = x_size//2
+                else:
+                    extraction_params["profile_index"] = y_size//2
+            
+            elif isinstance(extraction_params["profile_position"], float) or isinstance(extraction_params["profile_position"], int):
+                coord_val = extraction_params["profile_position"]
+                x_index, y_index = None, None
+                
+                if extraction_params["axis"] == 'X':
+                    if not isinstance(self._x, np.ndarray):
+                        self._x = np.array(self._x)
+                    
+                    x_index = np.argmin(np.abs(self._x - coord_val))
+                    closest_value = self._x[x_index]
+                    
+                    if x_index is None:
+                        raise ValueError(f"Find no values, must be: {self._x}")
+                    extraction_params["profile_index"] = x_index
+                else:
+                    if not isinstance(self._y, np.ndarray):
+                        self._y = np.array(self._y)
+                    
+                    y_index = np.argmin(np.abs(self._y - coord_val))
+                    closest_value = self._y[y_index]
+                    
+                    if y_index is None:
+                        raise ValueError(f"Find no values, must be: {self._y}")
+                    extraction_params["profile_index"] = y_index
+            
+            else:
+                raise ValueError("Invalid format for 'profile_position'. Must be None or float position.")
+
+            # Return profile
+            if extraction_params["axis"] == 'X':
+                return (StaticResults1D(name=self._name,
+                                        d=data_field[:, extraction_params["profile_index"]],
+                                        coords=self._y,
+                                        coords_name='y',
+                                        notation=self._notation), 
+                        closest_value)
+            else:
+                return (StaticResults1D(name=self._name,
+                                        d=data_field[extraction_params["profile_index"], :],
+                                        coords=self._x,
+                                        coords_name='x',
+                                        notation=self._notation), 
+                        closest_value)
+
+        elif extraction_mode == "coordinates":
+            if "xcoord" not in extraction_params:
+                extraction_params["xcoord"] = self._x[:]
+            if "ycoord" not in extraction_params:
+                extraction_params["ycoord"] = [0] * len(self._x)
+            
+            # Check errors
+            if not isinstance(extraction_params["xcoord"], np.ndarray):
+                if isinstance(extraction_params["xcoord"], list):
+                    extraction_params["xcoord"] = np.array(extraction_params["xcoord"])
+                else:
+                    raise ValueError("Invalid format for 'xcoord'. Must be a numpy array.")
+            if not isinstance(extraction_params["ycoord"], np.ndarray):
+                if isinstance(extraction_params["ycoord"], list):
+                    extraction_params["ycoord"] = np.array(extraction_params["ycoord"])
+                else:
+                    raise ValueError("Invalid format for 'ycoord'. Must be a numpy array.")
+            
+            if extraction_params["xcoord"].ndim != 1:
+                raise ValueError("Invild dimension. 'xcoord' must be a 1d array.")
+            if extraction_params["ycoord"].ndim != 1:
+                raise ValueError("Invild dimension. 'ycoord' must be a 1d array.")
+            
+            if len(extraction_params["xcoord"]) != len(extraction_params["ycoord"]):
+                raise ValueError(f"'xcoord' and 'ycoord' must have same size: ({len(extraction_params["xcoord"])}, {len(extraction_params["ycoord"])})")
+            
+            # Extract index from nearest value of xcoord and ycoord
+            x_distances = np.abs(self._x[None, :] - extraction_params["xcoord"][:, None])
+            y_distances = np.abs(self._y[None, :] - extraction_params["ycoord"][:, None])
+            
+            x_indexes = np.argmin(x_distances, axis=1)
+            y_indexes = np.argmin(y_distances, axis=1)
+
+            # Compute distance
+            x_values = self._x[x_indexes]
+            y_values = self._y[y_indexes]
+            
+            dx = np.diff(x_values)
+            dy = np.diff(y_values)
+            
+            distance = np.sqrt(dx**2 + dy**2)
+            distance = np.concatenate(([0], np.cumsum(distance)))
+
+            # Return profile
+            return (StaticResults1D(name=self._name,
+                                    d=self._d[y_indexes, x_indexes],
+                                    coords=distance,
+                                    coords_name='dist'),
+                    (x_values, 
+                     y_values, 
+                     distance))
+            
+        elif extraction_mode == "shapefile" :
+            if "path" not in extraction_params:
+                extraction_params["path"] = None
+            if "x_origin" not in extraction_params:
+                extraction_params["x_origin"] = 0
+            if "y_origin" not in extraction_params:
+                extraction_params["y_origin"] = self._y[-1]
+            if "x_pixsize" not in extraction_params:
+                extraction_params["x_pixsize"] = self._x[1] - self._x[0]
+            if "y_pixsize" not in extraction_params:
+                extraction_params["y_pixsize"] = self._y[1] - self._y[0]
+            if "step" not in extraction_params:
+                extraction_params["step"] = 10
+            
+            # Check errors
+            if extraction_params["path"] is None:
+                raise ValueError("No path to the shape file given.")
+
+            if not isinstance(extraction_params["x_origin"], float) and not isinstance(extraction_params["x_origin"], int):
+                raise ValueError("'x_origin' must be float.")
+            if not isinstance(extraction_params["y_origin"], float) and not isinstance(extraction_params["y_origin"], int):
+                raise ValueError("'y_origin' must be float.")
+            if not isinstance(extraction_params["x_pixsize"], float) and not isinstance(extraction_params["x_pixsize"], int):
+                raise ValueError("'x_pixsize' must be float.")
+            if not isinstance(extraction_params["y_pixsize"], float) and not isinstance(extraction_params["y_pixsize"], int):
+                raise ValueError("'y_pixsize' must be float.")
+            
+            if not isinstance(extraction_params["step"], float) and not isinstance(extraction_params["step"], int):
+                raise ValueError("'step' must be float.")
+            
+            # Import specific module and define extraction function
+            from shapely.geometry import LineString, MultiLineString
+            from shapely.ops import linemerge
+            import geopandas as gpd
+            from affine import Affine
+            
+            def extract_lines_from_shp_file(shapefile_path):
+                """Extract LineString objects from a shapefile.
+                """
+                gdf = gpd.read_file(shapefile_path)
+                lines = []
+                for geom in gdf.geometry:
+                    if isinstance(geom, LineString):
+                        lines.append(geom)
+                    elif isinstance(geom, MultiLineString):
+                        lines.extend(list(geom))
+                    else:
+                        raise TypeError(f"Invalid geometry: {type(geom)}")
+                if not lines:
+                    raise ValueError("No Linestring found.")
+                return lines
+            
+            lines = extract_lines_from_shp_file(extraction_params["path"])
+            
+            # If multiple lines, merge them together
+            merged = linemerge(lines)
+            if isinstance(merged, LineString):
+                profile_line = merged
+            else:
+                profile_line = LineString([pt for line in merged for pt in line.coords])
+            
+            # Construct the affine transformation
+            transform = (Affine.translation(extraction_params["x_origin"], 
+                                            extraction_params["y_origin"]) 
+                         * Affine.scale(extraction_params["x_pixsize"], 
+                                        -extraction_params["y_pixsize"]))
+            inv = ~transform  # invert : (x, y) -> (row, col)
+
+            distances = np.arange(0, 
+                                  profile_line.length, 
+                                  extraction_params["step"])
+            points = [profile_line.interpolate(d) for d in distances]
+
+            # Conversion coordinates -> indexes
+            rowcols = [inv * (pt.x, pt.y) for pt in points]
+            rowcols = [(int(round(r)), int(round(c))) for c, r in rowcols]
+
+            # Extract values
+            values = []
+            valid_distances = []
+            for d, (r, c) in zip(distances, rowcols):
+                if 0 <= r < self._d.shape[0] and 0 <= c < self._d.shape[1]:
+                    values.append(self._d[r, c])
+                    valid_distances.append(d)
+            
+            valid_distances = np.array(valid_distances)
+            
+            # Return profile
+            return (StaticResults1D(name=self._name,
+                                    d=values,
+                                    coords=valid_distances,
+                                    coords_name="dist",
+                                    notation=self._notation),
+                    valid_distances)
+        
+        else :
+            raise ValueError("Invalid 'extraction_mode': 'axis', 'coordinates' or 'shapefile'.")
+            
+            
     @property
     def x(self) -> np.ndarray:
         """Get X coordinates.
@@ -1832,7 +2476,7 @@ class Results:
         self._costh = None
     
 
-    def plot(self,
+    '''def plot(self,
              output_name: str,
              from_file: bool=True,
              h_thresh: float=None,
@@ -1955,7 +2599,222 @@ class Results:
 
         return axe
 
+    '''
 
+
+    def plot(self,
+             output: str,
+             from_file: bool =True, #get_output
+             h_thresh: float=None, #get_output
+             time_steps: float | list[float] = None,
+             save: bool = True,
+             folder_out: str = None,
+             dpi: int = 150,
+             fmt: str="png",
+             file_suffix: str = None,
+             file_prefix: str = None,
+             display_plot: bool = True,
+             **plot_kwargs
+             ) -> matplotlib.axes._axes.Axes:
+        
+        if not display_plot:
+            backend = plt.get_backend()
+            plt.close("all")
+            plt.switch_backend("Agg")
+        
+        if output in ["z", "zinit", "z_init"]:
+            topo_kwargs = dict()
+            if "topo_kwargs" in plot_kwargs:
+                topo_kwargs = plot_kwargs["topo_kwargs"]
+            axe = plt_fn.plot_topo(self._zinit, self._x, self._y, **topo_kwargs)
+            return axe
+
+        data = self.get_output(output, from_file=from_file, h_thresh=h_thresh)
+
+        if (isinstance(time_steps, float) or isinstance(time_steps, int)) and isinstance(data, tilupy.read.TemporalResults):
+            add_time_on_plot = True
+        else:
+            add_time_on_plot = False
+        
+        if isinstance(time_steps, float) or isinstance(time_steps, int):
+            t_index = np.argmin(np.abs(self._tim - time_steps))
+            closest_value = self._tim[t_index]
+            
+            if isinstance(data, tilupy.read.TemporalResults2D):
+                data = StaticResults2D(name=data.name,
+                                       d=data.d[:, :, t_index],
+                                       x=data.x,
+                                       y=data.y,
+                                       z=data.z,
+                                       notation=data.notation)
+            elif isinstance(data, tilupy.read.TemporalResults1D):
+                data = StaticResults1D(name=data.name,
+                                       d=data.d[:, t_index],
+                                       coords=data.coords,
+                                       coords_name=data.coords_name,
+                                       notation=data.notation)
+            elif isinstance(data, tilupy.read.TemporalResults0D):
+                raise ValueError("Cannot plot single scalar value.")
+        
+        if isinstance(time_steps, list) or isinstance(time_steps, np.ndarray):
+            t_distances = np.abs(self._tim[None, :] - time_steps[:, None])
+            t_indexes = np.argmin(t_distances, axis=1)
+        
+            if isinstance(data, tilupy.read.TemporalResults2D):
+                data = TemporalResults2D(name=data.name,
+                                         d=data.d[:, :, t_indexes],
+                                         t=data.t[t_indexes],
+                                         x=data.x,
+                                         y=data.y,
+                                         z=data.z,
+                                         notation=data.notation)
+            elif isinstance(data, tilupy.read.TemporalResults1D):
+                data = TemporalResults1D(name=data.name,
+                                         d=data.d[:, t_indexes],
+                                         t=data.t[t_indexes],
+                                         coords=data.coords,
+                                         coords_name=data.coords_name,
+                                         notation=data.notation)
+            elif isinstance(data, tilupy.read.TemporalResults0D):
+                data = TemporalResults0D(name=data.name,
+                                         d=data.d[t_indexes],
+                                         t=data.t[t_indexes],
+                                         scalar_names=data.scalar_names,
+                                         notation=data.notation)
+
+        if save:
+            if folder_out is None:
+                assert (self._folder_output is not None), "folder_output attribute must be set"
+                folder_out = os.path.join(self._folder_output, "plots")
+            os.makedirs(folder_out, exist_ok=True)
+
+        
+        # TODO
+        # Edit Temporal/Static.plot() pour que la sauvegarde soit directement intégrer dans les méthodes plots
+        # Dans les plots, modifier les fonctions pour appeler des méthodes de pytopomap selon le plot voulu
+        # (shotgater, profil, surface, etc...) et créer une fonction globale qui appelle chaque sous méthode 
+        # pour créer les graphes et gérer la sauvegarde 
+        if folder_out is not None and isinstance(data, TemporalResults2D):
+            # If data is TemporalResults2D then saving is managed directly
+            # by the associated plot method
+            plot_kwargs["folder_out"] = folder_out
+            plot_kwargs["dpi"] = dpi
+            plot_kwargs["fmt"] = fmt
+            # kwargs["file_suffix"] = file_prefix
+            # kwargs["file_prefix"] = file_prefix
+
+        axe = data.plot(**plot_kwargs)
+        
+        if add_time_on_plot:
+            axe.set_title(f"t={closest_value}s", loc="left")
+
+        if folder_out is not None and not isinstance(data, TemporalResults2D):
+            file_name = output
+            if file_suffix is not None:
+                file_name = file_name + "_" + file_suffix
+            if file_prefix is not None:
+                file_name = file_prefix + "_" + file_name
+            file_out = os.path.join(folder_out, file_name + "." + fmt)
+            # axe.figure.tight_layout(pad=0.1)
+            axe.figure.savefig(file_out, dpi=dpi, bbox_inches="tight", pad_inches=0.05)
+        
+        if not display_plot:
+            plt.close("all")
+            plt.switch_backend(backend)
+
+        return axe
+
+
+    def plot_profile(self,
+                     output: str,
+                     from_file: bool=True,
+                     extraction_method: str = "axis",
+                     extraction_params: dict = None,
+                     time_steps: float | list[float] = None,
+                     save: bool = True,
+                     folder_out: str = None,
+                     display_plot: bool = True,
+                     **plot_kwargs
+                     ) -> matplotlib.axes._axes.Axes:
+        if not display_plot:
+            backend = plt.get_backend()
+            plt.close("all")
+            plt.switch_backend("Agg")
+        
+        data = self.get_output(output, from_file=from_file)
+        
+        if not isinstance(data, tilupy.read.TemporalResults2D) and not isinstance(data, tilupy.read.StaticResults2D):
+            raise ValueError("Can only extract profile from 2D data.")
+        
+        profile = data.get_profile(extraction_method, **extraction_params)
+        add_time_on_plot = False
+        
+        if isinstance(profile, tilupy.read.TemporalResults1D) and time_steps is not None:
+            if isinstance(time_steps, float) or isinstance(time_steps, int):
+                t_index = np.argmin(np.abs(self._tim - time_steps))
+                closest_value = self._tim[t_index]
+                add_time_on_plot = True
+                
+                profile = StaticResults1D(name=profile.name,
+                                          d=profile.d[:, t_index],
+                                          coords=profile.coords,
+                                          coords_name=profile.coords_name,
+                                          notation=profile.notation)
+            
+            if isinstance(time_steps, list) or isinstance(time_steps, np.ndarray):
+                t_distances = np.abs(self._tim[None, :] - time_steps[:, None])
+                t_indexes = np.argmin(t_distances, axis=1)
+
+                profile = TemporalResults1D(name=profile.name,
+                                            d=profile.d[:, t_indexes],
+                                            t=profile.t[t_indexes],
+                                            coords=profile.coords,
+                                            coords_name=profile.coords_name,
+                                            notation=profile.notation)
+            
+        axe = data.plot(**plot_kwargs)
+        
+        if add_time_on_plot:
+            axe.set_title(f"t={closest_value}s", loc="left")
+        
+        if save:
+            if folder_out is None:
+                assert (self._folder_output is not None), "folder_output attribute must be set"
+                folder_out = os.path.join(self._folder_output, "plots")
+            os.makedirs(folder_out, exist_ok=True)
+            
+        # TODO
+        # Same as plot() -> add save mode in plot functions in Temporal/StaticResults
+        '''
+        if folder_out is not None and isinstance(data, TemporalResults2D):
+            # If data is TemporalResults2D then saving is managed directly
+            # by the associated plot method
+            kwargs["folder_out"] = folder_out
+            kwargs["dpi"] = dpi
+            kwargs["fmt"] = fmt
+            # kwargs["file_suffix"] = file_prefix
+            # kwargs["file_prefix"] = file_prefix
+
+        
+
+        if folder_out is not None and not isinstance(data, TemporalResults2D):
+            file_name = output_name
+            if file_suffix is not None:
+                file_name = file_name + "_" + file_suffix
+            if file_prefix is not None:
+                file_name = file_prefix + "_" + file_name
+            file_out = os.path.join(folder_out, file_name + "." + fmt)
+            # axe.figure.tight_layout(pad=0.1)
+            axe.figure.savefig(file_out, dpi=dpi, bbox_inches="tight", pad_inches=0.05)
+        '''
+        
+        if not display_plot:
+            plt.close("all")
+            plt.switch_backend(backend)
+
+        return axe
+            
+        
     def save(self,
              output_name: str,
              folder_out: str=None,
@@ -2227,3 +3086,48 @@ def use_thickness_threshold(simu: tilupy.read.Results,
     thickness = simu.get_output("h")
     array[thickness.d < h_thresh] = 0
     return array
+
+
+def get_profile(simu: tilupy.read.Results, 
+                output: str,
+                extraction_method: str = "axis",
+                **extraction_params
+                ) -> tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D:
+    """Extract a profile from a 2D data.
+
+    Parameters
+    ----------
+    simu : tilupy.read.Results
+        Simulation result object.
+    output : str
+        Wanted data output.
+    extraction_mode : str, optional
+        Method to extract profiles:
+        
+            - "axis": Extracts a profile along an axis.
+            - "coordinates": Extracts a profile along specified coordinates.
+            - "shapefile": Extracts a profile along a shapefile (polylines).
+        
+        Be default "axis".
+    extraction_params : dict, optional
+        Different parameters to be entered depending on the extraction method chosen.
+        See :meth:`tilupy.read.TemporalResults2D.get_profile`.
+
+    Returns
+    -------
+    tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D
+        Extracted profile.
+
+    Raises
+    ------
+    ValueError
+        If :data:`output` doesn't generate a 2D data.
+    """
+    data = simu.get_output(output)
+        
+    if not isinstance(data, tilupy.read.TemporalResults2D) and not isinstance(data, tilupy.read.StaticResults2D):
+        raise ValueError("Can only extract profile from 2D data.")
+    
+    profile = data.get_profile(extraction_method, **extraction_params)
+    
+    return profile
