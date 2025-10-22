@@ -301,7 +301,7 @@ class TemporalResults(AbstractResults):
         # 1d array with times, matching last dimension of self.d
         self._t = t
 
-
+    
     def get_temporal_stat(self, stat: str) -> tilupy.read.StaticResults2D | tilupy.read.StaticResults1D:
         """Statistical analysis along temporal dimension.
 
@@ -343,6 +343,7 @@ class TemporalResults(AbstractResults):
                                    coords_name=self._coords_name,
                                    )
 
+
     @abstractmethod
     def get_spatial_stat(self, stat, axis):
         """Abstract method for statistical analysis along spatial dimension.
@@ -369,7 +370,13 @@ class TemporalResults(AbstractResults):
         """Abstract method to save the temporal results."""
         pass
 
+    
+    @abstractmethod
+    def extract_from_time_step(*arg, **kwargs):
+        """Abstract method to extract data from specific time steps of a TemporalResults."""
+        pass
 
+    
     @property
     def t(self) -> np.ndarray:
         """Get times.
@@ -489,6 +496,43 @@ class TemporalResults0D(TemporalResults):
         raise NotImplementedError("Spatial integration of :class:`tilupy.read.Spatialresults0D` is not implemented because non relevant")
 
 
+    def extract_from_time_step(self,
+                               time_steps: float | list[float], 
+                               ) -> tilupy.read.StaticResults0D | tilupy.read.TemporalResults0D:
+        """Extract data from specific time steps. 
+
+        Parameters
+        ----------
+        time_steps : float | list[float]
+            Value of time steps to extract data.
+
+        Returns
+        -------
+        tilupy.read.StaticResults0D | tilupy.read.TemporalResults0D
+            Extracted data, the type depends on the time step.
+        """
+        if isinstance(time_steps, float) or isinstance(time_steps, int):
+            t_index = np.argmin(np.abs(self._t - time_steps))
+            
+            return StaticResults0D(name=self._name,
+                                   d=self._d[t_index],
+                                   notation=self._notation)
+        
+        elif isinstance(time_steps, list):
+            time_steps = np.array(time_steps)
+        
+        if isinstance(time_steps, np.ndarray):
+            if isinstance(self._t, list):
+                self._t = np.array(self._t)
+            t_distances = np.abs(self._t[None, :] - time_steps[:, None])
+            t_indexes = np.argmin(t_distances, axis=1)
+            
+            return TemporalResults0D(name=self._name,
+                                     d=self._d[t_indexes],
+                                     t=self._t[t_indexes],
+                                     notation=self._notation)
+    
+    
     @property
     def scalar_names(self) -> list[str]:
         """Get list of names of the scalar fields.
@@ -723,6 +767,47 @@ class TemporalResults1D(TemporalResults):
                                  self._t, 
                                  notation=notation)
 
+    
+    def extract_from_time_step(self,
+                               time_steps: float | list[float], 
+                               ) -> tilupy.read.StaticResults1D | tilupy.read.TemporalResults1D:
+        """Extract data from specific time steps. 
+
+        Parameters
+        ----------
+        time_steps : float | list[float]
+            Value of time steps to extract data.
+
+        Returns
+        -------
+        tilupy.read.StaticResults1D | tilupy.read.TemporalResults1D
+            Extracted data, the type depends on the time step.
+        """
+        if isinstance(time_steps, float) or isinstance(time_steps, int):
+            t_index = np.argmin(np.abs(self._t - time_steps))
+            
+            return StaticResults1D(name=self._name,
+                                   d=self._d[:, t_index],
+                                   coords=self._coords,
+                                   coords_name=self._coords_name,
+                                   notation=self._notation)
+        
+        elif isinstance(time_steps, list):
+            time_steps = np.array(time_steps)
+        
+        if isinstance(time_steps, np.ndarray):
+            if isinstance(self._t, list):
+                self._t = np.array(self._t)
+            t_distances = np.abs(self._t[None, :] - time_steps[:, None])
+            t_indexes = np.argmin(t_distances, axis=1)
+            
+            return TemporalResults1D(name=self._name,
+                                     d=self._d[:, t_indexes],
+                                     t=self._t[t_indexes],
+                                     coords=self._coords,
+                                     coords_name=self._coords_name,
+                                     notation=self._notation)
+    
     
     @property
     def coords(self) -> np.ndarray:
@@ -1079,6 +1164,50 @@ class TemporalResults2D(TemporalResults):
                                      coords_name=coords_name,
                                      notation=notation)
 
+
+    def extract_from_time_step(self,
+                               time_steps: float | list[float], 
+                               ) -> tilupy.read.StaticResults2D | tilupy.read.TemporalResults2D:
+        """Extract data from specific time steps. 
+
+        Parameters
+        ----------
+        time_steps : float | list[float]
+            Value of time steps to extract data.
+
+        Returns
+        -------
+        tilupy.read.StaticResults2D | tilupy.read.TemporalResults2D
+            Extracted data, the type depends on the time step.
+        """
+        if isinstance(time_steps, float) or isinstance(time_steps, int):
+            t_index = np.argmin(np.abs(self._t - time_steps))
+            
+            return StaticResults2D(name=self._name,
+                                   d=self._d[:, :, t_index],
+                                   x=self._x,
+                                   y=self._y,
+                                   z=self._z,
+                                   notation=self._notation)
+        
+        elif isinstance(time_steps, list):
+            time_steps = np.array(time_steps)
+
+        if isinstance(time_steps, np.ndarray):
+            if isinstance(self._t, list):
+                self._t = np.array(self._t)
+            t_distances = np.abs(self._t[None, :] - time_steps[:, None])
+            t_indexes = np.argmin(t_distances, axis=1)
+            
+            return TemporalResults2D(name=self._name,
+                                     d=self._d[:, :, t_indexes],
+                                     t=self._t[t_indexes],
+                                     x=self._x,
+                                     y=self._y,
+                                     z=self._z,
+                                     notation=self._notation)
+    
+
     def get_profile(self,
                     extraction_mode: str = "axis",
                     data_threshold: float = 1e-3,
@@ -1189,7 +1318,7 @@ class TemporalResults2D(TemporalResults):
                 extraction_params["axis"] = 'Y'
             if "profile_position" not in extraction_params:
                 extraction_params["profile_position"] = None
-
+            
             # Check errors
             if extraction_params["axis"] not in ['x', 'X', 'y', 'Y']:
                 raise ValueError("Invalid axis: 'X' or 'Y'.")
@@ -1199,8 +1328,10 @@ class TemporalResults2D(TemporalResults):
             if extraction_params["profile_position"] is None:
                 if extraction_params["axis"] == 'X':
                     extraction_params["profile_index"] = x_size//2
+                    closest_value=self._x[extraction_params["profile_index"]]
                 else:
                     extraction_params["profile_index"] = y_size//2
+                    closest_value=self._y[extraction_params["profile_index"]]
             
             elif isinstance(extraction_params["profile_position"], float) or isinstance(extraction_params["profile_position"], int):
                 coord_val = extraction_params["profile_position"]
@@ -1226,7 +1357,7 @@ class TemporalResults2D(TemporalResults):
                     if y_index is None:
                         raise ValueError(f"Find no values, must be: {self._y}")
                     extraction_params["profile_index"] = y_index
-            
+                                
             else:
                 raise ValueError("Invalid format for 'profile_position'. Must be None or float position.")
 
@@ -2248,6 +2379,10 @@ class Results:
             X-coordinates of the simulation.
         _y : numpy.ndarray
             Y-coordinates of the simulation.
+        _dx : float
+            Cell size along X-coordinates.
+        _dy : float
+            Cell size along Y-coordinates.
     
     Quick access attributes:
     ------------------------
@@ -2283,6 +2418,8 @@ class Results:
         self._tim = None
         self._x = None
         self._y = None
+        self._dx = None
+        self._dy = None
 
 
     def compute_costh(self) -> np.ndarray:
@@ -2297,7 +2434,8 @@ class Results:
         costh = 1 / np.sqrt(1 + Fx**2 + Fy**2)
         return costh
 
-
+    # TODO
+    # Edit to have 3 TemporalResults0D
     def center_of_mass(self, h_thresh: float=None) -> tilupy.read.TemporalResults0D:
         """Compute center of mass coordinates depending on time.
 
@@ -2316,6 +2454,9 @@ class Results:
         # Make meshgrid
         X, Y = np.meshgrid(self._x, np.flip(self._y))
 
+        if self._h is None:
+            self.h
+        
         # Weights for coordinates average (volume in cell / total volume)
         h2 = self._h.copy()
         if h_thresh is not None:
@@ -2445,7 +2586,15 @@ class Results:
         # If processed output is read directly from file, call the child method
         # read_from_file.
         if from_file:
-            res = self._read_from_file(name, operator, axis=axis, **kwargs)
+            try:
+                res = self._read_from_file(name, operator, axis=axis, **kwargs)
+                if res is None:
+                    raise UserWarning("Method _read_from_file not implemented in sub-class.")
+                elif isinstance(res, str):
+                    raise UserWarning(res)
+            except UserWarning as w:
+                print(f"[WARNING] {w}")
+                res = None
             # res is None in case of function failure
 
         # If no results could be read from file, output must be
@@ -2607,13 +2756,13 @@ class Results:
              from_file: bool =True, #get_output
              h_thresh: float=None, #get_output
              time_steps: float | list[float] = None,
-             save: bool = True,
+             save: bool = False,
              folder_out: str = None,
              dpi: int = 150,
              fmt: str="png",
              file_suffix: str = None,
              file_prefix: str = None,
-             display_plot: bool = True,
+             display_plot: bool = False,
              **plot_kwargs
              ) -> matplotlib.axes._axes.Axes:
         
@@ -2632,55 +2781,13 @@ class Results:
         data = self.get_output(output, from_file=from_file, h_thresh=h_thresh)
 
         if (isinstance(time_steps, float) or isinstance(time_steps, int)) and isinstance(data, tilupy.read.TemporalResults):
-            add_time_on_plot = True
+            t_index = np.argmin(np.abs(self._tim - time_steps))
+            add_time_on_plot = self._tim[t_index]
         else:
             add_time_on_plot = False
         
-        if isinstance(time_steps, float) or isinstance(time_steps, int):
-            t_index = np.argmin(np.abs(self._tim - time_steps))
-            closest_value = self._tim[t_index]
-            
-            if isinstance(data, tilupy.read.TemporalResults2D):
-                data = StaticResults2D(name=data.name,
-                                       d=data.d[:, :, t_index],
-                                       x=data.x,
-                                       y=data.y,
-                                       z=data.z,
-                                       notation=data.notation)
-            elif isinstance(data, tilupy.read.TemporalResults1D):
-                data = StaticResults1D(name=data.name,
-                                       d=data.d[:, t_index],
-                                       coords=data.coords,
-                                       coords_name=data.coords_name,
-                                       notation=data.notation)
-            elif isinstance(data, tilupy.read.TemporalResults0D):
-                raise ValueError("Cannot plot single scalar value.")
-        
-        if isinstance(time_steps, list) or isinstance(time_steps, np.ndarray):
-            t_distances = np.abs(self._tim[None, :] - time_steps[:, None])
-            t_indexes = np.argmin(t_distances, axis=1)
-        
-            if isinstance(data, tilupy.read.TemporalResults2D):
-                data = TemporalResults2D(name=data.name,
-                                         d=data.d[:, :, t_indexes],
-                                         t=data.t[t_indexes],
-                                         x=data.x,
-                                         y=data.y,
-                                         z=data.z,
-                                         notation=data.notation)
-            elif isinstance(data, tilupy.read.TemporalResults1D):
-                data = TemporalResults1D(name=data.name,
-                                         d=data.d[:, t_indexes],
-                                         t=data.t[t_indexes],
-                                         coords=data.coords,
-                                         coords_name=data.coords_name,
-                                         notation=data.notation)
-            elif isinstance(data, tilupy.read.TemporalResults0D):
-                data = TemporalResults0D(name=data.name,
-                                         d=data.d[t_indexes],
-                                         t=data.t[t_indexes],
-                                         scalar_names=data.scalar_names,
-                                         notation=data.notation)
+        if time_steps is not None and isinstance(data, tilupy.read.TemporalResults):
+            data = data.extract_from_time_step(time_steps)
 
         if save:
             if folder_out is None:
@@ -2688,7 +2795,6 @@ class Results:
                 folder_out = os.path.join(self._folder_output, "plots")
             os.makedirs(folder_out, exist_ok=True)
 
-        
         # TODO
         # Edit Temporal/Static.plot() pour que la sauvegarde soit directement intégrer dans les méthodes plots
         # Dans les plots, modifier les fonctions pour appeler des méthodes de pytopomap selon le plot voulu
@@ -2706,7 +2812,7 @@ class Results:
         axe = data.plot(**plot_kwargs)
         
         if add_time_on_plot:
-            axe.set_title(f"t={closest_value}s", loc="left")
+            axe.set_title(f"t={add_time_on_plot}s", loc="left")
 
         if folder_out is not None and not isinstance(data, TemporalResults2D):
             file_name = output
@@ -2731,7 +2837,7 @@ class Results:
                      extraction_method: str = "axis",
                      extraction_params: dict = None,
                      time_steps: float | list[float] = None,
-                     save: bool = True,
+                     save: bool = False,
                      folder_out: str = None,
                      display_plot: bool = True,
                      **plot_kwargs
@@ -2746,35 +2852,21 @@ class Results:
         if not isinstance(data, tilupy.read.TemporalResults2D) and not isinstance(data, tilupy.read.StaticResults2D):
             raise ValueError("Can only extract profile from 2D data.")
         
-        profile = data.get_profile(extraction_method, **extraction_params)
-        add_time_on_plot = False
+        extraction_params = {} if extraction_params is None else extraction_params
         
-        if isinstance(profile, tilupy.read.TemporalResults1D) and time_steps is not None:
-            if isinstance(time_steps, float) or isinstance(time_steps, int):
-                t_index = np.argmin(np.abs(self._tim - time_steps))
-                closest_value = self._tim[t_index]
-                add_time_on_plot = True
-                
-                profile = StaticResults1D(name=profile.name,
-                                          d=profile.d[:, t_index],
-                                          coords=profile.coords,
-                                          coords_name=profile.coords_name,
-                                          notation=profile.notation)
-            
-            if isinstance(time_steps, list) or isinstance(time_steps, np.ndarray):
-                t_distances = np.abs(self._tim[None, :] - time_steps[:, None])
-                t_indexes = np.argmin(t_distances, axis=1)
+        profile, _ = data.get_profile(extraction_method, **extraction_params)
+        closest_value = False
+        
+        if (isinstance(time_steps, float) or isinstance(time_steps, int)) and isinstance(data, tilupy.read.TemporalResults):
+            t_index = np.argmin(np.abs(self._tim - time_steps))
+            closest_value = self._tim[t_index]
+        
+        if time_steps is not None and isinstance(data, tilupy.read.TemporalResults):
+            profile = profile.extract_from_time_step(time_steps)
 
-                profile = TemporalResults1D(name=profile.name,
-                                            d=profile.d[:, t_indexes],
-                                            t=profile.t[t_indexes],
-                                            coords=profile.coords,
-                                            coords_name=profile.coords_name,
-                                            notation=profile.notation)
-            
-        axe = data.plot(**plot_kwargs)
+        axe = profile.plot(**plot_kwargs)
         
-        if add_time_on_plot:
+        if closest_value:
             axe.set_title(f"t={closest_value}s", loc="left")
         
         if save:
@@ -2949,6 +3041,30 @@ class Results:
     
     
     @property
+    def dx(self):
+        """Get cell size along X.
+        
+        Returns
+        -------
+        numpy.ndarray
+            Attribute :attr:`_dx`
+        """
+        return self._dx
+    
+    
+    @property
+    def dy(self):
+        """Get cell size along Y.
+        
+        Returns
+        -------
+        numpy.ndarray
+            Attribute :attr:`_dy`
+        """
+        return self._dy
+    
+    
+    @property
     def tim(self):
         """Get recorded time steps.
         
@@ -3117,6 +3233,16 @@ def get_profile(simu: tilupy.read.Results,
     -------
     tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D
         Extracted profile.
+        
+    data
+        Specific output depending on :data:`extraction_mode`:
+            
+                - If :data:`extraction_mode == "axis"`: float
+                    Position of the profile.
+                - If :data:`extraction_mode == "coordinates"`: tuple[numpy.ndarray]
+                    X coordinates, Y coordinates and distance values.
+                - If :data:`extraction_mode == "shapefile"`: numpy.ndarray
+                    Distance values.
 
     Raises
     ------
@@ -3128,6 +3254,6 @@ def get_profile(simu: tilupy.read.Results,
     if not isinstance(data, tilupy.read.TemporalResults2D) and not isinstance(data, tilupy.read.StaticResults2D):
         raise ValueError("Can only extract profile from 2D data.")
     
-    profile = data.get_profile(extraction_method, **extraction_params)
+    profile, data = data.get_profile(extraction_method, **extraction_params)
     
-    return profile
+    return profile, data
