@@ -271,3 +271,8 @@ class Results(tilupy.read.Results):
                                                      t, 
                                                      notation=notation)
         return None
+
+
+    def _read_from_file(self, *args, **kwargs):
+        """Not useful"""
+        return "No lava2D file allows output extraction."
