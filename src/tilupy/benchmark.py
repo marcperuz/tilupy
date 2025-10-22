@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 
 import tilupy.read
 import tilupy.notations as notations
+from tilupy.analytic_sol import Coussot_shape
 
 
 class Benchmark:
@@ -83,15 +84,15 @@ class Benchmark:
         self._models_tim = {}
         self._x, self._y, self._z = None, None, None
         
-        self._allowed_extracting_outputs = ["h", "u", "ux", "uy"]
+        # self._allowed_extracting_outputs = ["h", "u", "ux", "uy"]
         
-        for var in self._allowed_extracting_outputs:
-            for suffix in ["num_1d_X", "num_1d_Y", "num_1d_params", "num_2d"]:
-                setattr(self, f"_{var}_{suffix}", {})
+        # for var in self._allowed_extracting_outputs:
+        #     for suffix in ["num_1d_X", "num_1d_Y", "num_1d_params", "num_2d"]:
+        #         setattr(self, f"_{var}_{suffix}", {})
         
-        as_vars = ["h", "u"]
-        for var in as_vars:
-            setattr(self, f"_{var}_as_1d", [])
+        # as_vars = ["h", "u"]
+        # for var in as_vars:
+        #     setattr(self, f"_{var}_as_1d", [])
     
     
     def load_numerical_result(self, 
@@ -189,18 +190,23 @@ class Benchmark:
             T = [T]
         
         if output not in ['h', 'u']:
-            raise ValueError(" -> Available ouput : 'h', 'u'.")
+            raise ValueError(" -> Available output: 'h', 'u'.")
         
         if output == 'h':
             solution.compute_h(self._x, T)
             
             if solution.h is not None:
-                for i in range(len(T)):
+                return tilupy.read.TemporalResults1D(name=output,
+                                                     d=solution.h[:].T,
+                                                     t=T,
+                                                     coords=self._x,
+                                                     coords_name='x')
+                # for i in range(len(T)):
                     # self._h_as_1d.append((T[i], solution.h[i]))
-                    self._h_as_1d.append((T[i], tilupy.read.StaticResults1D(name=output,
-                                                                            d=solution.h[i],
-                                                                            coords=self._x,
-                                                                            coords_name='x')))
+                    # self._h_as_1d.append((T[i], tilupy.read.StaticResults1D(name=output,
+                    #                                                         d=solution.h[i],
+                    #                                                         coords=self._x,
+                    #                                                         coords_name='x')))
             else:
                 raise ValueError("No analytic solution for fluid height.")
             
@@ -208,414 +214,92 @@ class Benchmark:
             solution.compute_u(self._x, T)
             
             if solution.u is not None:
-                for i in range(len(T)):
-                    # self._u_as_1d.append((T[i], solution.u[i]))
-                    self._u_as_1d.append((T[i], tilupy.read.StaticResults1D(name=output,
-                                                                            d=solution.u[i],
-                                                                            coords=self._x,
-                                                                            coords_name='x')))
+                return tilupy.read.TemporalResults1D(name=output,
+                                                     d=solution.u[:].T,
+                                                     t=T,
+                                                     coords=self._x,
+                                                     coords_name='x')
+                # for i in range(len(T)):
+                #     # self._u_as_1d.append((T[i], solution.u[i]))
+                #     self._u_as_1d.append((T[i], tilupy.read.StaticResults1D(name=output,
+                #                                                             d=solution.u[i],
+                #                                                             coords=self._x,
+                #                                                             coords_name='x')))
             else:
                 raise ValueError("No analytic solution for fluid velocity.")
 
 
-    def process_data_field(self, 
-                           model: str, 
-                           field_name: str, 
-                           storage_dict_X: dict, 
-                           storage_dict_Y: dict, 
-                           storage_params: dict, 
-                           t: float = None,
-                           direction_index: str | list[float] = None, 
-                           flow_threshold: float = 1e-3,
-                           show_message: bool = False,
-                           ) -> str | list[float]:
-        """Process data field to extract profiles.
-
-        Parameters
-        ----------
-        model : str
-            Model to extract the profile.
-        field_name : str
-            Data field. Can be: "h", "u", "ux", "uy".
-        storage_dict_X : dict
-            Dictionary to save the X axis profile. 
-        storage_dict_Y : dict
-            Dictionary to save the Y axis profile.
-        storage_params : dict
-            Dictionary to save the parameters of the profiles.
-        t : float, optional
-            Time index to extract. If None, uses the last available time step. By default None.
-        direction_index : list[float] or str, optional
-            Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
-                - list[float]: position (in meter) of the wanted profiles.
-                - str: "max" for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
-                - None: select the medians.
-            By default None.
-        flow_threshold : float, optional
-            Minimum velocity to consider as part of the flow, by default 1e-3.
-        show_message : bool, optional
-            If True, print the indexes and the front positions saved, by default False
-
-        Raises
-        ------
-        UserWarning
-            If the output variable is not accessible from the model.
-        ValueError
-            If invalid time step.
-        
-        Returns
-        -------
-        str | list[float]
-            direction_index
-        """
-        def find_max_index_along_axis(matrix: np.ndarray, axis: int, threshold: float):
-            """Find the best profile index based on the farthest flow front and the position of maximum fluid data.
-
-            Parameters
-            ----------
-            matrix : np.ndarray
-                Data field
-            axis : int
-                Axis to look at (0: X, 1: Y).
-            threshold : float
-                Minimum value considered.
-
-            Returns
-            -------
-            int
-                Index of the selected profile.
-            """
-            max_front_idx = 0
-            list_with_front = []
-
-            for i in range(matrix.shape[1 - axis]):
-                profile = matrix[:, i] if axis == 0 else matrix[i, :]
-                idx_max = np.argmax(profile)
-                sub_profile = profile[idx_max:]
-                idx = np.where(sub_profile < threshold)[0]
-
-                if len(idx) == 0:
-                    temp_front = 0
-                else:
-                    temp_front = idx[0] + idx_max
-
-                if temp_front > max_front_idx:
-                    max_front_idx = temp_front
-                    list_with_front = [i]
-                elif temp_front == max_front_idx:
-                    list_with_front.append(i)
-
-            max_front_value = 0
-            list_with_value = []
-            for idx in list_with_front:
-                val = matrix[max_front_idx - 1, idx] if axis == 0 else matrix[idx, max_front_idx - 1]
-                if val > max_front_value:
-                    max_front_value = val
-                    list_with_value = [idx]
-                elif val == max_front_value:
-                    list_with_value.append(idx)
-
-            if len(list_with_value) > 1:
-                max_index = np.unravel_index(
-                    np.argmax(matrix[:, list_with_value]) if axis == 0 else np.argmax(matrix[list_with_value, :]),
-                    matrix.shape
-                )
-                return list_with_value[max_index[1 if axis == 0 else 0]]
-            else:
-                return list_with_value[0]
-
-        def get_front_index(profile):
-            idx = np.where(profile <= flow_threshold)[0]
-            return (idx[0] - 1) if len(idx) else len(profile) - 1
-
-        def get_back_index(profile):
-            idx = np.where(profile <= flow_threshold)[0]
-            return (idx[-1] + 1) if len(idx) else 0
-
-        # Extract data and time
-        field_all = self._loaded_results[model].get_output(field_name)
-        tim = self._models_tim[model]
-        t_idx = None
-        
-        
-        # If no data extracted, stop the program
-        if isinstance(field_all, tilupy.read.AbstractResults) and not isinstance(field_all, tilupy.read.TemporalResults):
-            raise UserWarning(f"{field_name} is not accessible in {model}.")
-                
-        
-        # Find the index of the wanted time (or the closest)
-        if t is not None:
-            for idx in range(len(tim)):
-                if tim[idx] == t:
-                    t_idx = idx
-                    break
-                else:
-                    if abs(tim[idx] - t) < 0.01:
-                        t_idx = idx
-                        break
-            
-            if t_idx is None:
-                raise ValueError(f"Invalid time step. Recorded time steps are : {tim}")
-        else:
-            t_idx = field_all.d.shape[2]-1
-
-        
-        # Keep only the data field at the wanted time
-        field_t = field_all.d[:, :, t_idx]
-        
-        
-        # Apply mask on data
-        field_t[field_t <= flow_threshold] = 0
-
-        y_size, x_size = field_t.shape
-
-
-        # Different cases depending on the type of direction_index 
-        if direction_index is None:
-            direction_index = [None, None]
-            direction_index[0] = x_size//2
-            direction_index[1] = y_size//2
-            
-        elif isinstance(direction_index[0], float):
-            x_val = direction_index[0]
-            y_val = direction_index[1]
-            
-            x_index, y_index = None, None
-            for x in range(x_size):
-                if abs(x_val - self._x[x]) <= 0.1:
-                    x_index = x
-                    break
-            for y in range(y_size):
-                if abs(y_val - self._y[y]) <= 0.1:
-                    y_index = y
-                    break
-            direction_index[0] = x_size//2 if x_index is None else x_index
-            direction_index[1] = y_size//2 if y_index is None else y_index
-            
-        elif direction_index == "max":
-            direction_index = [None, None]
-            direction_index[0] = find_max_index_along_axis(field_t, axis=0, threshold=flow_threshold)
-            direction_index[1] = find_max_index_along_axis(field_t, axis=1, threshold=flow_threshold)
-
-        elif direction_index[0] is None or direction_index[1] is None:
-            direction_index[0] = x_size//2
-            direction_index[1] = y_size//2
-        
-        
-        # Save profiles in the dictionaries       
-        if t in storage_dict_Y:
-            if not any(res[0] == model for res in storage_dict_Y[t]):
-                # storage_dict_Y[t].append((model, field_t[:, direction_index[0]]))
-                storage_dict_Y[t].append((model, tilupy.read.StaticResults1D(name=field_name,
-                                                                             d=field_t[:, direction_index[0]],
-                                                                             coords=self._y,
-                                                                             coords_name='y')))
-        else:
-            # storage_dict_Y[t] = [(model, field_t[:, direction_index[0]])]
-            storage_dict_Y[t] = [(model, tilupy.read.StaticResults1D(name=field_name,
-                                                                     d=field_t[:, direction_index[0]],
-                                                                     coords=self._y,
-                                                                     coords_name='y'))]
-        if t in storage_dict_X:
-            if not any(res[0] == model for res in storage_dict_X[t]):
-                # storage_dict_X[t].append((model, field_t[direction_index[1], :]))
-                storage_dict_X[t].append((model, tilupy.read.StaticResults1D(name=field_name,
-                                                                             d=field_t[direction_index[1], :],
-                                                                             coords=self._x,
-                                                                             coords_name='x')))
-        else:
-            # storage_dict_X[t] = [(model, field_t[direction_index[1], :])]
-            storage_dict_X[t] = [(model, tilupy.read.StaticResults1D(name=field_name,
-                                                                     d=field_t[direction_index[1], :],
-                                                                     coords=self._x,
-                                                                     coords_name='x'))]
-
-        # Calculate front positions
-        idx_max_X = np.argmax(field_t[direction_index[1], :])
-        idx_max_Y = np.argmax(field_t[:, direction_index[0]])
-
-        idx_r = get_front_index(field_t[direction_index[1], idx_max_X:]) + idx_max_X
-        idx_l = get_back_index(field_t[direction_index[1], :idx_max_X])
-        idx_u = get_front_index(field_t[idx_max_Y:, direction_index[0]]) + idx_max_Y
-        idx_d = get_back_index(field_t[:idx_max_Y, direction_index[0]])
-
-        
-        # Save front positions
-        if t in storage_params:
-            if not any(res[0] == model for res in storage_params[t]):
-                storage_params[t].append((model, direction_index, [idx_l, idx_r, idx_d, idx_u]))
-        else:
-            storage_params[t] = [(model, direction_index, [idx_l, idx_r, idx_d, idx_u])]
-
-        if show_message:
-            print(self._current_model, f" -> {field_name}")
-            print(f"Selected index:\n   X -> {direction_index[0]}\n   Y -> {direction_index[1]}")
-            print(f"Front positions:\n  Right -> {idx_r}, {self._x[idx_r]}m\n  Left -> {idx_l}, {self._x[idx_l]}m\n  Up -> {idx_u}, {self._y[idx_u]}m\n  Down -> {idx_d}, {self._y[idx_d]}m")
-
-        return direction_index
-
-
-    def extract_profiles(self,
-                         output: str,
-                         model: str = None,
-                         t: float = None,
-                         direction_index: list[float] | str = None,
-                         flow_threshold: float = 1e-3,
-                         show_message: bool = False,
-                         ) -> None:
-        """Extract 1D profiles along X and Y axis at a specific time and store it for future use.
-
-        Parameters
-        ----------
-        output : str
-            Wanted data profile. Can be: "h", "u", "ux", "uy".
-        model : str, optional
-            Wanted model to extract profiles, if None take the currently loaded model. By default None.
-        t : float, optional
-            Time index to extract. If None, uses the last available time step.
-        direction_index : list[float] or str, optional
-            Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
-                - list[float]: position (in meter) of the wanted profiles.
-                - str: 'max' for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
-                - None: select the medians.
-        flow_threshold : float, optional
-            Minimum value to consider as part of the flow, by default 1e-3.
-        show_message : bool, optional
-            If True, print the indexes and the front positions saved. 
-
-        Raises
-        ------
-        ValueError
-            If the model has not been loaded.
-        ValueError
-            If the output asked is not allowed.
-        """
-        if model is None:
-            model = self._current_model
-
-        if model not in self._loaded_results.keys():
-            raise ValueError(" -> First load model using load_numerical_result.")
-        
-        if output not in self._allowed_extracting_outputs:
-            raise ValueError(" -> Invalid output. See _allowed_extracting_outputs.")
-        
-        if direction_index is None:
-            direction_index = [None, None]            
-        
-        outputs_dict = {"h" : [self._h_num_1d_X, self._h_num_1d_Y, self._h_num_1d_params],
-                        "u" : [self._u_num_1d_X, self._u_num_1d_Y, self._u_num_1d_params],
-                        "ux" : [self._ux_num_1d_X, self._ux_num_1d_Y, self._ux_num_1d_params],
-                        "uy" : [self._uy_num_1d_X, self._uy_num_1d_Y, self._uy_num_1d_params]}
-        
-        self.process_data_field(model=model, 
-                                field_name=output, 
-                                storage_dict_X=outputs_dict[output][0], 
-                                storage_dict_Y=outputs_dict[output][1], 
-                                storage_params=outputs_dict[output][2], 
-                                t=t,
-                                direction_index=direction_index, 
-                                flow_threshold=flow_threshold, 
-                                show_message=show_message)
- 
-
-    def extract_field(self,
-                      output: str,
-                      model: str = None,
-                      t: float = None
-                      ):
-        """Extract and store 2D data field at a given time step and store it for future use.
+    def show_output(self,
+                    output: str,
+                    model: str,
+                    time_steps: float | list[float],
+                    show_plot: bool = True,
+                    **plot_kwargs,
+                    ) -> matplotlib.axes._axes.Axes:
+        """Plot 2D surfaces for a given model.
 
         Parameters
         ----------
         output : str
             Wanted data field. Can be: "h", "u", "ux", "uy".
-        model : str, optional
-           Wanted model to extract data field, if None take the currently loaded model. By default None.
-        t : float, optional
-           Time index to extract. If None, uses the last available time step. By default None
+        model : str
+           Wanted model to show the data field.
+        t : float | list[float]
+            Value or list of time steps required to extract and display data fields. 
+            If None displays the data fields for all recorded time steps in the model's result. 
+            By default None.
+        ax : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib window, by default None.
+        figsize : tuple[float], optional
+            Size of the plotted figure if no ax is given (Width, Height; in inch). By default None.
+        show_plot : bool, optional
+            If True, show the plot, by default True
+
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            The created plot.
 
         Raises
         ------
         ValueError
-            If the model has not been loaded.
-        ValueError
             If the output asked is not allowed.
-        UserWarning
-            If the output variable is not accessible from the model.
         ValueError
-            If invalid time step.
+            If model is not loaded.
+        ValueError
+            If the solution is not extracted.
         """
-        if model is None:
-            model = self._current_model
-
-        if model not in self._loaded_results:
-            raise ValueError(" -> Model not load, use first load_numerical_result(model).")
+     
+        if model not in self._loaded_results.keys():
+            raise ValueError(" -> First load model using load_numerical_result.")
         
-        if output not in self._allowed_extracting_outputs:
-            raise ValueError(" -> Invalid output. See _allowed_extracting_outputs.")
+        plot_kwargs = {} if plot_kwargs is None else plot_kwargs
         
-        outputs_dict = {"h" : self._h_num_2d,
-                        "u" : self._u_num_2d,
-                        "ux" : self._ux_num_2d,
-                        "uy" : self._uy_num_2d}
+        ax = self._loaded_results[model].plot(output=output,
+                                              time_steps=time_steps,
+                                              **plot_kwargs)
+        if show_plot:
+            plt.show()
         
-        field_2d_all = self._loaded_results[model].get_output(output)
-        tim = self._loaded_results[model].tim
-        t_idx = None
-        
-        # If no data extracted, stop the program
-        if isinstance(field_2d_all, tilupy.read.AbstractResults) and not isinstance(field_2d_all, tilupy.read.TemporalResults):
-            raise UserWarning(f"{output} is not accessible in {model}.")
-        
-        # Find the index of the wanted time (or the closest)
-        if t is not None:
-            for idx in range(len(tim)):
-                if tim[idx] == t:
-                    t_idx = idx
-                    break
-                else:
-                    if abs(tim[idx] - t) < 0.01:
-                        t_idx = idx
-                        break
-            if t_idx is None:
-                raise ValueError(f"Invalid time step. Recorded time steps are : {tim}")
-        else:
-            t_idx = field_2d_all.d.shape[2]-1
-
-        t_idx = field_2d_all.d.shape[2]-1 if t_idx is None or t_idx >= field_2d_all.d.shape[2] or isinstance(t_idx, float) else t_idx
-        field_2d_t = field_2d_all.d[:, :, t_idx]
-    
-        if t in outputs_dict[output]:
-            if not any(res[0] == model for res in outputs_dict[output][t]):
-                # outputs_dict[output][t].append((model, field_2d_t))
-                outputs_dict[output][t].append((model, tilupy.read.StaticResults2D(name=output,
-                                                                                   d=field_2d_t,
-                                                                                   x=self._x,
-                                                                                   y=self._y,
-                                                                                   z=self._z)))
-        else:
-            outputs_dict[output][t] = [(model, tilupy.read.StaticResults2D(name=output,
-                                                                           d=field_2d_t,
-                                                                           x=self._x,
-                                                                           y=self._y,
-                                                                           z=self._z))]
+        return ax
 
 
-    def show_profile(self,
-                     output: str,
-                     model: str,
-                     axis: str = "X",
-                     time_steps: float | list[float] = None,
-                     direction_index: list[float] | str = None,
-                     flow_threshold: float = 0.001,
-                     ax: matplotlib.axes._axes.Axes = None,
-                     figsize: tuple[float] = None,
-                     linestyles: list[str] = None,
-                     plot_multiples: bool = False,
-                     multiples_highlight: bool = False,
-                     plot_kwargs: dict = None,
-                     show_plot: bool = True,
-                     )-> matplotlib.axes._axes.Axes:
+    def show_output_profile(self,
+                            output: str,
+                            model: str,
+                            extraction_method: str = "axis",
+                            extraction_params: dict = None,
+                            time_steps: float | list[float] = None,
+                            #  direction_index: list[float] | str = None,
+                            #  flow_threshold: float = 0.001,
+                            #  ax: matplotlib.axes._axes.Axes = None,
+                            #  figsize: tuple[float] = None,
+                            #  linestyles: list[str] = None,
+                            #  plot_multiples: bool = False,
+                            #  multiples_highlight: bool = False,
+                            plot_kwargs: dict = None,
+                            show_plot: bool = True,
+                            )-> matplotlib.axes._axes.Axes:
         """Plot 1D profiles for a given model or the analytic solution.
 
         Parameters
@@ -672,265 +356,31 @@ class Benchmark:
         ValueError
             If invalid axis.
         """
-        if output not in self._allowed_extracting_outputs:
-            raise ValueError(" -> Invalid output. See _allowed_extracting_outputs.")
-        
+
         if model not in self._loaded_results.keys() and model != "as":
-            raise ValueError(" -> First load model using load_numerical_result or compute analytical solution.")
+            raise ValueError(" -> First load model using load_numerical_result")
 
-        plot = None
-        profil_idx = None
-        profil_positions = []
-        
-        axis = axis.upper()
-                
-        outputs_dict = {"h" : [self._h_num_1d_X, self._h_num_1d_Y, self._h_num_1d_params],
-                        "u" : [self._u_num_1d_X, self._u_num_1d_Y, self._u_num_1d_params],
-                        "ux" : [self._ux_num_1d_X, self._ux_num_1d_Y, self._ux_num_1d_params],
-                        "uy" : [self._uy_num_1d_X, self._uy_num_1d_Y, self._uy_num_1d_params]}
-        
-        as_dict = {"h" : self._h_as_1d,
-                   "u" : self._u_as_1d}
-        
-        # For analytic solution profile
-        if model == 'as' and axis == 'X' and (output == "h" or output == "u"):            
-            if len(as_dict[output]) == 0:
-                raise ValueError(" -> No analytic solution computed.")
-            else:
-                plot = as_dict[output][:]
-        
-        # For models profile
-        elif model in self._allowed_models:
-            if time_steps is None:
-                time_steps = self._models_tim[model]
-                        
-            # First extract the wanted profiles at specified time
-            if isinstance(time_steps, float) or isinstance(time_steps, int):
-                    self.extract_profiles(output, 
-                                          model, 
-                                          time_steps, 
-                                          direction_index, 
-                                          flow_threshold)
-                
-            elif isinstance(time_steps, list) or isinstance(time_steps, np.ndarray):
-                for t in time_steps:
-                    self.extract_profiles(output,
-                                          model, 
-                                          t, 
-                                          direction_index, 
-                                          flow_threshold)
-
-            # Then extract the profile depending on the axis 
-            if axis == "X":
-                if any(label == model for lst in outputs_dict[output][0].values() for label, _ in lst):
-                    plot = [(t, val) for t, lst in outputs_dict[output][0].items() for label, val in lst if label == model]
-                    profil_idx = [idx[1] for t, lst in outputs_dict[output][2].items() for label, idx, front in lst if label == model]
-                else:
-                    raise ValueError(" -> Solution not extracted.")
-            elif axis == "Y":
-                if any(label == model for lst in outputs_dict[output][1].values() for label, _ in lst):
-                    plot = [(t, val) for t, lst in outputs_dict[output][1].items() for label, val in lst if label == model]
-                    profil_idx = [idx[0] for t, lst in outputs_dict[output][2].items() for label, idx, front in lst if label == model]
-                else:
-                    raise ValueError(" -> Solution not extracted.")
-            else:
-                raise ValueError(" -> Incorrect axis: 'X' or 'Y'.")
-        
-        # Create fig if not given
-        if ax is None and (isinstance(time_steps, float) or isinstance(time_steps, int)):
-            fig, ax = plt.subplots(figsize=figsize, layout="constrained")
-        
         plot_kwargs = {} if plot_kwargs is None else plot_kwargs
         
-        # Recover the position of the extracted profiles
-        # absci = self._y if axis == 'Y' else self._x
-        inv_axis = 'X' if axis == 'Y' else 'Y'
-        profil_coord = self._x if axis == 'Y' else self._y
-        if profil_idx:
-            profil_positions = [float(profil_coord[i]) for i in profil_idx]
-            # print(f"Profiles' position: {profil_positions}m")
-    
-    
-        # Plot the profiles
-        if len(plot) == 1: # Only one time to plot
-            plot[0][1].plot(ax=ax, 
-                            color='black', 
-                            **plot_kwargs)
-        
-        else: # Multiple times to plot
-            t = [s[0] for s in plot]
-            all_values = [s[1].d for s in plot]     
-            
-            stack_values = np.stack(all_values, axis=1)
-            temporal_output = tilupy.read.TemporalResults1D(name=output,
-                                                            d=stack_values,
-                                                            t=t,
-                                                            coords=plot[0][1].coords,
-                                                            coords_name=plot[0][1].coords_name)
-            if plot_multiples:
-                axes = temporal_output.plot(plot_type="multiples",
-                                            figsize=figsize,
-                                            highlighted_curve=multiples_highlight)
-                
-
-                for i in range(len(profil_positions)):
-                    axes[i].set_title(f"{inv_axis}={profil_positions[i]}m", loc="right")
-                
-                if show_plot:
-                    plt.show()
-                
-                return axes 
-                
-            temporal_output.plot(plot_type="simple", 
-                                 ax=ax,
-                                 linestyles=linestyles,
-                                 **plot_kwargs)
-                
-        # Formatting the fig
-        if len(plot) == 1:
-            ax.set_title(f"{inv_axis}={profil_positions[0]}m  |  t={plot[0][0]}s")
-        else:
-            ax.set_title(f"{inv_axis}={profil_positions[0]}m")
-            ax.legend(loc='upper right')
-                
+        ax = self._loaded_results[model].plot_profile(output=output,
+                                                      extraction_method = extraction_method,
+                                                      extraction_params = extraction_params,
+                                                      time_steps=time_steps,
+                                                      display_plot=show_plot,
+                                                      **plot_kwargs)
         if show_plot:
             plt.show()
             
-        return ax       
-    
-    
-    def show_field(self,
-                   output: str,
-                   model: str,
-                   t: float | list[float],
-                   ax: matplotlib.axes._axes.Axes = None,
-                   figsize: tuple[float] = None,
-                   show_plot: bool = True,
-                   **plot_kwargs,
-                   ) -> matplotlib.axes._axes.Axes:
-        """Plot 2D surfaces for a given model.
+        return ax
 
-        Parameters
-        ----------
-        output : str
-            Wanted data field. Can be: "h", "u", "ux", "uy".
-        model : str
-           Wanted model to show the data field.
-        t : float | list[float]
-            Value or list of time steps required to extract and display data fields. 
-            If None displays the data fields for all recorded time steps in the model's result. 
-            By default None.
-        ax : matplotlib.axes._axes.Axes, optional
-            Existing matplotlib window, by default None.
-        figsize : tuple[float], optional
-            Size of the plotted figure if no ax is given (Width, Height; in inch). By default None.
-        show_plot : bool, optional
-            If True, show the plot, by default True
-
-        Returns
-        -------
-        matplotlib.axes._axes.Axes
-            The created plot.
-
-        Raises
-        ------
-        ValueError
-            If the output asked is not allowed.
-        ValueError
-            If model is not loaded.
-        ValueError
-            If the solution is not extracted.
-        """
-        if output not in self._allowed_extracting_outputs:
-            raise ValueError(" -> Invalid output. See _allowed_extracting_outputs.")
-        
-        if model not in self._loaded_results.keys():
-            raise ValueError(" -> First load model using load_numerical_result.")
-        
-        outputs_dict = {"h" : self._h_num_2d,
-                        "u" : self._u_num_2d,
-                        "ux" : self._ux_num_2d,
-                        "uy" : self._uy_num_2d}
-        
-        if t is None:
-            t = self._models_tim[model]
-        
-        # Extract output if not already done
-        if isinstance(t, float) or isinstance(t, int):
-            if t not in outputs_dict[output]:
-                self.extract_field(output=output,
-                                   model=model, 
-                                   t=t)
-                    
-            if not any(res[0] == model for res in outputs_dict[output][t]):
-                self.extract_field(output=output,
-                                  model=model, 
-                                  t=t)
-        
-        elif isinstance(t, list) or isinstance(t, np.ndarray):
-            for T in t:
-                if T not in outputs_dict[output]:
-                    self.extract_field(output=output,
-                                       model=model, 
-                                       t=T)
-                        
-                if not any(res[0] == model for res in outputs_dict[output][T]):
-                    self.extract_field(output=output,
-                                       model=model, 
-                                       t=T)
-        
-        if isinstance(t, float) or isinstance(t, int):
-            if ax is None:
-                fig, ax = plt.subplots(figsize=figsize, layout="constrained")
-            
-            for lst in outputs_dict[output][t]:
-                if lst[0] == model:
-                    lst[1].plot(ax = ax,
-                                **plot_kwargs)
-                    break
-            ax.set_title(f"t={t}s")
-            
-            if show_plot:
-                plt.show()
-
-            return ax
-
-        else:
-            if any(label == model for lst in outputs_dict[output].values() for label, _ in lst):
-                data = [(t, val) for t, lst in outputs_dict[output].items() for label, val in lst if label == model]
-            else:
-                raise ValueError(" -> Solution not extracted.")
-            
-            t = [s[0] for s in data]
-            all_values = [s[1].d for s in data]     
-            
-            stack_values = np.stack(all_values, axis=2)
-
-            temporal_output = tilupy.read.TemporalResults2D(name=output,
-                                                            d=stack_values,
-                                                            t=t,
-                                                            x=self._x,
-                                                            y=self._y,
-                                                            z=self._z)
-            
-            axes = temporal_output.plot(plot_multiples=True,
-                                        figsize=figsize,
-                                        **plot_kwargs)
-
-            if show_plot:
-                plt.show()
-
-            return axes
-
-
-    def show_multiple_profiles(self,
+    # TODO
+    """def show_multiple_profiles(self,
                                output: str,
                                models: list[str],
                                analytic_solution: dict = None,
-                               axis: str = "X",
+                               extraction_method: str = "axis",
+                               extraction_params: dict = None,
                                time_steps: float | list[float] = None,
-                               direction_index: list[float] | str = None,
-                               flow_threshold: float = 0.001,
                                axes: matplotlib.axes._axes.Axes = None,
                                rows_nb: int = None,
                                cols_nb: int = None,
@@ -941,7 +391,7 @@ class Benchmark:
                                as_kwargs: dict = None,
                                show_plot: bool = True,
                                )-> matplotlib.axes._axes.Axes:
-        if output not in self._allowed_extracting_outputs:
+        '''if output not in self._allowed_extracting_outputs:
             raise ValueError(" -> Invalid output. See _allowed_extracting_outputs.")
         
         for model in models:
@@ -1093,676 +543,1177 @@ class Benchmark:
             plt.show()
         
         return axes
-                   
-
-'''
-    def show_height_profile_comparison(self,
-                                       models_to_plot: list[str],
-                                       time_step: float,
-                                       axis: str = "X",
-                                       plot_as: bool = False,
-                                    #    nbr_point: int = 20,
-                                       colors: list = None,
-                                       linestyles: list[str] = None,
-                                       ax: matplotlib.axes._axes.Axes = None,
-                                       x_unit:str = "m",
-                                       h_unit:str = "m",
-                                       cmap: str = 'plasma',
-                                       show_plot: bool = True,
-                                       ) -> matplotlib.axes._axes.Axes:
-        """
-        Plot multiple height profiles and optionally compare them to the analytic solution.
-
-        Parameters
-        ----------
-        models_to_plot : list[str]
-            List of model names to compare (in :attr:`_allowed_models`).
-        time_step : float
-            Time step for the plot.
-        axis : str, optional
-            Allows to choose the profile according to the desired axis, by default 'X'.
-        plot_as : bool, optional
-            Whether to include the analytic solution, by default False.
-        nbr_point : int, optional
-            Number of points to plot for each curve, by default 20.
-        colors
-        
-        linestyles
-        
-        ax : matplotlib.axes._axes.Axes, optional
-            Existing matplotlib window.
-        x_unit : str, optional
-            Unit for the x-axis, by default "m".
-        h_unit : str, optional
-            Unit for the height axis, by default "m".
-        cmap : str, optional
-            Cmap for the model_to_plot curves, be default 'plasma'. 
-        show_plot : bool, optional
-            If True, show the plot, by default True.
-
-        Returns
-        -------
-        matplotlib.axes._axes.Axes
-            The axis with the plotted profiles.
-        
-        Raises
-        ------
-        ValueError
-            If no result has been loaded.
-        ValueError
-            If no result computed at the specified time step for the analytical solution.
-        ValueError
-            If the axis is incorrect.
-        """
-        # marker_list = ["o", "s", "^", "p", "D", "h", "v", "*"]
-        # cmap = plt.get_cmap(cmap, len(models_to_plot))
-        
-        if self._x is None:
-            raise ValueError(" -> No solution extracted, first use load_numerical_result.")
-        
-        axis = axis.upper()
-        
-        if axis == 'X':
-            # step = len(self._x) // nbr_point
-            
-            # If no profile for the time_step, extract it
-            if time_step not in self._h_num_1d_X.keys():
-                for model in models_to_plot:
-                    self.extract_height_profiles(model=model,
-                                                 t=time_step)
-            
-            if ax is None:
-                fig, ax = plt.subplots()
-            
-           # Plot analytic solution
-            if plot_as:
-                if any(res[0] == time_step for res in self._h_as_1d):
-                    for t, h in self._h_as_1d:
-                        if t == time_step:
-                            # ax.plot(self._x, h, linestyle="-", color='black', label="AS")
-                            ax.plot(self._x, h, linestyle=":", color='red', alpha=0.9, linewidth=1.5, label="AS")
-                            break
-                else:
-                    raise ValueError(" -> Time step not computed in analytical solution.") 
-            
-            # Plot models
-            for i in range(len(models_to_plot)):
-                if any(res[0] == models_to_plot[i] for res in self._h_num_1d_X[time_step]):
-                    for m, h in self._h_num_1d_X[time_step]:
-                        if models_to_plot[i] == m:
-                            # j = i
-                            # while j >= len(marker_list):
-                            #     j -= len(marker_list)
-                            #     if j < 0:
-                            #         j = 0
-                            # ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
-                            
-                            if colors is not None and len(colors) > i:
-                                color = colors[i]
-                            else:
-                                color = "black"
-                            if linestyles is not None and len(linestyles) > i:
-                                linestyle = linestyles[i]
-                            else:
-                                linestyle = None
-                                
-                            ax.plot(self._x, h, color=color, linestyle=linestyle, label=models_to_plot[i], alpha=0.8, linewidth=2)
-                            
-                            
-                            # plot_params = importlib.import_module("tilupy.models." + model + ".plot_params")
-                            # ax.plot(self._x[::step], h[::step], marker=plot_params.marker, linestyle='None', color=plot_params.color, label=model)
-
-            ax.set_xlim(left=min(self._x), right=max(self._x))
-            ax.set_xlabel(f"x [{x_unit}]")
-        
-        elif axis == 'Y':
-            # step = len(self._y) // nbr_point
-            
-            # If no profile for the time_step, extract it
-            if time_step not in self._h_num_1d_Y.keys():
-                for model in models_to_plot:
-                    self.extract_height_profiles(model=model,
-                                                 t=time_step)
-            
-            if ax is None:
-                fig, ax = plt.subplots()
-            
-            """NO ANALYTIC SOLUTION ALONG AXIS Y
-            if plot_as:
-                if any(res[0] == time_step for res in self._h_as_1d):
-                    for t, h in self._h_as_1d:
-                        if t == time_step:
-                            ax.plot(self._x, h, linestyle="-", color='black', label="AS")
-                            break
-                else:
-                    raise ValueError(" -> Time step not computed in analytical solution.")
-            """
-
-            # Plot models
-            for i in range(len(models_to_plot)):
-                if any(res[0] == models_to_plot[i] for res in self._h_num_1d_Y[time_step]):
-                    for m, h in self._h_num_1d_Y[time_step]:
-                        if models_to_plot[i] == m:
-                            # j = i
-                            # while j >= len(marker_list):
-                            #     j -= len(marker_list)
-                            #     if j < 0:
-                            #         j = 0
-                            # ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
-
-                            if colors is not None and len(colors) > i:
-                                color = colors[i]
-                            else:
-                                color = "black"
-                            if linestyles is not None and len(linestyles) > i:
-                                linestyle = linestyles[i]
-                            else:
-                                linestyle = None
-    
-                            ax.plot(self._y, h, color=color, linestyle=linestyle, label=models_to_plot[i], alpha=0.8, linewidth=2)
-                            
-            ax.set_xlim(left=min(self._y), right=max(self._y))
-            ax.set_xlabel(f"y [{x_unit}]")
-
-        else:
-            raise ValueError(" -> Incorrect axis: 'Y' or 'X'.")
-        
-        
-        # Formatting fig  
-        ax.grid(which='major')
-        ax.grid(which='minor', alpha=0.5)
-        
-        ax.set_title(f"Height comparison along {axis} for t={time_step}s")
-        
-        ax.set_ylabel(f"h [{h_unit}]")
-        ax.legend(loc='upper right')
-        
-        if show_plot:
-            plt.show()
-        
-        return ax
-'''
-'''
-    def show_velocity_profile_comparison(self,
-                                         models_to_plot: list[str],
-                                         time_step: float,
-                                         velocity_axis: str = "u",
-                                         axis: str = "X",
-                                         velocity_threshold: float = 1e-6,
-                                         plot_as: bool = False,
-                                         nbr_point: int = 20,
-                                         ax: matplotlib.axes._axes.Axes = None,
-                                         x_unit:str = "m",
-                                         u_unit:str = "m/s",
-                                         cmap: str = 'plasma',
-                                         show_plot: bool = True,
-                                         ) -> matplotlib.axes._axes.Axes:
-        """
-        Plot multiple velocity profiles and optionally compare them to the analytic solution.
-
-        Parameters
-        ----------
-        models_to_plot : list[str]
-            List of model names to compare (in :attr:`_allowed_models`).
-        time_step : float
-            Time step for the plot.
-        velocity_axis : str, optional
-            Velocity direction to use for the plot ("u", "ux" or "uy"), by default 'u' (norm).
-        axis : str, optional
-            Allows to choose the profile according to the desired axis, by default 'X'.
-        velocity_threshold : float, optional
-            Threshold value where lower values will be replaced by Nan, by default 1e-6.
-        plot_as : bool, optional
-            Whether to include the analytic solution, by default False.
-        nbr_point : int, optional
-            Number of points to plot for each curve, by default 20.
-        ax : matplotlib.axes._axes.Axes, optional
-            Existing matplotlib window.
-        x_unit : str, optional
-            Unit for the x-axis, by default "m".
-        u_unit : str, optional
-            Unit for the height axis, by default "m".
-        cmap : str, optional
-            Cmap for the model_to_plot curves, be default 'plasma'. 
-        show_plot : bool, optional
-            If True, show the plot, by default True.
-
-        Returns
-        -------
-        matplotlib.axes._axes.Axes
-            The axis with the plotted profiles.
-        
-        Raises
-        ------
-        ValueError
-            If no result has been loaded.
-        ValueError
-            If no result computed at the specified time step for the analytical solution.
-        ValueError
-            If the axis is incorrect.
-        ValueError
-            If the velocity axis is incorrect.
-        """
-        marker_list = ["o", "s", "^", "p", "D", "h", "v", "*"]
-        cmap = plt.get_cmap(cmap, len(models_to_plot))
-        
-        if self._x is None:
-            raise ValueError(" -> No solution extracted, first use load_numerical_result.")
-        
-        axis = axis.upper()
-        
-        if axis == 'X':
-            step = len(self._x) // nbr_point
-            
-            if velocity_axis == 'u':
-                if time_step not in self._u_num_1d_X.keys():
-                    for model in models_to_plot:
-                        self.extract_velocity_profiles(model=model,
-                                                       t=time_step)
-                
-                if ax is None:
-                    fig, ax = plt.subplots()
-                
-                if plot_as:
-                    if any(res[0] == time_step for res in self._u_as_1d):
-                        for t, h in self._u_as_1d:
-                            if t == time_step:
-                                h[h <= velocity_threshold] = np.nan
-                                ax.plot(self._x, h, linestyle="-", color='black', label="AS")
-                                break
-                    else:
-                        raise ValueError(" -> Time step not computed in analytical solution.")
-            
-                for i in range(len(models_to_plot)):
-                    if any(res[0] == models_to_plot[i] for res in self._u_num_1d_X[time_step]):
-                        for m, h in self._u_num_1d_X[time_step]:
-                            if models_to_plot[i] == m:
-                                h[h <= velocity_threshold] = np.nan
-                                j = i
-                                while j >= len(marker_list):
-                                    j -= len(marker_list)
-                                    if j < 0:
-                                        j = 0
-                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
-
-            
-            elif velocity_axis == 'ux':
-                if time_step not in self._ux_num_1d_X.keys():
-                    for model in models_to_plot:
-                        self.extract_velocity_profiles(model=model,
-                                                       t=time_step)
-                
-                if ax is None:
-                    fig, ax = plt.subplots()
-
-                for i in range(len(models_to_plot)):
-                    if any(res[0] == models_to_plot[i] for res in self._ux_num_1d_X[time_step]):
-                        for m, h in self._ux_num_1d_X[time_step]:
-                            if models_to_plot[i] == m:
-                                h[h <= velocity_threshold] = np.nan
-                                j = i
-                                while j >= len(marker_list):
-                                    j -= len(marker_list)
-                                    if j < 0:
-                                        j = 0
-                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
-
-
-            elif velocity_axis == 'uy':
-                if time_step not in self._uy_num_1d_X.keys():
-                    for model in models_to_plot:
-                        self.extract_velocity_profiles(model=model,
-                                                       t=time_step)
-                
-                if ax is None:
-                    fig, ax = plt.subplots()
-            
-                for i in range(len(models_to_plot)):
-                    if any(res[0] == models_to_plot[i] for res in self._uy_num_1d_X[time_step]):
-                        for m, h in self._uy_num_1d_X[time_step]:
-                            if models_to_plot[i] == m:
-                                h[h <= velocity_threshold] = np.nan
-                                j = i
-                                while j >= len(marker_list):
-                                    j -= len(marker_list)
-                                    if j < 0:
-                                        j = 0
-                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
-
-
-            else:
-                raise ValueError(" -> Incorrect velocity axis: 'u', 'ux' or 'uy")
-            
-            ax.set_xlim(left=min(self._x), right=max(self._x))
-            ax.set_xlabel(f"x [{x_unit}]")
-            
-        
-        elif axis == 'Y':
-            step = len(self._y) // nbr_point
-
-            if velocity_axis == 'u':
-                if time_step not in self._u_num_1d_Y.keys():
-                    for model in models_to_plot:
-                        self.extract_velocity_profiles(model=model,
-                                                       t=time_step)
-                
-                if ax is None:
-                    fig, ax = plt.subplots()
-            
-                for i in range(len(models_to_plot)):
-                    if any(res[0] == models_to_plot[i] for res in self._u_num_1d_Y[time_step]):
-                        for m, h in self._u_num_1d_Y[time_step]:
-                            if models_to_plot[i] == m:
-                                h[h <= velocity_threshold] = np.nan
-                                j = i
-                                while j >= len(marker_list):
-                                    j -= len(marker_list)
-                                    if j < 0:
-                                        j = 0
-                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
-
-
-            elif velocity_axis == 'ux':
-                if time_step not in self._ux_num_1d_Y.keys():
-                    for model in models_to_plot:
-                        self.extract_velocity_profiles(model=model,
-                                                       t=time_step)
-                
-                if ax is None:
-                    fig, ax = plt.subplots()
-            
-                for i in range(len(models_to_plot)):
-                    if any(res[0] == models_to_plot[i] for res in self._ux_num_1d_Y[time_step]):
-                        for m, h in self._ux_num_1d_Y[time_step]:
-                            if models_to_plot[i] == m:
-                                h[h <= velocity_threshold] = np.nan
-                                j = i
-                                while j >= len(marker_list):
-                                    j -= len(marker_list)
-                                    if j < 0:
-                                        j = 0
-                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
-
-
-            elif velocity_axis == 'uy':
-                if time_step not in self._uy_num_1d_Y.keys():
-                    for model in models_to_plot:
-                        self.extract_velocity_profiles(model=model,
-                                                       t=time_step)
-                
-                if ax is None:
-                    fig, ax = plt.subplots()
-            
-                for i in range(len(models_to_plot)):
-                    if any(res[0] == models_to_plot[i] for res in self._uy_num_1d_Y[time_step]):
-                        for m, h in self._uy_num_1d_Y[time_step]:
-                            if models_to_plot[i] == m:
-                                h[h <= velocity_threshold] = np.nan
-                                j = i
-                                while j >= len(marker_list):
-                                    j -= len(marker_list)
-                                    if j < 0:
-                                        j = 0
-                                ax.plot(self._x[::step], h[::step], marker=marker_list[j], markeredgecolor="black", markeredgewidth=0.2, linestyle='None', color=cmap(i), label=models_to_plot[i])
-
-
-            else:
-                raise ValueError(" -> Incorrect velocity axis: 'u', 'ux' or 'uy.")
-            
-            ax.set_xlim(left=min(self._y), right=max(self._y))
-            ax.set_xlabel(f"y [{x_unit}]")
-
-        else:
-            raise ValueError(" -> Incorrect axis: 'Y' or 'X'.")
-             
-        ax.grid(which='major')
-        ax.grid(which='minor', alpha=0.5)
-        
-        ax.set_title(f"Velocity comparison along {axis} for t={time_step}s")
-        
-        ax.set_ylabel(f"u [{u_unit}]")
-        ax.legend(loc='upper right')
-        
-        if show_plot:
-            plt.show()
-        
-        return ax
-'''
-
-'''
-    def show_height_profile_with_coussot_morpho(self, 
-                                                model_to_plot: str,
-                                                rho: float, 
-                                                tau: float, 
-                                                theta: int=0, 
-                                                H_size: int=100, 
-                                                direction: str = "right",
-                                                direction_index: list[float] | str = None,
-                                                flow_threshold: float = 1e-3,
-                                                front_position: float = None,
-                                                lateral_position: list[float] = None,
-                                                h_init: float = None, 
-                                                h_final: float = None, 
-                                                axes: matplotlib.axes._axes.Axes = None, 
-                                                x_unit: str = "m", 
-                                                h_unit: str = "m",
-                                                show_plot: bool = True,
-                                                ) -> list[matplotlib.axes._axes.Axes] :
-        """
-        Compare the final morphological profile (along X and Y axis) of the numerical result to the expected Coussot theoretical profile.
-
-        Parameters
-        ----------
-        model_to_plot : str
-            Model name to plot ('shaltop', 'lave2D', 'saval2D').
-        rho : float
-            Density of the material.
-        tau : float
-            Yield stress.
-        theta : int, optional
-            Slope angle (in degrees), by default 0.
-        H_size : int, optional
-            Number of discretization points, by default 100.
-        direction : str, optional
-            Direction of the flow ("right", "left", "down", "up"), by default "right".
-        direction_index : list[float] or str, optional
-            Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
-                - list[float]: position (in meter) of the wanted profiles.
-                - str: 'max' for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
-                - None: select the medians.
-        front_position : float, optional
-            Location to align the theoretical shape for the flow front. If None, detected automatically.
-        lateral_position : float, optional
-            Locations to align the theoretical shape for the lateral flow fronts: [min, max]. If None, detected automatically.
-        h_init : float, optional
-            Initial flow height. Used to compute the expected shape.
-        h_final : float, optional
-            Final flow height. Used to compute the expected shape. If None, computed automatically using h_init.
-        axes : matplotlib.axes._axes.Axes, optional
-            Existing matplotlib window.
-        x_unit : str, optional
-            Unit for the x-axis, by default "m".
-        h_unit : str, optional
-            Unit for the height axis, by default "m".
-        show_plot: bool, optional
-            If True, show the plot, by default True.
-
-        Returns
-        -------
-        list[matplotlib.axes._axes.Axes]
-            The axis with the plotted comparison : 
-                axes[0] contains the leading front of the flow.
-                axes[1] Contains the lateral fronts of the flow
-
-        Raises
-        ------
-        ValueError
-            If invalid direction.
-        ValueError
-            If the model is not recognized.
-        ValueError
-            If no numerical result has been loaded.
-        """
-        if direction not in ["right", "left", "up", "down"]:
-            raise ValueError(' -> Invalid direction: "right", "left", "up", "down"')
-        
-        if model_to_plot not in self._allowed_models:
-            raise ValueError(f" -> No allowed model selected, choose between:\n       {self._allowed_models}")
-                
-        # Extract the profiles at the latest time
-        self.extract_height_profiles(model=model_to_plot,
-                                     t=None,
-                                     direction_index=direction_index,
-                                     flow_height_threshold=flow_threshold)
-        
-        # Extract profile along X
-        if direction == "right" or direction == "left":
-            max_time = max(self._h_num_1d_X.keys())
-            saved_profiles = self._h_num_1d_X[max_time]
-            
-            if any(res[0] == model_to_plot for res in saved_profiles):
-                for res in saved_profiles:
-                    if res[0] == model_to_plot:
-                        front_profile = res[1]
-                        break    
-            else:
-                raise ValueError(" -> Model not loaded, first extract profiles.")
-
-            # Find the equivalent Y axis profile
-            for lat_res in self._h_num_1d_Y[max_time]:
-                if lat_res[0] == model_to_plot:
-                    lat_profile = lat_res[1]
-                    break  
-        
-        
-        # Do for axis Y
-        else:
-            max_time = max(self._h_num_1d_Y.keys())
-            saved_profiles = self._h_num_1d_Y[max_time]
-            
-            if any(res[0] == model_to_plot for res in saved_profiles):
-                for res in saved_profiles:
-                    if res[0] == model_to_plot:
-                        front_profile = res[1]
-                        break    
-            else:
-                raise ValueError(" -> Model not loaded, first extract profiles.")
-
-            for lat_res in self._h_num_1d_X[max_time]:
-                if lat_res[0] == model_to_plot:
-                    lat_profile = lat_res[1]
-                    break  
-        
-        
-        # Extract front positions
-        for params in self._h_num_1d_params[max_time]:
-            if params[0] == model_to_plot:
-                # idx = params[1]
-                fronts = params[2]
-        
-        
-        # Compute Coussot's solution and positions it in the right place for the front flow
-        morpho = AS.Coussot_shape(rho=rho, tau=tau, theta=theta, H_size=H_size)
-        morpho.compute_rheological_test_front_morpho(h_init=h_init, h_final=h_final)
-        
-        if direction == "right" or direction == "up" :
-            morpho.change_orientation_flow()
-        
-        if front_position is None:
-            if direction == "right":
-                morpho.translate_front(self._x[fronts[1]])
-            elif direction == "left":
-                morpho.translate_front(self._x[fronts[0]])
-            elif direction == "down":
-                morpho.translate_front(self._y[fronts[2]])
-            elif direction == "up":
-                morpho.translate_front(self._y[fronts[3]])
-        else:
-            morpho.translate_front(front_position)
-
-        
-        # Create fig
-        if axes is None:
-            fig, axes = plt.subplots(1, 2, figsize=(10, 5), sharey=True)
-        
-        
-        # Formatting axes[0] for the front flow 
-        if direction == "up" or direction == "down" :
-            axes[0].plot(self._y, front_profile, linestyle='-', color='black', label=model_to_plot)
-            axes[0].set_xlim(left=min(self._y), right=max(self._y))
-            axes[0].set_xlabel(f"y [{x_unit}]")
- 
-        else:
-            axes[0].plot(self._x, front_profile, linestyle='-', color='black', label=model_to_plot)
-            axes[0].set_xlim(left=min(self._x), right=max(self._x))
-            axes[0].set_xlabel(f"x [{x_unit}]")
-        
-        axes[0].plot(morpho.x, morpho.h, linestyle="--", color='red', label="Coussot shape")
-        axes[0].legend(loc='upper right')
-        
-        axes[0].grid(which='major')
-        axes[0].grid(which='minor', alpha=0.5)
-        
-        axes[0].set_ylabel(f"h [{h_unit}]")
-        axes[0].legend(loc='upper right')
-        
-        axes[0].set_title("Flow front")
-
-        
-        # Compute Coussot's solution and positions it in the right place for the lateral flow
-        if theta != 0:
-            morpho.compute_rheological_test_lateral_morpho()
-            lat_morpho_left = morpho.y
-            lat_morpho_right = [-1*v for v in morpho.y]
-        
-        else:
-            morpho.compute_rheological_test_front_morpho(h_init=h_init, h_final=h_final)
-            lat_morpho_left = morpho.x
-            lat_morpho_right = [-1*v for v in morpho.x]
-        
-        if lateral_position is None:
-            if direction == "right":
-                lat_morpho_left = [v+self._y[fronts[2]] for v in lat_morpho_left]
-                lat_morpho_right = [v+self._y[fronts[3]] for v in lat_morpho_right]
-            elif direction == "left":
-                lat_morpho_left = [v+self._y[fronts[3]] for v in lat_morpho_left]
-                lat_morpho_right = [v+self._y[fronts[2]] for v in lat_morpho_right]
-            elif direction == "down":
-                lat_morpho_left = [v+self._x[fronts[0]] for v in lat_morpho_left]
-                lat_morpho_right = [v+self._x[fronts[1]] for v in lat_morpho_right]
-            elif direction == "up":
-                lat_morpho_left = [v+self._x[fronts[1]] for v in lat_morpho_left]
-                lat_morpho_right = [v+self._x[fronts[0]] for v in lat_morpho_right]
-        else:
-            lat_morpho_left = [v+lateral_position[0] for v in lat_morpho_left]
-            lat_morpho_right = [v+lateral_position[1] for v in lat_morpho_right]
-        
-        
-        # Formatting axes[1] for the lateral flow 
-        if direction == "up" or direction == "down" :
-            axes[1].plot(self._x, lat_profile, linestyle='-', color='black', label=model_to_plot)
-            axes[1].set_xlim(left=min(self._x), right=max(self._x))
-            axes[1].set_xlabel(f"x [{x_unit}]")
- 
-        else:
-            axes[1].plot(self._y, lat_profile, linestyle='-', color='black', label=model_to_plot)
-            axes[1].set_xlim(left=min(self._y), right=max(self._y))
-            axes[1].set_xlabel(f"y [{x_unit}]")
-        
-        axes[1].plot(lat_morpho_left, morpho.h, linestyle="--", color='red', label="Coussot shape")
-        axes[1].plot(lat_morpho_right, morpho.h, linestyle="--", color='red', label="Coussot shape")
-        axes[1].legend(loc='upper right')
-        
-        axes[1].grid(which='major')
-        axes[1].grid(which='minor', alpha=0.5)
-        
-        axes[1].set_ylabel(f"h [{h_unit}]")
-        axes[1].legend(loc='upper right')
-        
-        axes[1].set_title("Lateral flow front")
-        
-        if show_plot:
-            plt.show()
-
-        return axes
     '''
+        
+        for model in models:
+            if model not in self._loaded_results.keys():
+                raise ValueError(" -> First load model using load_numerical_result.")
+                
+        plot_kwargs = {} if plot_kwargs is None else plot_kwargs
+        as_kwargs = {} if as_kwargs is None else as_kwargs
+        extraction_params = {} if extraction_params is None else extraction_params
+        
+        profile_list = []
+        for model in models:
+            prof, data = tilupy.read.get_profile(self._loaded_results[model],
+                                                        output=output,
+                                                        extraction_method=extraction_method,
+                                                        **extraction_params)
+            profile_list.append([prof, data])
+        
+        if time_steps is None:
+            time_steps = self._models_tim[0]
+        
+        if analytic_solution is not None:
+            as_profile = self.compute_analytic_solution(output=output,
+                                                        T=time_steps,
+                                                        **analytic_solution)
+        
+        if isinstance(time_steps, float) or isinstance(time_steps, int):
+            time_steps = np.array([time_steps])
+        
+        print(time_steps)
+        
+        for i in range(len(profile_list)):
+            t_distances = np.abs(profile_list[i][0].t[None, :] - time_steps[:, None])
+            t_indexes = np.argmin(t_distances, axis=1)
+
+            profile_list[i][0] = tilupy.read.TemporalResults1D(name=profile_list[i][0].name,
+                                                               d=profile_list[i][0].d[:, t_indexes],
+                                                               t=profile_list[i][0].t[t_indexes],
+                                                               coords=profile_list[i][0].coords,
+                                                               coords_name=profile_list[i][0].coords_name,
+                                                               notation=profile_list[i][0].notation)
+        
+        if axes is None:
+            if cols_nb is None:
+                cols_nb = len(time_steps) if len(time_steps) < 3 else 3
+            
+            if rows_nb is None:
+                rows_nb = len(time_steps) // cols_nb
+                if len(time_steps) % cols_nb != 0:
+                    rows_nb += 1
+                    
+            fig, axes = plt.subplots(nrows=rows_nb, 
+                                     ncols=cols_nb, 
+                                     figsize=figsize, 
+                                     layout="constrained", 
+                                     sharex=True, 
+                                     sharey=True)
+            if isinstance(axes, plt.Axes):
+                axes = np.array([axes])
+            else:
+                axes = axes.flatten()
+                
+        for T in range(len(time_steps)) :
+            # Plot models
+            for i in range(len(profile_list)):
+                if colors is not None and len(colors) > i:
+                    color = colors[i]
+                else:
+                    color = "black"
+                if linestyles is not None and len(linestyles) > i:
+                    linestyle = linestyles[i]
+                else:
+                    linestyle = None
+                
+                if "alpha" not in plot_kwargs:
+                    plot_kwargs["alpha"] = 0.8
+                if "linewidth" not in plot_kwargs:
+                    plot_kwargs["linewidth"] = 1.5
+                
+                axes[T].plot(profile_list[i][0].coords, profile_list[i][0].d[:, T], color=color, linestyle=linestyle, label=models[i], **plot_kwargs)
+            
+            # Plot analytic solution
+            if analytic_solution is not None:
+                if "color" not in as_kwargs:
+                    as_kwargs["color"] = "red"
+                if "alpha" not in as_kwargs:
+                    as_kwargs["alpha"] = 0.9
+                if "linewidth" not in as_kwargs:
+                    as_kwargs["linewidth"] = 1
+                
+                axes[T].plot(as_profile.coords, as_profile.d[:, T], label=f"{str(analytic_solution['model']).split('.')[-1][:-2]}", **as_kwargs)
+            
+            # Formatting fig                
+            axes[T].set_xlim(left=min(profile_list[0][0].coords), right=max(profile_list[0][0].coords))
+            axes[T].grid(True, alpha=0.3)
+            
+            if len(time_steps) == 1:
+                if extraction_method == "axis":
+                    inv_axis = ""
+                    if profile_list[0][0].coords_name == 'x':
+                        inv_axis = "Y"
+                    else:
+                        inv_axis = "X"
+                    axes[T].set_title(f"{inv_axis}={profile_list[0][1]}m  |  t={time_steps[T]}s")
+                else:
+                    axes[T].set_title(f"t={time_steps[T]}s")
+            else:
+                axes[T].set_title(f"t={time_steps[T]}s", loc="left")
+                if extraction_method == "axis":
+                    inv_axis = ""
+                    if profile_list[0][0].coords_name == 'x':
+                        inv_axis = "Y"
+                    else:
+                        inv_axis = "X"
+                    axes[T].set_title(f"{inv_axis}={profile_list[0][1]}m", loc="right")
+                
+            axes[T].set_xlabel(notations.get_label(profile_list[0][0].coords_name))
+            axes[T].set_ylabel(notations.get_label(output))
+            axes[T].legend(loc='upper right')
+
+        for i in range(len(time_steps), len(axes)):
+            fig.delaxes(axes[i])    
+        
+        if show_plot:
+            plt.show()
+        
+        return axes"""
+
+    
+    def get_avrg_result(self, 
+                        output: str
+                        ) -> tilupy.read.TemporalResults | tilupy.read.StaticResults:
+        """Get average result computed with all loaded model (:meth:`tilupy.benchmark.Benchmark.load_numerical_result`).
+
+        Parameters
+        ----------
+        output : str
+            Wanted average output.
+
+        Returns
+        -------
+        tilupy.read.TemporalResults | tilupy.read.StaticResults
+            Average result output.
+
+        Raises
+        ------
+        ValueError
+            If StaticResults0D output wanted.
+        """
+        output_list = []
+        for model in self._loaded_results:
+            output_list.append(self._loaded_results[model].get_output(output))
+        
+        if isinstance(output_list[0], tilupy.read.TemporalResults2D):
+            data_list = [output_list[i].d for i in range(len(output_list))]
+            time_list = [output_list[i].t for i in range(len(output_list))]
+            x_list = [output_list[i].x for i in range(len(output_list))]
+            y_list = [output_list[i].y for i in range(len(output_list))]
+            z_list = [output_list[i].z for i in range(len(output_list))]
+
+            mean_data = np.mean(np.stack(data_list), axis=0)
+            mean_time = np.mean(np.stack(time_list), axis=0)
+            mean_x = np.mean(np.stack(x_list), axis=0)
+            mean_y = np.mean(np.stack(y_list), axis=0)
+            mean_z = np.mean(np.stack(z_list), axis=0)
+            
+            mean_result = tilupy.read.TemporalResults2D(name=output_list[0].name,
+                                                        d=mean_data,
+                                                        t=mean_time,
+                                                        x=mean_x,
+                                                        y=mean_y,
+                                                        z=mean_z)
+
+            return mean_result
+        
+        elif isinstance(output_list[0], tilupy.read.TemporalResults1D):
+            data_list = [output_list[i].d for i in range(len(output_list))]
+            time_list = [output_list[i].t for i in range(len(output_list))]
+            coords_list = [output_list[i].coords for i in range(len(output_list))]
+            
+            mean_data = np.mean(np.stack(data_list), axis=0)
+            mean_time = np.mean(np.stack(time_list), axis=0)
+            mean_coords = np.mean(np.stack(coords_list), axis=0)
+            
+            mean_result = tilupy.read.TemporalResults1D(name=output_list[0].name,
+                                                        d=mean_data,
+                                                        t=mean_time,
+                                                        coords=mean_coords,
+                                                        coords_name=output_list[0].coords_name)
+
+            return mean_result
+
+        elif isinstance(output_list[0], tilupy.read.TemporalResults0D):
+            data_list = [output_list[i].d for i in range(len(output_list))]
+            time_list = [output_list[i].t for i in range(len(output_list))]
+            
+            mean_data = np.mean(np.stack(data_list), axis=0)
+            mean_time = np.mean(np.stack(time_list), axis=0)
+            
+            mean_result = tilupy.read.TemporalResults0D(name=output_list[0].name,
+                                                        d=mean_data,
+                                                        t=mean_time,
+                                                        scalar_names=output_list[0].scalar_names)
+
+            return mean_result
+
+        elif isinstance(output_list[0], tilupy.read.StaticResults2D):
+            data_list = [output_list[i].d for i in range(len(output_list))]
+            x_list = [output_list[i].x for i in range(len(output_list))]
+            y_list = [output_list[i].y for i in range(len(output_list))]
+            z_list = [output_list[i].z for i in range(len(output_list))]
+
+            mean_data = np.mean(np.stack(data_list), axis=0)
+            mean_x = np.mean(np.stack(x_list), axis=0)
+            mean_y = np.mean(np.stack(y_list), axis=0)
+            mean_z = np.mean(np.stack(z_list), axis=0)
+            
+            mean_result = tilupy.read.StaticResults2D(name=output_list[0].name,
+                                                      d=mean_data,
+                                                      x=mean_x,
+                                                      y=mean_y,
+                                                      z=mean_z)
+
+            return mean_result
+        
+        elif isinstance(output_list[0], tilupy.read.StaticResults1D):
+            data_list = [output_list[i].d for i in range(len(output_list))]
+            coords_list = [output_list[i].coords for i in range(len(output_list))]
+            
+            mean_data = np.mean(np.stack(data_list), axis=0)
+            mean_coords = np.mean(np.stack(coords_list), axis=0)
+            
+            mean_result = tilupy.read.StaticResults1D(name=output_list[0].name,
+                                                      d=mean_data,
+                                                      coords=mean_coords,
+                                                      coords_name=output_list[0].coords_name)
+
+            return mean_result
+
+        else:
+            raise ValueError("Not available for StaticResults0D.")
+        
+
+    def compute_area(self,
+                     flow_threshold: float = None
+                     ) -> tuple[dict, dict]:
+        """Compute area, computed with 'h', for each model loaded.
+
+        Parameters
+        ----------
+        flow_threshold : float, optional
+            Flow threshold to extract flow area, if None use 1% of initial maximal 
+            flow height. By default None.
+
+        Returns
+        -------
+        tuple[dict, dict]
+            area_surf: dict
+                2D area for each model: area_surf[model] = TemporalResults2D.
+            area_num: dict
+                Area value for each model: area_num[model] = TemporalResults0D. 
+        """
+        output_list = []
+        for model in self._loaded_results:
+            output_list.append(self._loaded_results[model].get_output("h"))
+        
+        height_list = [output_list[i].d for i in range(len(output_list))]
+
+        if flow_threshold is None:
+            flow_threshold = np.max(height_list[0]) * 0.01
+        
+        for h in height_list:
+            h[h<flow_threshold] = np.nan
+            h[h>=flow_threshold] = 1
+        
+        area_num = {}
+        area_surf = {}
+        model_name = list(self._loaded_results.keys())
+        for i in range(len(height_list)):
+            surface_list = []
+            dx = self._loaded_results[model].dx
+            dy = self._loaded_results[model].dy
+            cell_surface = dx*dy
+
+            for t in range(height_list[i].shape[2]):
+                nb_cell = np.sum(height_list[i][:, :, t] == 1)
+                surface_list.append(nb_cell*cell_surface)
+            
+            area_num[model_name[i]] = tilupy.read.TemporalResults0D(name='s',
+                                                                    d=np.array(surface_list),
+                                                                    t=output_list[i].t,
+                                                                    scalar_names="Surface")
+        
+            area_surf[model_name[i]] = tilupy.read.TemporalResults2D(name='s',
+                                                                     d=height_list[i],
+                                                                     t=output_list[i].t,
+                                                                     x=output_list[i].x,
+                                                                     y=output_list[i].y,
+                                                                     z=output_list[i].z)
+        
+        return area_surf, area_num 
+    
+    
+    def compute_integrated_area(self,
+                                flow_threshold: float = None,
+                                ) -> tuple[dict, dict]:
+        """Compute integrated area, computed with 'h_max', for each model loaded.
+
+        Parameters
+        ----------
+        flow_threshold : float, optional
+            Flow threshold to extract flow area, if None use 1% of initial maximal 
+            flow height. By default None.
+
+        Returns
+        -------
+        tuple[dict, dict]
+            area_surf: dict
+                2D area for each model: area_surf[model] = StaticResults2D.
+            area_num: dict
+                Area value for each model: area_num[model] = area_val. 
+        """
+        output_list = []
+        for model in self._loaded_results:
+            output_list.append(self._loaded_results[model].get_output("h_max"))
+        
+        height_list = [output_list[i].d for i in range(len(output_list))]
+
+        if flow_threshold is None:
+            flow_threshold = np.max(height_list[0]) * 0.01
+        
+        for h in height_list:
+            h[h<flow_threshold] = np.nan
+            h[h>=flow_threshold] = 1
+        
+        area_num = {}
+        area_surf = {}
+        model_name = list(self._loaded_results.keys())
+        for i in range(len(height_list)):
+            dx = self._loaded_results[model].dx
+            dy = self._loaded_results[model].dy
+            cell_surface = dx*dy
+
+            nb_cell = np.sum(height_list[i][:, :] == 1)
+            surface = (nb_cell*cell_surface)
+            
+            area_num[model_name[i]] = surface
+        
+            area_surf[model_name[i]] = tilupy.read.StaticResults2D(name='s',
+                                                                     d=height_list[i],
+                                                                     x=output_list[i].x,
+                                                                     y=output_list[i].y,
+                                                                     z=output_list[i].z)
+        
+        return area_surf, area_num 
+    
+    
+    def compute_integrated_area_rms_from_avrg(self,
+                                              avrg_result: tilupy.read.StaticResults2D = None,
+                                              flow_threshold: float = None
+                                              ) -> dict:
+        """Compute integrated area, computed with 'h_max', RMS with average result for each model loaded.
+
+        Parameters
+        ----------
+        avrg_result : tilupy.read.StaticResults2D, optional
+            Existing average result, by default None.
+        flow_threshold : float, optional
+            Flow threshold to extract flow area, if None use 1% of initial maximal 
+            flow height. By default None.
+
+        Returns
+        -------
+        dict
+            RMS value for each model: area_rms[model] = rms_value.
+        """
+        if avrg_result is None:
+            avrg_result = self.get_avrg_result("h_max")
+       
+        avrg_h = avrg_result.d
+        avrg_h[avrg_h<flow_threshold] = np.nan
+        avrg_h[avrg_h>=flow_threshold] = 1
+        
+        dx = avrg_result.x[1] - avrg_result.x[0]
+        dy = avrg_result.y[1] - avrg_result.y[0]
+        cell_surface = dx*dy
+
+        nb_cell = np.sum(avrg_h[:, :] == 1)
+        surface = (nb_cell*cell_surface)
+        
+        avrg_area_num = surface
+
+        _, area_num = self.compute_integrated_area(flow_threshold=flow_threshold)
+        
+        area_rms = {}
+        for model in area_num:
+            rms = (np.sqrt(np.sum((area_num[model] - avrg_area_num)**2)) /
+                   np.sqrt(np.sum((avrg_area_num)**2)))
+            area_rms[model] = rms
+
+        return area_rms
+
+
+    def compute_rms_from_avrg(self,
+                              output: str,
+                              avrg_result: tilupy.read.TemporalResults | tilupy.read.StaticResults = None
+                              ) -> dict:
+        """Compute RMS with average result for each model loaded.
+
+        Parameters
+        ----------
+        output : str
+            Wanted output to compute the RMS.
+        avrg_result : tilupy.read.TemporalResults | tilupy.read.StaticResults, optional
+            Existing average result, by default None.
+
+        Returns
+        -------
+        dict
+            RMS value for each model: output_rms[model] = rms_value.
+        """
+        if avrg_result is None:
+            avrg_result = self.get_avrg_result(output)
+            
+        extracted_data = {}
+        for model in self._loaded_results:
+            data = self._loaded_results[model].get_output(output)
+            extracted_data[model] = data.d
+        avrg_height = avrg_result.d
+        
+        output_rms = {}
+        for model in self._loaded_results:
+            rms = (np.sqrt(np.sum((extracted_data[model] - avrg_height)**2)) /
+                   np.sqrt(np.sum((avrg_height)**2)))
+            output_rms[model] = rms
+                
+        return output_rms
+    
+    
+    def compute_average_velocity(self,
+                                 distance: float = None,
+                                 look_up_direction: str = "right",
+                                 flow_threshold: float = None,
+                                 **extration_profile_params
+                                 ) -> tuple[dict, dict, float, dict]:
+        """Compute average velocity for each model loaded.
+
+        Parameters
+        ----------
+        distance : float, optional
+            Distance used to calculate average speed, if None use maximal_distance/2. 
+            By default None.
+        look_up_direction : str, optional
+            Direction to look for the flow front, must be "right" or "left", 
+            by default "right".
+        flow_threshold : float, optional
+            Flow threshold when extracting front position from profile, if None use 
+            1% of initial maximal flow height. By default None.
+        
+        Returns
+        -------
+        tuple[dict, dict, float, dict]
+            model_avrg_vel: dict
+                Average velocity value for each model: model_avrg_vel[model] = avrg_velocity.
+            model_time: dict
+                Time for each model to reach the distance: model_time[model] = time.
+            distance: float
+                Distance used to compute the average velocity.
+            model_pos: dict
+                Front position of the profile of each model: model_pos[model] = [init_front_pos, final_front_pos, 
+                maximal_distance].
+        """
+        def get_front_index(profile):
+            idx = np.where(profile <= flow_threshold)[0]
+            return (idx[0] - 1) if len(idx) else len(profile) - 1
+
+        def get_back_index(profile):
+            idx = np.where(profile <= flow_threshold)[0]
+            return (idx[-1] + 1) if len(idx) else 0
+        
+        extration_profile_params = {} if extration_profile_params is None else extration_profile_params
+        
+        if look_up_direction not in ["right", "left"]:
+            raise ValueError("Invalid look-up direction: 'right' or 'left'")
+        
+        # Extract profile
+        model_profile = {}
+        for model in self._loaded_results:
+            profile, _ = tilupy.read.get_profile(simu=self._loaded_results[model],
+                                                 output="h",
+                                                 **extration_profile_params)
+            model_profile[model] = profile
+            
+            if flow_threshold is None:
+                flow_threshold = np.max(profile.d[:, 0])*0.01
+            
+        # Find initial and final position
+        model_pos = {}
+        for model in self._loaded_results:
+            max_index_init = np.argmax(model_profile[model].d[:, 0])
+            max_index_final = np.argmax(model_profile[model].d[:, -1])
+
+            idx_r_init = get_front_index(model_profile[model].d[max_index_init:, 0]) + max_index_init
+            idx_l_init = get_back_index(model_profile[model].d[:max_index_init, 0])
+            idx_r_final = get_front_index(model_profile[model].d[max_index_final:, -1]) + max_index_final
+            idx_l_final = get_back_index(model_profile[model].d[:max_index_final, -1])
+            
+            if look_up_direction == "right":
+                init_pos = model_profile[model].coords[idx_r_init]
+                final_pos = model_profile[model].coords[idx_r_final]
+            else:
+                init_pos = model_profile[model].coords[idx_l_init]
+                final_pos = model_profile[model].coords[idx_l_final]
+
+            model_pos[model] = (init_pos, final_pos, abs(final_pos-init_pos))
+
+        # Find minimal distance
+        min_distance = 1e10
+        for model in model_pos:
+            min_distance = model_pos[model][2] if model_pos[model][2] < min_distance else min_distance
+        
+        if distance is not None and distance > min_distance:
+            raise ValueError(f"The requested distance is greater than the minimum distance: {min_distance}")
+        
+        if distance is None:
+            distance = min_distance/2
+        
+        
+        # Find the time for each model to exceed the distance
+        model_time = {}
+        for model in model_profile:
+            for t in range(1, len(model_profile[model].t)):
+                max_index = np.argmax(model_profile[model].d[:, t])
+                
+                idx_r = get_front_index(model_profile[model].d[max_index:, t]) + max_index
+                idx_l = get_back_index(model_profile[model].d[:max_index, t])
+                
+                if look_up_direction == "right":
+                    pos = model_profile[model].coords[idx_r]
+                else:
+                    pos = model_profile[model].coords[idx_l]
+                
+                if abs(pos - model_pos[model][0]) >= distance:
+                    model_time[model] = model_profile[model].t[t]
+                    break
+        
+        
+        # Compute the avrg velocity for each model
+        model_avrg_vel = {}
+        for model in model_time:
+            model_avrg_vel[model] = distance / model_time[model]
+                    
+        return model_avrg_vel, model_time, distance, model_pos
+    
+    
+    def compute_rms_from_coussot(self,
+                                 look_up_direction: str = "right",
+                                 flow_threshold: float = None,
+                                 **coussot_params
+                                 ) -> tuple[dict, dict, dict]:
+        """Compute RMS with Coussot's front shape for each model loaded.
+
+        Parameters
+        ----------
+        look_up_direction : str, optional
+            Direction to look for the flow front, must be "right" or "left", 
+            by default "right".
+        flow_threshold : float, optional
+            Flow threshold when extracting front position from profile, if None use 
+            1% of initial maximal flow height. By default None.
+
+        Returns
+        -------
+        tuple[dict, dict, dict]
+            output_rms: dict
+                RMS value for each model: output_rms[model] = rms_value.
+            model_front_pos: dict
+                Position of Coussot's profile for each model: model_front_pos[model] = pos_value.
+            model_coussot: dict
+                Coussot's profile for each model: model_coussot[model] = StaticResults1D.
+        """
+        from scipy.interpolate import interp1d
+        
+        def get_front_index(profile):
+            idx = np.where(profile <= flow_threshold)[0]
+            return (idx[0] - 1) if len(idx) else len(profile) - 1
+
+        def get_back_index(profile):
+            idx = np.where(profile <= flow_threshold)[0]
+            return (idx[-1] + 1) if len(idx) else 0
+        
+        output_rms = {}
+        model_front_pos = {}
+        model_coussot = {}
+        for model in self._loaded_results:
+            # Extract profile
+            prof, _ = tilupy.read.get_profile(self._loaded_results[model],
+                                              "h")
+            if flow_threshold is None:
+                flow_threshold = np.max(prof.d[:, 0])*0.01
+            max_index = np.argmax(prof.d[:, -1])
+            
+            # Create Coussot profile
+            front_shape = Coussot_shape(**coussot_params)
+            front_shape.compute_rheological_test_front_morpho(h_final=np.max(prof.d[:, -1]))
+            
+            if look_up_direction == "right":
+                front_shape.change_orientation_flow()
+                idx = get_front_index(prof.d[max_index:, -1]) + max_index
+                front_pos = prof.coords[idx]
+            else:
+                idx = get_back_index(prof.d[:max_index, -1])
+                front_pos = prof.coords[idx]                
+            front_shape.translate_front(front_pos)
+            
+            # Find best position for Coussot's profile
+            interp_front = interp1d(front_shape.x, front_shape.h, bounds_error=False, fill_value=np.nan)
+
+            max_dx = (prof.coords[1] - prof.coords[0]) * 2
+            dx_range = np.linspace(-max_dx, max_dx, 1000)
+            best_dx = None
+            best_error = np.inf
+
+            for dx in dx_range:
+                y_shifted = interp_front(prof.coords - dx)
+                error = np.nanmean((prof.d[:, -1] - y_shifted)**2)
+                if error < best_error:
+                    best_error = error
+                    best_dx = dx
+            
+            # print(best_dx)
+            front_shape.translate_front(best_dx)
+            model_front_pos[model] = front_pos + best_dx
+            model_coussot[model] = tilupy.read.StaticResults1D(name="h",
+                                                               d=front_shape.h,
+                                                               coords=front_shape.x,
+                                                               coords_name="x")
+                        
+            # Extract front value of profile 
+            x_index_max = np.argmin(np.abs(prof.coords - np.max(front_shape.x)))
+            x_index_min = np.argmin(np.abs(prof.coords - np.min(front_shape.x)))
+            
+            reduc_idx = np.linspace(0, len(front_shape.x) - 1, len(prof.coords[x_index_min:x_index_max]), dtype=int)
+            
+            # print((prof.d[x_index_min:x_index_max, -1] 
+            #                        - np.array(front_shape.h[::-1])[reduc_idx])**2)
+            # print(np.sum((prof.d[x_index_min:x_index_max, -1] 
+            #                        - np.array(front_shape.h[::-1])[reduc_idx])**2))
+            # print(np.sqrt(np.sum((prof.d[x_index_min:x_index_max, -1] 
+            #                        - np.array(front_shape.h[::-1])[reduc_idx])**2)))
+            # print(np.sqrt(np.sum((np.array(front_shape.h)[reduc_idx])**2)))
+            
+            # a = np.sqrt(np.sum((prof.d[x_index_min:x_index_max, -1] 
+            #                        - np.array(front_shape.h[::-1])[reduc_idx])**2))
+            # b = np.sqrt(np.sum((np.array(front_shape.h)[reduc_idx])**2))
+            # print(a/b)
+            
+            # Compute RMS
+            rms = (np.sqrt(np.sum((prof.d[x_index_min:x_index_max, -1] 
+                                   - np.array(front_shape.h[::-1])[reduc_idx])**2)) /
+                   np.sqrt(np.sum((np.array(front_shape.h)[reduc_idx])**2)))
+            
+            output_rms[model] = rms
+            
+            # prof.plot()
+            # plt.plot(np.array(front_shape.x)[reduc_idx], np.array(front_shape.h)[reduc_idx])
+            # plt.show()
+            
+        # print(output_rms)
+        return output_rms, model_front_pos, model_coussot
+
+    
+    def generate_simulation_comparison_csv(self,
+                                           folder_out: str = None,
+                                           file_name: str = None,
+                                           flow_threshold: float = 1e-1,
+                                           profile_direction: str = "right",
+                                           avrg_velocity_distance: float = None,
+                                           coussot_criteria: dict = None,
+                                           ) -> None:
+        """Generate a xlsx file summarizing comparison criteria between flow models.
+        
+        Generates a file grouping comparison criteria between numerical flow models:
+        
+            - Criterias integrated throughout the simulation:
+
+                - Flow Area: flow area value and RMS versus mean result.
+                - Maximal Height: RMS of flow maximal height versus mean result.
+                - Average Velocity: time for flow to reach a given distance and 
+                average velocity calculated from these values.
+            
+            - Criterias for the final time step of the simulation:
+
+                - Final Height: RMS of flow final height versus mean result.
+                - Flow Front Position: maximum distance traveled by the flow and 
+                comparison with the average result.
+                - Front Shape (optional): RMS of the front shape versus Coussot's
+                theorical front shape (:class:`tilupy.analytic_sol.Coussot_shape`).
+                
+            - Numerical criterias:
+
+                - Volume: value of the volume at final time steps and RMS versus 
+                initial volume value.
+            
+        Parameters
+        ----------
+        folder_out : str, optional
+            Path to the folder where the file is saved, if None generate 'xlsx_results'
+            folder in code folder. By default None
+        file_name : str, optional
+            Name of the folder, if None use :data:`results_[models]`. By default None.
+        flow_threshold : float, optional
+            Flow threshold when extracting front position from profile, by default 1e-1.
+        profile_direction : str, optional
+            Direction to look for the flow front, must be "right" or "left", 
+            by default "right".
+        avrg_velocity_distance : float, optional
+            Distance used to calculate average speed, if None use maximal_distance/2. 
+            By default None.
+        coussot_criteria : dict, optional
+            If None, ignore Coussot criteria. Otherwise, list of arguments to generate a 
+            Coussot profile, by default None
+
+        Raises
+        ------
+        ValueError
+            If the file already exists.
+        """
+        import pandas as pd
+        import openpyxl
+        import os
+
+        if folder_out is None:
+            folder_out = os.path.join(os.path.dirname(__file__), "xlsx_results")
+            
+        os.makedirs(folder_out, exist_ok=True)
+        
+        if file_name is None:
+            file_name = "results"
+            for model in self._loaded_results:
+                file_name += "_" + model
+        
+        if not file_name.endswith(".xlsx"):
+            file_name = file_name + ".xlsx"
+        saving_path = os.path.join(folder_out, file_name)
+        
+        if os.path.exists(saving_path):
+            raise ValueError(f"Existing file: {saving_path}")
+        
+        # Create table columns
+        cols = ["", ""]
+        for model in self._loaded_results:
+            cols.append(model)
+        
+        table_content = []
+        
+        
+        # --------------------------------------------------------------------------------------------
+        #                        Criterias integrated throughout the simulation 
+        # --------------------------------------------------------------------------------------------
+        table_content.append(["Criterias integrated throughout the simulation"])
+        
+        # --------------------------------------- Flow area ------------------------------------------
+        line = ["Flow Area", "Total Area [m2]"]
+        _, area_num = self.compute_integrated_area(flow_threshold=flow_threshold)
+        
+        for model in self._loaded_results:
+            line.append(area_num[model])
+        table_content.append(line)
+        
+        line = ["", "RMS (avrg)"]
+        rms_area = self.compute_integrated_area_rms_from_avrg(flow_threshold=flow_threshold)
+        
+        for model in self._loaded_results:
+            line.append(rms_area[model])
+        table_content.append(line)
+
+        # ------------------------------------- Maximal height ---------------------------------------
+        line = ["Maximal Height", "RMS (avrg)"]
+        rms_height = self.compute_rms_from_avrg(output="h_max")
+
+        for model in self._loaded_results:
+            line.append(rms_height[model])
+        table_content.append(line)
+
+        # ----------------------------------- Average flow speed -------------------------------------
+        avrg_vel, time, dist, model_pos = self.compute_average_velocity(distance=avrg_velocity_distance,
+                                                                        look_up_direction=profile_direction,
+                                                                        flow_threshold=flow_threshold)
+        line = ["Average Velocity", f"Time [s] to complete d={dist}m"]
+
+        for model in self._loaded_results:
+            line.append(time[model])
+        table_content.append(line)
+        
+        line = ["", f"Average velocity [m/s]"]
+        
+        for model in self._loaded_results:
+            line.append(avrg_vel[model])
+        table_content.append(line)
+
+
+        # --------------------------------------------------------------------------------------------
+        #                       Criterias for the final time step of the simulation
+        # --------------------------------------------------------------------------------------------
+        table_content.append(["Criterias for the final time step of the simulation"])
+
+        # --------------------------------------- Final height ---------------------------------------
+        line = ["Final Height", "RMS (avrg)"]
+        rms_height = self.compute_rms_from_avrg(output="h_final")
+
+        for model in self._loaded_results:
+            line.append(rms_height[model])
+        table_content.append(line)
+        
+        # -------------------------------- Position of the flow front --------------------------------
+        line = ["Flow Front Position", "Max distance [m]"]
+
+        for model in self._loaded_results:
+            line.append(model_pos[model][2])
+        table_content.append(line)
+        
+        line = ["", "Compared to avrg"]
+
+        list_pos = []
+        for model in self._loaded_results:
+            list_pos.append(model_pos[model][2])
+        mean_dist = np.mean(np.array(list_pos))
+        
+        for model in self._loaded_results:
+            line.append(abs(model_pos[model][2]-mean_dist)/mean_dist)
+        table_content.append(line)
+
+        # ---------------------------------- Front shape comparison ---------------------------------- 
+        if coussot_criteria is not None:
+            line = ["Front Shape", "RMS (Coussot)"]
+            model_rms, _ = self.compute_rms_from_coussot(look_up_direction=profile_direction,
+                                                         flow_threshold=flow_threshold,
+                                                         **coussot_criteria)
+            
+            for model in self._loaded_results:
+                line.append(model_rms[model])
+            table_content.append(line)
+
+            
+        # --------------------------------------------------------------------------------------------
+        #                                     Numeralical criterias
+        # --------------------------------------------------------------------------------------------
+        table_content.append(["Numerical criterias"])
+        
+        # ------------------------------------------- Volume -----------------------------------------
+        line = ["Flow Volume", "At final time step [m3]"]
+        
+        for model in self._loaded_results:
+            line.append(model_volume[model].d[-1])
+        table_content.append(line)
+        
+        line = ["", "RMS (Vinit)"]
+        
+        model_volume = {}
+        for model in self._loaded_results:
+            volume = self._loaded_results[model].get_output("volume")
+            model_volume[model] = volume
+        
+        for model in self._loaded_results:
+            rms = np.sqrt(np.mean(model_volume[model].d**2))
+            vinit = model_volume[model].d[0]
+            rms_vinit = (rms - vinit) / vinit
+            line.append(rms_vinit)
+        table_content.append(line)
+        
+        
+        # --------------------------------------------------------------------------------------------
+        #                                       Save table in [xlsx]
+        # --------------------------------------------------------------------------------------------
+        df = pd.DataFrame(table_content, columns=cols)
+        df.to_excel(saving_path, index=False, engine="openpyxl")
+        
+        # --------------------------------------- Reformat table -------------------------------------
+        wb = openpyxl.load_workbook(saving_path)
+        ws = wb.active
+        
+        # Add border style
+        bordure_fine = openpyxl.styles.Border(left=openpyxl.styles.Side(style="thin"),
+                                              right=openpyxl.styles.Side(style="thin"),
+                                              top=openpyxl.styles.Side(style="thin"),
+                                              bottom=openpyxl.styles.Side(style="thin"))
+
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
+            for cell in row:
+                cell.border = bordure_fine
+        wb.save(saving_path)
+        
+        print(f"Saved in: {saving_path}")
+
+
+    def generate_analytical_comparison_csv(self,
+                                           analytic_solution: dict,
+                                           compute_as_u: bool = True,
+                                           extration_profile_params: dict = None,
+                                           flow_threshold: float = None,
+                                           folder_out: str = None,
+                                           file_name: str = None,
+                                           ) -> None:
+        """Generate a xlsx file summarizing comparison criteria between flow models and analytic solution.
+        
+        Generates a file grouping comparison criteria between numerical flow models and analytic solution:
+        
+            - Criterias integrated throughout the simulation:
+
+                - Total Height: RMS of flow height versus analytical solution.
+                - Total h*u: RMS of flow h*u versus analytical solution.
+                - Total Front Position: RMS of flow front versus analytical solution.
+            
+            - Criterias for the final time step of the simulation:
+
+                - Flow Front Position: maximum distance traveled by the flow and 
+                comparison with the analytic solution.
+                 
+            - Numerical criterias:
+
+                - Volume: value of the volume at final time steps and RMS versus 
+                initial volume value.
+            
+        Parameters
+        ----------
+        analytic_solution: dict
+            Argument for the analytic solution. See :meth:`tilupy.benchmark.Benchmark.compute_analytic_solution`.
+        compute_as_u: bool, optional
+            If True, compute analytic solution for flow velocity. Can be disabled. By default True.
+        extration_profile_params: dict, optional
+            Argument for extracting profile. See :meth:`tilupy.read.get_profile`. By default None.
+        flow_threshold : float, optional
+            Flow threshold when extracting front position from profile, by default None.
+        folder_out : str, optional
+            Path to the folder where the file is saved, if None generate 'xlsx_results'
+            folder in code folder. By default None
+        file_name : str, optional
+            Name of the folder, if None use :data:`AS_comparison_[models]`. By default None.
+        
+        Raises
+        ------
+        ValueError
+            If the file already exists.
+        """
+        import pandas as pd
+        import openpyxl
+        import os
+
+        if folder_out is None:
+            folder_out = os.path.join(os.path.dirname(__file__), "xlsx_results")
+        
+        os.makedirs(folder_out, exist_ok=True)
+        
+        if file_name is None:
+            file_name = "AS_comparison"
+            for model in self._loaded_results:
+                file_name += "_" + model
+        
+        if not file_name.endswith(".xlsx"):
+            file_name = file_name + ".xlsx"
+        saving_path = os.path.join(folder_out, file_name)
+        
+        if os.path.exists(saving_path):
+            raise ValueError(f"Existing file: {saving_path}")
+        
+        extration_profile_params = {} if extration_profile_params is None else extration_profile_params
+        
+        # Create table columns
+        cols = [f"AS: {str(analytic_solution['model']).split('.')[-1][:-2]}", ""]
+        for model in self._loaded_results:
+            cols.append(model)
+        
+        table_content = []
+        
+        # --------------------------------------------------------------------------------------------
+        #                        Compute AS at each time steps for each models 
+        # --------------------------------------------------------------------------------------------
+        model_AS_h = {}
+        model_AS_u = {}
+        for model in self._loaded_results:
+            as_h_profile = self.compute_analytic_solution(output="h",
+                                                          T=self._models_tim[model],
+                                                          **analytic_solution)
+            model_AS_h[model] = as_h_profile
+            if compute_as_u:
+                as_u_profile = self.compute_analytic_solution(output="u",
+                                                              T=self._models_tim[model],
+                                                              **analytic_solution)
+                
+                model_AS_u[model] = np.nan_to_num(as_u_profile.d, nan=0)
+        
+            if flow_threshold is None:
+                flow_threshold = np.max(model_AS_h[model].d) * 0.01
+        
+        # --------------------------------------------------------------------------------------------
+        #                        Criterias integrated throughout the simulation 
+        # --------------------------------------------------------------------------------------------
+        table_content.append(["Criterias integrated throughout the simulation"])
+        
+        # ---------------------------------- Height difference ---------------------------------------
+        model_h = {}
+        for model in self._loaded_results:
+            profile, _ = tilupy.read.get_profile(simu=self._loaded_results[model],
+                                                 output="h",
+                                                 **extration_profile_params)
+            model_h[model] = profile
+            
+        line = ["Total Height Difference", "RMS (AS)"]
+        for model in self._loaded_results:
+            line.append((np.sqrt(np.sum((model_h[model].d - model_AS_h[model].d)**2)) /
+                         np.sqrt(np.sum((model_AS_h[model].d)**2))))
+        
+        table_content.append(line)
+        
+        # ------------------------------------ HU difference -----------------------------------------
+        if compute_as_u:
+            model_u = {}
+            for model in self._loaded_results:
+                profile, _ = tilupy.read.get_profile(simu=self._loaded_results[model],
+                                                     output="u",
+                                                     **extration_profile_params)
+                model_u[model] = profile
+                
+            line = ["Total h*u Difference", "RMS (AS)"]
+            for model in self._loaded_results:
+                hu = model_h[model].d * model_u[model].d
+                as_hu = model_AS_h[model].d * model_AS_u[model]
+                line.append((np.sqrt(np.sum((hu - as_hu)**2)) /
+                            np.sqrt(np.sum((as_hu)**2))))
+            
+            table_content.append(line)
+        
+        # ----------------------------------- Front position ---------------------------------------
+        model_position = {}
+        model_as_position = {}
+        for model in self._loaded_results:
+            list_position = []
+            list_as_position = []
+            for t in range(len(model_h[model].t)):
+                # Model
+                max_index = np.argmax(model_h[model].d[:, t])
+                idx = np.where(model_h[model].d[max_index:, t] <= flow_threshold)[0]
+                idx = (idx[0] - 1) if len(idx) else len(model_h[model].d[max_index:, t]) - 1
+                idx += max_index
+                list_position.append(model_h[model].coords[idx])
+                # AS
+                max_index = np.argmax(model_AS_h[model].d[:, t])
+                idx = np.where(model_AS_h[model].d[max_index:, t] <= flow_threshold)[0]
+                idx = (idx[0] - 1) if len(idx) else len(model_AS_h[model].d[max_index:, t]) - 1
+                idx += max_index
+                list_as_position.append(model_AS_h[model].coords[idx])
+            model_position[model] = np.array(list_position)
+            model_as_position[model] = np.array(list_as_position) 
+        
+        line = ["Total Front Position Difference", "RMS (AS)"]
+        
+        for model in self._loaded_results:
+            line.append((np.sqrt(np.sum((model_position[model] - model_as_position[model])**2)) /
+                        np.sqrt(np.sum((model_as_position[model])**2))))
+        
+        table_content.append(line)
+        
+        # --------------------------------------------------------------------------------------------
+        #                       Criterias for the final time step of the simulation
+        # --------------------------------------------------------------------------------------------
+        table_content.append(["Criterias for the final time step of the simulation"])
+        
+        # ---------------------------- Front position at final time step -----------------------------
+        line = ["Front position", "Maximum distance [m]"]
+        
+        for model in self._loaded_results:
+            line.append(model_position[model][-1] - model_position[model][0])
+        
+        table_content.append(line)
+        
+        line = ["", "Compared to AS"]
+        
+        for model in self._loaded_results:
+            line.append((np.sqrt((model_position[model][-1] - model_as_position[model][-1])**2)) /
+                        np.sqrt(np.sum((model_as_position[model])**2)))
+        
+        table_content.append(line)
+        
+        # --------------------------------------------------------------------------------------------
+        #                                     Numeralical criterias
+        # --------------------------------------------------------------------------------------------
+        table_content.append(["Numerical criterias"])
+        
+        # ------------------------------------------- Volume -----------------------------------------
+        line = ["Flow Volume", "RMS (Vinit)"]
+        
+        model_volume = {}
+        for model in self._loaded_results:
+            volume = self._loaded_results[model].get_output("volume")
+            model_volume[model] = volume
+        
+        for model in self._loaded_results:
+            rms = np.sqrt(np.mean(model_volume[model].d**2))
+            vinit = model_volume[model].d[0]
+            rms_vinit = (rms - vinit) / vinit
+            line.append(rms_vinit)
+        table_content.append(line)
+        
+        line = ["", "Final time step [m3]"]
+        
+        for model in self._loaded_results:
+            line.append(model_volume[model].d[-1])
+        table_content.append(line)
+            
+            
+        # --------------------------------------------------------------------------------------------
+        #                                       Save table in [xlsx]
+        # --------------------------------------------------------------------------------------------
+        df = pd.DataFrame(table_content, columns=cols)
+        df.to_excel(saving_path, index=False, engine="openpyxl")
+        
+        # --------------------------------------- Reformat table -------------------------------------
+        wb = openpyxl.load_workbook(saving_path)
+        ws = wb.active
+        
+        # Add border style
+        bordure_fine = openpyxl.styles.Border(left=openpyxl.styles.Side(style="thin"),
+                                              right=openpyxl.styles.Side(style="thin"),
+                                              top=openpyxl.styles.Side(style="thin"),
+                                              bottom=openpyxl.styles.Side(style="thin"))
+
+        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
+            for cell in row:
+                cell.border = bordure_fine
+        wb.save(saving_path)
+        
+        print(f"Saved in: {saving_path}")
+        
+
+"""
+from openpyxl import load_workbook
+
+wb = load_workbook("tableau_resultats.xlsx")
+ws = wb.active
+
+# Exemple de fusions
+ws.merge_cells("A2:A3")
+
+# Enregistrer le résultat
+wb.save("tableau_resultats.xlsx")
+"""
+
+"""
+from openpyxl import load_workbook
+from openpyxl.styles import Font, Alignment
+
+# Charger le fichier
+wb = load_workbook("tableau_resultats.xlsx")
+ws = wb.active
+
+# Exemple : mettre en gras et centrer une cellule
+cell = ws["A1"]
+cell.font = Font(bold=True)
+cell.alignment = Alignment(horizontal="center", vertical="center")
+
+# Exemple : appliquer à toute une ligne d'en-têtes
+for cell in ws[1]:
+    cell.font = Font(bold=True)
+    cell.alignment = Alignment(horizontal="center", vertical="center")
+
+# Exemple : centrer toutes les cellules du tableau
+for row in ws.iter_rows(min_row=2, max_col=6, max_row=ws.max_row):
+    for cell in row:
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+# Enregistrer
+wb.save("tableau_resultats.xlsx")
+"""
