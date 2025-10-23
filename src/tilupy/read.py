@@ -34,30 +34,28 @@ Implemented states :
     - uy : Y-component of fluid velocity
 """
 
-TEMPORAL_DATA_0D = ["ek", "vol"]
+TEMPORAL_DATA_0D = ["ek", "volume"]
 """Time-varying 0D data.
    
 Implemented 0D temporal data :
 
     - ek : kinetic energy
-    - vol : Fluid volume
+    - volume : Fluid volume
     
 Also combine all the assembly possibilities between :data:`TEMPORAL_DATA_2D` and :data:`NP_OPERATORS` (or :data:`OTHER_OPERATORS`), at each point xy following this format:
 
 `[TEMPORAL_DATA_2D]_[NP/OTHER_OPERATORS]_xy`
 
 For instance with h :
-    - h_max_xy
-    - h_mean_xy
-    - h_std_xy
-    - h_sum_xy
-    - h_min_xy
-    - h_final_xy
-    - h_init_xy
-    - h_int_xy
+    - h_max_xy: Maximum value of h over the entire surface for each time step.
+    - h_min_xy: Minimal value of h over the entire surface for each time step.
+    - h_mean_xy: Mean value of h over the entire surface for each time step.
+    - h_std_xy: Standard deviation of h over the entire surface for each time step.
+    - h_sum_xy: Sum of each value of h at each point of the surface for each time step.
+    - h_int_xy: Integrated value of h at each point of the surface for each time step.
 """
 
-TEMPORAL_DATA_1D = [""]
+TEMPORAL_DATA_1D = []
 """Time-varying 1D data.
 
 Combine all the assembly possibilities between :data:`TEMPORAL_DATA_2D` and :data:`NP_OPERATORS` (or :data:`OTHER_OPERATORS`) and with an axis like this:
@@ -65,22 +63,18 @@ Combine all the assembly possibilities between :data:`TEMPORAL_DATA_2D` and :dat
 `[TEMPORAL_DATA_2D]_[NP/OTHER_OPERATORS]_[x/y]`
 
 For instance with h :
-    - h_max_x [Maximum value of height integrating all time steps and value from the X axis -> hmax(y)]
-    - h_max_y [Maximum value of height integrating all time steps and value from the Y axis -> hmax(x)]
-    - h_mean_x
-    - h_mean_y
-    - h_std_x
-    - h_std_y
-    - h_sum_x
-    - h_sum_y
-    - h_min_x
-    - h_min_y
-    - h_final_x
-    - h_final_y
-    - h_init_x
-    - h_init_y
-    - h_int_x
-    - h_int_y
+    - h_max_x: For each Y coordinate, maximum value of h integrating the values of all points on the X axis (along the fixed Y axis) and integrating all time steps, giving hmax(y).
+    - h_max_y: For each X coordinate, maximum value of h integrating the values of all points on the Y axis (along the fixed X axis) and integrating all time steps, giving hmax(x).
+    - h_min_x: For each Y coordinate, minimum value of h integrating the values of all points on the X axis (along the fixed Y axis) and integrating all time steps, giving hmin(y).
+    - h_min_y: For each X coordinate, minimum value of h integrating the values of all points on the Y axis (along the fixed X axis) and integrating all time steps, giving hmin(x).
+    - h_mean_x: For each Y coordinate, mean value of h integrating the values of all points on the X axis (along the fixed Y axis) and integrating all time steps, giving hmean(y).
+    - h_mean_y: For each X coordinate, mean value of h integrating the values of all points on the Y axis (along the fixed X axis) and integrating all time steps, giving hmean(x).
+    - h_std_x: For each Y coordinate, standard deviation of h integrating the values of all points on the X axis (along the fixed Y axis) and integrating all time steps, giving hstd(y).
+    - h_std_y: For each X coordinate, standard deviation of h integrating the values of all points on the Y axis (along the fixed X axis) and integrating all time steps, giving hstd(x).
+    - h_sum_x: For each Y coordinate, sum of each value of h integrating the values of all points on the X axis (along the fixed Y axis) and integrating all time steps, giving hsum(y).
+    - h_sum_y: For each X coordinate, sum of each value of h integrating the values of all points on the Y axis (along the fixed X axis) and integrating all time steps, giving hsum(x).
+    - h_int_x: For each Y coordinate, integrate each value of h integrating the values of all points on the X axis (along the fixed Y axis) and integrating all time steps, giving hint(y).
+    - h_int_y: For each X coordinate, integrate each value of h integrating the values of all points on the Y axis (along the fixed X axis) and integrating all time steps, giving hint(x).
 """
 
 TEMPORAL_DATA_2D = ["hvert", "h", "u", "ux", "uy", "hu", "hu2"]
@@ -111,14 +105,14 @@ Combine all the assembly possibilities between :data:`TEMPORAL_DATA_2D` and :dat
 `[TEMPORAL_DATA_2D]_[NP/OTHER_OPERATORS]`
 
 For instance with h :
-    - h_max : Maximum value of fluid height [At each point on the map, write the maximum fluid height passed over this point, taking into account all the time steps]
-    - h_mean : Mean of fluid height
-    - h_std : Standard deviation of fluid height
-    - h_sum : Sum of fluid height
-    - h_min : Minimum value of fluid height
-    - h_final : Final value of fluid height
-    - h_init : Initial value of fluid height
-    - h_int : Integrated value of fluid height
+    - h_max : Maximum value of h at each point on the map, integrating all the time steps.
+    - h_min : Minimum value of h at each point on the map, integrating all the time steps.
+    - h_mean : Mean value of h at each point on the map, integrating all the time steps.
+    - h_std : Standard deviation of h at each point on the map, integrating all the time steps.
+    - h_sum : Sum of h at each point on the map, integrating all the time steps.
+    - h_final : Value of h at each point on the map, for the last time step.
+    - h_init : Value of h at each point on the map, for the first time step.
+    - h_int : Integrated value of h at each point on the map, integrating all the time steps.
 """
 
 TOPO_DATA_2D = ["z", "zinit", "costh"]
@@ -131,16 +125,16 @@ Implemented topographic data :
     - costh : Cosine of the angle between the vertical and the normal to the relief. Factor to transform vertical height (hvert) into normal height (h).
 """
 
-NP_OPERATORS = ["max", "mean", "std", "sum", "min"]
+NP_OPERATORS = ["max", "min", "mean", "std", "sum"]
 """Statistical operators.
    
 Implemented operators :
 
-    - max : Maximum value
+    - max : Maximum
+    - min : Minimum
     - mean : Mean
     - std : Standard deviation
     - sum : Sum
-    - min : Minimum value
 """
 
 OTHER_OPERATORS = ["final", "init", "int"]
@@ -167,11 +161,11 @@ for stat in NP_OPERATORS + OTHER_OPERATORS:
     for name in TEMPORAL_DATA_2D:
         STATIC_DATA_2D.append(name + "_" + stat)
 
-for stat in NP_OPERATORS + OTHER_OPERATORS:
+for stat in NP_OPERATORS + ["int"]:
     for name in TEMPORAL_DATA_2D:
         TEMPORAL_DATA_0D.append(name + "_" + stat + "_xy")
         
-for stat in NP_OPERATORS + OTHER_OPERATORS:
+for stat in NP_OPERATORS + ["int"]:
     for name in TEMPORAL_DATA_2D:
         for axis in ["x", "y"]:
             TEMPORAL_DATA_1D.append(name + "_" + stat + "_" + axis)
@@ -1155,7 +1149,7 @@ class TemporalResults2D(TemporalResults):
                 coords = self._x
                 coords_name = "x"
             else:
-                coords = self._x
+                coords = self._y
                 coords_name = "y"
             return TemporalResults1D(new_name,
                                      dnew,
@@ -2116,8 +2110,10 @@ class StaticResults2D(StaticResults):
             if extraction_params["profile_position"] is None:
                 if extraction_params["axis"] == 'X':
                     extraction_params["profile_index"] = x_size//2
+                    closest_value=self._x[extraction_params["profile_index"]]
                 else:
                     extraction_params["profile_index"] = y_size//2
+                    closest_value=self._y[extraction_params["profile_index"]]
             
             elif isinstance(extraction_params["profile_position"], float) or isinstance(extraction_params["profile_position"], int):
                 coord_val = extraction_params["profile_position"]
@@ -2148,6 +2144,8 @@ class StaticResults2D(StaticResults):
                 raise ValueError("Invalid format for 'profile_position'. Must be None or float position.")
 
             # Return profile
+            print(closest_value)
+            
             if extraction_params["axis"] == 'X':
                 return (StaticResults1D(name=self._name,
                                         d=data_field[:, extraction_params["profile_index"]],
@@ -2589,7 +2587,7 @@ class Results:
             try:
                 res = self._read_from_file(name, operator, axis=axis, **kwargs)
                 if res is None:
-                    raise UserWarning("Method _read_from_file not implemented in sub-class.")
+                    raise UserWarning(f"{output_name} not found with _read_from_file for {self._code}, use get_spatial_stat")
                 elif isinstance(res, str):
                     raise UserWarning(res)
             except UserWarning as w:
@@ -2625,132 +2623,6 @@ class Results:
         self._costh = None
     
 
-    '''def plot(self,
-             output_name: str,
-             from_file: bool=True,
-             h_thresh: float=None,
-             save: bool=True,
-             folder_out: str=None,
-             dpi: int=150,
-             fmt: str="png",
-             file_suffix: str=None,
-             file_prefix: str=None,
-             display_plot: bool=True,
-             **kwargs
-             ) -> matplotlib.axes._axes.Axes:
-        """Plot a simulation output (temporal, spatial or topographic) and save the plots.
-
-        The method retrieves the requested output using :meth:`get_output`,
-        generates the corresponding plot, and saves it if requested. 
-        Topographic outputs ("z", "zinit", "z_init") are plotted directly.
-
-        Parameters
-        ----------
-        output_name : str
-            Name of the variable or processed output to plot 
-            (e.g., "h", "u_mean_t", "centermass", or topographic data like "zinit").
-        from_file : bool, optional
-            If True, try to read precomputed results from file before computing 
-            them, by default True.
-        h_thresh : float, optional
-            Minimum water depth threshold. Values below this threshold are ignored, 
-            by default None (no thresholding).
-        save : bool, optional
-            If True, save the figure to file, by default True.
-        folder_out : str, optional
-            Path to the folder where figures will be saved. If None, uses
-            `_folder_output/plots`, by default None.
-        dpi : int, optional
-            Resolution of the saved figure in dots per inch, by default 150.
-        fmt : str, optional
-            Output file format for saving the figure (e.g., "png", "jpg", "pdf"),
-            by default "png".
-        file_suffix : str, optional
-            String appended at the end of the file name, by default None.
-        file_prefix : str, optional
-            String prepended at the beginning of the file name, by default None.
-        display_plot : bool, optional
-            If False, the plot is generated in a non-interactive backend (no display), 
-            by default True.
-        **kwargs : dict
-            Additional keyword arguments passed to the underlying plotting function 
-            (e.g., colorbar options, contour levels, figure size).
-
-        Returns
-        -------
-        matplotlib.axes._axes.Axes
-            Matplotlib Axes object containing the plot.
-
-        Raises
-        ------
-        AssertionError
-            If save=True and neither :data:`folder_out` nor :attr:`_folder_output` is defined.
-        """
-        if not display_plot:
-            backend = plt.get_backend()
-            plt.close("all")
-            plt.switch_backend("Agg")
-
-        if output_name in ["z", "zinit", "z_init"]:
-            topo_kwargs = dict()
-            if "topo_kwargs" in kwargs:
-                topo_kwargs = kwargs["topo_kwargs"]
-            axe = plt_fn.plot_topo(self._zinit, self._x, self._y, **topo_kwargs)
-            return axe
-
-        data = self.get_output(output_name, from_file=from_file, h_thresh=h_thresh)
-
-        # if name in TEMPORAL_DATA_2D + STATIC_DATA_2D:
-        #     if "colorbar_kwargs" not in kwargs:
-        #         kwargs["colorbar_kwargs"] = dict()
-        #     if "label" not in kwargs["colorbar_kwargs"]:
-        #         kwargs["colorbar_kwargs"]["label"] = notations.get_label(
-        #             self.notation
-        #         )
-
-        # if "x" not in kwargs:
-        #     kwargs["x"] = self.x
-        # if "y" not in kwargs:
-        #     kwargs["y"] = self.y
-        # if "z" not in kwargs:
-        #     kwargs["z"] = self.zinit
-
-        if save:
-            if folder_out is None:
-                assert (self._folder_output is not None), "folder_output attribute must be set"
-                folder_out = os.path.join(self._folder_output, "plots")
-            os.makedirs(folder_out, exist_ok=True)
-
-        if folder_out is not None and isinstance(data, TemporalResults2D):
-            # If data is TemporalResults2D then saving is managed directly
-            # by the associated plot method
-            kwargs["folder_out"] = folder_out
-            kwargs["dpi"] = dpi
-            kwargs["fmt"] = fmt
-            # kwargs["file_suffix"] = file_prefix
-            # kwargs["file_prefix"] = file_prefix
-
-        axe = data.plot(**kwargs)
-
-        if folder_out is not None and not isinstance(data, TemporalResults2D):
-            file_name = output_name
-            if file_suffix is not None:
-                file_name = file_name + "_" + file_suffix
-            if file_prefix is not None:
-                file_name = file_prefix + "_" + file_name
-            file_out = os.path.join(folder_out, file_name + "." + fmt)
-            # axe.figure.tight_layout(pad=0.1)
-            axe.figure.savefig(file_out, dpi=dpi, bbox_inches="tight", pad_inches=0.05)
-
-        if not display_plot:
-            plt.close("all")
-            plt.switch_backend(backend)
-
-        return axe
-
-    '''
-
-
     def plot(self,
              output: str,
              from_file: bool =True, #get_output
@@ -2762,7 +2634,7 @@ class Results:
              fmt: str="png",
              file_suffix: str = None,
              file_prefix: str = None,
-             display_plot: bool = False,
+             display_plot: bool = True,
              **plot_kwargs
              ) -> matplotlib.axes._axes.Axes:
         
