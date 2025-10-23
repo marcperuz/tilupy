@@ -986,8 +986,13 @@ class TemporalResults2D(TemporalResults):
             for i in range(len(self._t), len(axes)):
                 fig.delaxes(axes[i])
             
-            
-            mappable = axes[0].images[1]
+            max_val, idx = 0, 0
+            for i in range(len(axes)):
+                max_val_t = np.max(axes[i].images[1].get_array())
+                if max_val_t > max_val:
+                    max_val = max_val_t
+                    idx = i
+            mappable = axes[idx].images[1]
             fig.colorbar(mappable, ax=axes, orientation='vertical', **kwargs["colorbar_kwargs"])
             
             return axes
