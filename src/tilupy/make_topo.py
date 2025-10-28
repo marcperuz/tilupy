@@ -65,12 +65,13 @@ def gray99(nx: int = None,
 
     Returns
     -------
-    Xout : numpy.ndarray
-        Mesh of X coordinates in the cartesian frame (nx*ny).
-    Yout : numpy.ndarray
-        Mesh of Y coordinates in the cartesian frame (nx*ny).
-    Zout : numpy.ndarray
-        Mesh of Z coordinates in the cartesian frame (nx*ny).
+    list[numpy.ndarray, numpy.ndarray, numpy.ndarray]
+        Xout : numpy.ndarray
+            Mesh of X coordinates in the cartesian frame (nx*ny).
+        Yout : numpy.ndarray
+            Mesh of Y coordinates in the cartesian frame (nx*ny).
+        Zout : numpy.ndarray
+            Mesh of Z coordinates in the cartesian frame (nx*ny).
     """
     theta1 = np.deg2rad(theta1)
     theta2 = np.deg2rad(theta2)
@@ -254,13 +255,14 @@ def channel(nx: int = None,
 
     Returns
     -------
-    Xout : numpy.ndarray
-        Mesh of X coordinates in the cartesian frame (nx*ny).
-    Yout : numpy.ndarray
-        Mesh of Y coordinates in the cartesian frame (nx*ny).
-    Zout : numpy.ndarray
-        Mesh of Z coordinates in the cartesian frame (nx*ny).
-    thalweg : numpy.ndarray
+    list[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
+        Xout : numpy.ndarray
+            Mesh of X coordinates in the cartesian frame (nx*ny).
+        Yout : numpy.ndarray
+            Mesh of Y coordinates in the cartesian frame (nx*ny).
+        Zout : numpy.ndarray
+            Mesh of Z coordinates in the cartesian frame (nx*ny).
+        thalweg : numpy.ndarray
     """
 
     theta_start = np.deg2rad(theta_start)
