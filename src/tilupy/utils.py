@@ -24,10 +24,10 @@ def CSI(pred: np.ndarray, obs: np.ndarray) -> float:
     ----------
     pred : numpy.ndarray
         Array of predicted binary values (e.g., 1 for event predicted, 0 otherwise).
-        Shape and type must match :paramref:`obs`.
+        Shape and type must match :data:`obs`.
     obs : numpy.ndarray
         Array of observed binary values (e.g., 1 for event observed, 0 otherwise).
-        Shape and type must match :paramref:`pred`.
+        Shape and type must match :data:`pred`.
 
     Returns
     -------
@@ -63,12 +63,12 @@ def diff_runout(x_contour: np.ndarray,
     x_contour : numpy.ndarray
         Array of x-coordinates defining the contour.
     y_contour : numpy.ndarray
-        Array of y-coordinates defining the contour. Must be the same length as :paramref:`x_contour`.
+        Array of y-coordinates defining the contour. Must be the same length as :data:`x_contour`.
     point_ref : tuple[float, float]
         Reference point coordinates (x, y) from which the distance is calculated.
     section : numpy.ndarray or shapely.geometry.LineString, optional
         Coordinates of the section line as an array of shape (N, 2) or a Shapely LineString.
-        If None, the function returns the Euclidean distance from :paramref:`point_ref` to the contour.
+        If None, the function returns the Euclidean distance from :data:`point_ref` to the contour.
         By default None.
     orientation : str, optional
         Orientation of the section line. Must be one of:
@@ -77,14 +77,15 @@ def diff_runout(x_contour: np.ndarray,
             - "E-W" (East-West)
             - "S-N" (South-North)
             - "N-S" (North-South)
+            
         This determines how the intersection point is selected if multiple intersections exist.
         By default "W-E".
 
     Returns
     -------
     float
-        If `section` is None: Euclidean distance from :paramref:`point_ref` to the contour.
-        If `section` is provided: Distance along the section line between :paramref:`point_ref` and the contour intersection.
+        If `section` is None: Euclidean distance from :data:`point_ref` to the contour.
+        If `section` is provided: Distance along the section line between :data:`point_ref` and the contour intersection.
         The distance is signed, depending on the projection direction.
     """
     npts = len(x_contour)
@@ -185,10 +186,9 @@ def get_contour(x: np.ndarray,
                            dict[float, np.ndarray]]:
     """Extract contour lines from a 2D grid of values at specified levels.
 
-    This function computes contour lines for a given 2D field :paramref:`z` defined on the grid :data:`(x, y)`,
-    at the specified levels :paramref:`zlevels`. It can optionally ensure that contours are closed by padding
+    This function computes contour lines for a given 2D field :data:`z` defined on the grid :data:`(x, y)`,
+    at the specified levels :data:`zlevels`. It can optionally ensure that contours are closed by padding
     the input arrays, and filter out contours that are not closed within a maximum distance threshold.
-
 
     Parameters
     ----------
@@ -300,7 +300,7 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
                 - :data:`profile_position`: float, optional
                     Position where to extract the profile. If None choose the median.
                     By default None.
-                Must be read: profile in `axis` = `profile_position m`.
+                Must be read: profile in :data:`axis = profile_position m`.
             
             - If :data:`extraction_mode == "coordinates"`:
             
@@ -328,17 +328,18 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
         
     Returns
     -------
-    tilupy.read.TemporalResults1D or tilupy.read.StaticResults1D
-        Extracted profiles.
-    float or numpy.ndarray
-        Specific output depending on :data:`extraction_mode`:
-        
-            - If :data:`extraction_mode == "axis"`: float
-                Position of the profile.
-            - If :data:`extraction_mode == "coordinates"`: tuple[numpy.ndarray]
-                X coordinates, Y coordinates and distance values.
-            - If :data:`extraction_mode == "shapefile"`: numpy.ndarray
-                Distance values.
+    tuple[tilupy.read.TemporalResults1D or tilupy.read.StaticResults1D, float or tuple[np.ndarray] or np.ndarray]
+        tilupy.read.TemporalResults1D or tilupy.read.StaticResults1D
+            Extracted profiles.
+        float or tuple[np.ndarray] or numpy.ndarray
+            Specific output depending on :data:`extraction_mode`:
+            
+                - If :data:`extraction_mode == "axis"`: float
+                    Position of the profile.
+                - If :data:`extraction_mode == "coordinates"`: tuple[numpy.ndarray]
+                    X coordinates, Y coordinates and distance values.
+                - If :data:`extraction_mode == "shapefile"`: numpy.ndarray
+                    Distance values.
                             
     Raises
     ------
