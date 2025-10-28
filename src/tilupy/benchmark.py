@@ -616,10 +616,10 @@ class Benchmark:
         return area_surf, area_num 
     
     
-    def compute_integrated_area(self,
+    def compute_impacted_area(self,
                                 flow_threshold: float = None,
                                 ) -> tuple[dict, dict]:
-        """Compute integrated area, computed with 'h_max', for each model loaded using 
+        """Compute impacted area, computed with 'h_max', for each model loaded using 
         :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
 
         Parameters
@@ -671,10 +671,10 @@ class Benchmark:
         return area_surf, area_num 
     
     
-    def compute_integrated_area_rms_from_avrg(self,
+    def compute_impacted_area_rms_from_avrg(self,
                                               flow_threshold: float = None
                                               ) -> tuple[dict, np.ndarray]:
-        """Compute integrated area, computed with 'h_max', RMS with average result for each model loaded
+        """Compute impacted area, computed with 'h_max', RMS with average result for each model loaded
         using :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
 
         Parameters
@@ -691,7 +691,7 @@ class Benchmark:
             avrg_area: numpy.ndarray
                 Average area surface.
         """
-        area_surf, area_num = self.compute_integrated_area(flow_threshold=flow_threshold)
+        area_surf, area_num = self.compute_impacted_area(flow_threshold=flow_threshold)
         
         mean_area = []
         for model in area_surf:
@@ -768,7 +768,7 @@ class Benchmark:
                                             centermass.d[1, 0],
                                             centermass.d[2, 0]]
         
-        area_surf, _ = self.compute_integrated_area(flow_threshold=flow_threshold)
+        area_surf, _ = self.compute_impacted_area(flow_threshold=flow_threshold)
 
         model_max_dist = {}
         for model in self._loaded_results:
@@ -1132,7 +1132,7 @@ class Benchmark:
         
         # --------------------------------------- Flow area ------------------------------------------
         line = ["Flow Area", "Total Area [m2]"]
-        _, area_num = self.compute_integrated_area(flow_threshold=flow_threshold)
+        _, area_num = self.compute_impacted_area(flow_threshold=flow_threshold)
         
         mean_list = []
         for model in self._loaded_results:
@@ -1147,7 +1147,7 @@ class Benchmark:
         table_content.append(line)    
             
         line = ["Impacted Zone", "RMS (avrg)"]
-        rms_area, _ = self.compute_integrated_area_rms_from_avrg(flow_threshold=flow_threshold)
+        rms_area, _ = self.compute_impacted_area_rms_from_avrg(flow_threshold=flow_threshold)
         
         for model in self._loaded_results:
             line.append(rms_area[model])
