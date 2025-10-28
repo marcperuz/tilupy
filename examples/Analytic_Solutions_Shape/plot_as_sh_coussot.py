@@ -20,7 +20,7 @@ where
 
 with:
  - :math:`h`: fluid depth.
- - :math:`x`: distance of the front from the origin.
+ - :math:`d`: distance of the front from the origin.
  - :math:`g`: gravitational acceleration.
  - :math:`\rho`: fluid density.
  - :math:`\tau_c`: threshold constraint.
@@ -37,7 +37,7 @@ import matplotlib.pyplot as plt
 
 case_1 = Coussot_shape(rho=1000, tau=50, theta=10)
 case_1.compute_rheological_test_front_morpho()
-plt.plot(case_1.x, case_1.h, color="black")
+plt.plot(case_1.d, case_1.h, color="black")
 plt.show()
 
 # %%
@@ -53,7 +53,7 @@ plt.show()
 
 case_2 = Coussot_shape(rho=1000, tau=50, theta=0)
 case_2.compute_rheological_test_front_morpho(h_final=1)
-plt.plot(case_2.x, case_2.h, color="black")
+plt.plot(case_2.d, case_2.h, color="black")
 plt.show()
 
 # %%

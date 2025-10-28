@@ -20,9 +20,14 @@ class Depth_result(ABC):
     This class defines a common interface for analytical solution that compute flow height 
     h(x,t) and flow velocity u(x,t).
 
-    Attributes:
-    -----------
-        _g : float 
+    Parameters
+    ----------
+        theta : float, optional
+            Angle of the surface, in radian, by default 0.
+    
+    Attributes
+    ----------
+        _g = 9.81 : float 
             Gravitational constant.
         _theta : float
             Angle of the surface, in radian.
@@ -34,11 +39,6 @@ class Depth_result(ABC):
             Flow height depending on space at a moment.
         _u : np.ndarray
             Flow velocity depending on space at a moment.
-    
-    Parameters:
-    -----------
-        theta : float, optional
-            Angle of the surface, in radian, by default 0.
     """
     def __init__(self, 
                  theta: float=None
@@ -91,8 +91,8 @@ class Depth_result(ABC):
         
         Returns
         -------
-        :attr:`_h` : numpy.ndarray
-            Flow height in :attr:`_x` at :attr:`_t`. If None, no solution computed.
+        numpy.ndarray
+            Attribute :attr:`_h`. If None, no solution computed.
         """
         return self._h
 
@@ -103,8 +103,8 @@ class Depth_result(ABC):
         
         Returns
         -------
-        :attr:`_u` : numpy.ndarray
-            Flow height in :attr:`_x` at :attr:`_t`. If None, no solution computed.
+        numpy.ndarray
+            Attribute :attr:`_u`. If None, no solution computed.
         """
         return self._u
 
@@ -115,8 +115,8 @@ class Depth_result(ABC):
         
         Returns
         -------
-        :attr:`_x` : numpy.ndarray
-            Spatial distribution of the computed solution. If None, no solution computed.
+        numpy.ndarray
+            Attribute :attr:`_x`. If None, no solution computed.
         """
         return self._x
 
@@ -127,8 +127,8 @@ class Depth_result(ABC):
         
         Returns
         -------
-        :attr:`_t` : float or np.ndarray
-            Time instant of the computed solution. If None, no solution computed.
+        float or numpy.ndarray
+            Attribut :attr:`_t`. If None, no solution computed.
         """
         return self._t
 
@@ -264,19 +264,19 @@ class Ritter_dry(Depth_result):
     
     Ritter, A., 1892, Die Fortpflanzung der Wasserwellen, Zeitschrift des Vereines Deutscher Ingenieure, vol. 36(33), p. 947-954.
 
-    Attributes:
-    -----------
-        _h0 : float
-            Initial water depth to the left of the dam.
-        _x0 : float 
-            Initial dam location (position along x-axis).
-        
-    Parameters:
-    -----------
-        h_0 : float
-            Initial water depth to the left of the dam.
+    Parameters
+    ----------
         x_0 : float, optional
             Initial dam location (position along x-axis), by default 0.
+        h_0 : float
+            Initial water depth to the left of the dam.
+
+    Attributes
+    ----------
+        _x0 : float 
+            Initial dam location (position along x-axis).
+        _h0 : float
+            Initial water depth to the left of the dam.
     """
     def __init__(self,
                  h_0: float,  
@@ -350,7 +350,7 @@ class Ritter_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._h`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -398,7 +398,7 @@ class Ritter_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._u`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -435,19 +435,8 @@ class Stoker_SWASHES_wet(Depth_result):
 
     Stoker, J.J., 1957, Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, vol. 4, Interscience Publishers, New York, USA.
 
-    Attributes:
-    -----------
-        _x0 : float 
-            Initial dam location (position along x-axis).
-        _h0 : float
-            Water depth to the left of the dam.
-        _hr : float
-            Water depth to the right of the dam.
-        _cm : float
-            Critical velocity.
-       
-    Parameters:
-    -----------
+    Parameters
+    ----------
         x_0 : float
             Initial dam location (position along x-axis).
         h_0 : float
@@ -457,6 +446,17 @@ class Stoker_SWASHES_wet(Depth_result):
         h_m : float, optional
             Intermediate height used to compute the critical speed cm. If not provided,
             it will be computed numerically via the 'compute_cm()' method.
+    
+    Attributes
+    ----------
+        _x0 : float 
+            Initial dam location (position along x-axis).
+        _h0 : float
+            Water depth to the left of the dam.
+        _hr : float
+            Water depth to the right of the dam.
+        _cm : float
+            Critical velocity. 
     """
     def __init__(self, 
                  x_0: float, 
@@ -544,18 +544,18 @@ class Stoker_SWASHES_wet(Depth_result):
         Parameters
         ----------
         cm : float
-            Trial value for :data:`cm`.
+            Trial value for :attr:`_cm`.
 
         Returns
         -------
         float
-            Residual of the equation. Zero when :data:`cm` satisfies the system.
+            Residual of the equation. Zero when :attr:`_cm` satisfies the system.
         """
         return -8 * self._g * self._hr * cm**2 * (self._g * self._h0 - cm**2)**2 + (cm**2 - self._g * self._hr)**2 * (cm**2 + self._g * self._hr)
 
 
     def compute_cm(self) -> None:
-        r"""Solves the non-linear equation to compute the critical velocity :data:`cm`.
+        r"""Solves the non-linear equation to compute the critical velocity :attr:`_cm`.
 
         Uses numerical root-finding to find a valid value of cm that separates
         the flow regimes. Sets :attr:`_cm` if a valid solution is found.
@@ -609,7 +609,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._h`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if self._cm is not None:
             if isinstance(x, float):
@@ -676,7 +676,7 @@ class Stoker_SWASHES_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._u`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if self._cm is not None:
             if isinstance(x, float):
@@ -730,9 +730,16 @@ class Stoker_SARKHOSH_wet(Depth_result):
     Sarkhosh, P., 2021, Stoker solution package, version 1.0.0, Zenodo. https://doi.org/10.5281/zenodo.5598374
     
     Stoker, J.J., 1957, Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, vol. 4, Interscience Publishers, New York, USA.
+    
+    Parameters
+    ----------
+        h_0 : float
+            Initial water depth to the left of the dam.
+        h_r : float
+            Initial water depth to the right of the dam.
 
-    Attributes:
-    -----------
+    Attributes
+    ----------
         _h0 : float
             Water depth to the left of the dam.
         _hr : float
@@ -741,13 +748,6 @@ class Stoker_SARKHOSH_wet(Depth_result):
             Shock front speed.
         _hm : float
             Height of the shock front.
-       
-    Parameters:
-    -----------
-        h_0 : float
-            Initial water depth to the left of the dam.
-        h_r : float
-            Initial water depth to the right of the dam.
     """
     def __init__(self, 
                  h_0: float, 
@@ -882,7 +882,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._h`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -942,7 +942,7 @@ class Stoker_SARKHOSH_wet(Depth_result):
 
         Notes
         -----
-        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._u`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -991,33 +991,33 @@ class Mangeney_dry(Depth_result):
     Mangeney, A., Heinrich, P., & Roche, R., 2000, Analytical solution for testing debris avalanche numerical models, 
     Pure and Applied Geophysics, vol. 157, p. 1081-1096.
 
-    Attributes:
-    -----------
-        _delta : float 
-            Dynamic friction angle, in radian.
-        _h0 : float
+    Parameters
+    ----------
+        x_0 : float
+            Initial dam location (position along x-axis), by default 0.
+        h_0 : float
             Initial water depth.
-        _x0 : float 
-            Initial dam location (position along x-axis).
-        _c0 : float
-            Initial wave propagation speed.
-        _m : float
-            Constant horizontal acceleration of the front.
-    
-    Parameters:
-    -----------
         theta : float
             Angle of the surface, in degree.
         delta : float
             Dynamic friction angle (20°-40° for debris avalanche), in degree.
-        h_0 : float
+
+    Attributes
+    ----------
+        _x0 : float 
+            Initial dam location (position along x-axis).
+        _h0 : float
             Initial water depth.
-        x_0 : float, optional
-            Initial dam location (position along x-axis), by default 0.
+        _delta : float 
+            Dynamic friction angle, in radian.
+        _c0 : float
+            Initial wave propagation speed.
+        _m : float
+            Constant horizontal acceleration of the front.
     """    
     def __init__(self,
-                 h_0: float,
                  x_0: float,
+                 h_0: float,
                  theta: float,
                  delta: float,
                  ):
@@ -1121,7 +1121,7 @@ class Mangeney_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._h`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1171,7 +1171,7 @@ class Mangeney_dry(Depth_result):
 
         Notes
         -----
-        Updates the internal :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._u`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1209,12 +1209,21 @@ class Dressler_dry(Depth_result):
     Dressler, R.F., 1952, Hydraulic resistance effect upon the dam‑break functions, Journal of Research of the National Bureau 
     of Standards, vol. 49(3), p. 217-225.
 
-    Attributes:
-    -----------
-        _h0 : float
+    Parameters
+    ----------
+        x_0 : float
+            Initial dam location (position along x-axis).
+        h_0 : float
             Water depth to the left of the dam.
+        C : float, optional
+            Chézy coefficient, by default 40.
+    
+    Attributes
+    ----------
         _x0 : float 
             Initial dam location (position along x-axis).
+        _h0 : float
+            Water depth to the left of the dam.
         _c : float, optional
             Chézy coefficient, by default 40.
         _xt : float
@@ -1223,19 +1232,10 @@ class Dressler_dry(Depth_result):
             Depth of the tip area, by default None.
         _ut : float, optional
             Velocity of the tip area, by default None.
-       
-    Parameters:
-    -----------
-        h_0 : float
-            Water depth to the left of the dam.
-        x_0 : float
-            Initial dam location (position along x-axis).
-        C : float, optional
-            Chézy coefficient, by default 40.
     """
     def __init__(self,
-                 h_0: float, 
                  x_0: float, 
+                 h_0: float, 
                  C: float=40
                  ):
         super().__init__()
@@ -1342,23 +1342,15 @@ class Dressler_dry(Depth_result):
             return 12./(2 - xi)- 8/3 + 8*np.sqrt(3)/189 * ((2 - xi)**(3/2)) - 108/(7*(2 - xi)**2)
         else:
             return 0
-
-    
-    # def compute_h(self,
-    #               x: float | np.ndarray, 
-    #               T: float | np.ndarray
-    #               ) -> None:
-    #     print(self._h)
-    #     if self._h is None:
-    #         self.compute_h_u(x, T)
         
     
     def compute_u(self,
                   x: float | np.ndarray, 
                   T: float | np.ndarray
                   ) -> None:
+        """Call :meth:`compute_h`."""
         if self._u is None:
-            self.compute_h_u(x, T)
+            self.compute_h(x, T)
 
 
     def compute_h(self, 
@@ -1397,7 +1389,7 @@ class Dressler_dry(Depth_result):
             
         Notes
         -----        
-        Updates the internal :attr:`_h`, :attr:`_u`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._h`, :attr:`tilupy.analytic_sol.Depth_result._u`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1476,23 +1468,23 @@ class Chanson_dry(Depth_result):
     in SWASHES, based on Chanson's equation.
     
     Chanson, H., 2005, Applications of the Saint-Venant Equations and Method of Characteristics to the Dam Break Wave Problem. https://espace.library.uq.edu.au/view/UQ:9438
-
-    Attributes:
-    -----------
-        _h0 : float
-            Water depth to the left of the dam.
-        _x0 : float 
-            Initial dam location (position along x-axis).        
-        _f : float, optional
-            Darcy friction factor.
-       
-    Parameters:
-    -----------
-        h_0 : float
-            Water depth to the left of the dam.
+   
+    Parameters
+    ----------
         x_0 : float 
             Initial dam location (position along x-axis).            
+        h_0 : float
+            Water depth to the left of the dam.
         f : float
+            Darcy friction factor.
+    
+    Attributes
+    ----------
+        _x0 : float 
+            Initial dam location (position along x-axis).        
+        _h0 : float
+            Water depth to the left of the dam.
+        _f : float, optional
             Darcy friction factor.
     """
     def __init__(self, 
@@ -1621,7 +1613,7 @@ class Chanson_dry(Depth_result):
 
         Notes
         -----        
-        Updates the internal :attr:`_h`, :attr:`_x`, :attr:`_t` attributes with the computed result.
+        Updates the internal :attr:`tilupy.analytic_sol.Depth_result._h`, :attr:`tilupy.analytic_sol.Depth_result._x`, :attr:`tilupy.analytic_sol.Depth_result._t` attributes with the computed result.
         """
         if isinstance(x, float):
             x = [x]
@@ -1680,9 +1672,14 @@ class Shape_result(ABC):
     This class defines a common interface for flow simulation that compute 
     the geometry of the final shape of a flow simulation. 
 
-    Attributes:
-    -----------
-        _g : float 
+    Parameters
+    ----------
+        theta : float, optional
+            Angle of the surface, in radian, by default 0.
+    
+    Attributes
+    ----------
+        _g = 9.81 : float 
             Gravitational constant.
         _theta : float
             Angle of the surface, in radian.
@@ -1690,11 +1687,6 @@ class Shape_result(ABC):
             Spatial coordinates.
         _h : np.ndarray
             Flow height depending on space.
-    
-    Parameters:
-    -----------
-        theta : float, optional
-            Angle of the surface, in radian, by default 0.
     """
     def __init__(self,
                  theta: float=0):
@@ -1712,8 +1704,8 @@ class Shape_result(ABC):
         
         Returns
         -------
-        :attr:`_h` : np.ndarray
-            Flow height in :attr:`_x`. If None, no solution computed.
+        numpy.ndarray
+            Attribute :attr:`_h`. If None, no solution computed.
         """
         return self._h
 
@@ -1724,8 +1716,8 @@ class Shape_result(ABC):
         
         Returns
         -------
-        :attr:`_x` : np.ndarray
-            Spatial distribution of the computed solution. If None, no solution computed.
+        numpy.ndarray
+            Attribute :attr:`_x`. If None, no solution computed.
         """
         return self._x
     
@@ -1736,8 +1728,8 @@ class Shape_result(ABC):
         
         Returns
         -------
-        :attr:`_y` : np.ndarray
-            Lateral spatial distribution of the computed solution. If None, no solution computed.
+        numpy.ndarray
+            Attribute :attr:`_y`. If None, no solution computed.
         """
         return self._y
 
@@ -1752,23 +1744,8 @@ class Coussot_shape(Shape_result):
     Coussot, P., Proust, S., & Ancey, C., 1996, Rheological interpretation of deposits of yield stress fluids, 
     Journal of Non-Newtonian Fluid Mechanics, v. 66(1), p. 55-70, doi:10.1016/0377-0257(96)01474-7.
 
-    Attributes:
-    -----------
-        _rho : float
-            Fluid density.
-        _tau : float
-            Threshold constraint.
-        _D : float or np.ndarray
-            Normalized distance of the front from the origin.
-        _H : float or np.ndarray
-            Normalized fluid depth.
-        _d : float or np.ndarray
-            Distance of the front from the origin.
-        _h : float or np.ndarray
-            Fluid depth.
-    
-    Parameters:
-    -----------
+    Parameters
+    ----------
         rho : float
             Fluid density.
         tau : float
@@ -1779,6 +1756,24 @@ class Coussot_shape(Shape_result):
             The final flow depth, by default 1.
         H_size : int, optional
             Number of value wanted in the H array, by default 100.
+    
+    Attributes
+    ----------
+        _rho : float
+            Fluid density.
+        _tau : float
+            Threshold constraint.
+        _D : float or numpy.ndarray
+            Normalized distance of the front from the origin.
+        _H : float or numpy.ndarray
+            Normalized fluid depth.
+        _d : float or numpy.ndarray
+            Distance of the front from the origin.
+        _h : float or numpy.ndarray
+            Fluid depth.
+        _H_size : int
+            Number of point in H-axis.
+    
     """   
     def __init__(self, 
                  rho: float,
@@ -1791,7 +1786,7 @@ class Coussot_shape(Shape_result):
         self._rho = rho
         self._tau = tau
         
-        self.H_size = H_size
+        self._H_size = H_size
         self._D = None
         self._d = None
         self._H = np.linspace(0, self.h_to_H(h_final), H_size)
@@ -1888,7 +1883,7 @@ class Coussot_shape(Shape_result):
     
     def X_to_x(self,
                X: float
-               ) -> np.ndarray:
+               ) -> float:
         r"""Find the original value of the spatial coordinates from the normalized one
         by following:
         
@@ -1927,11 +1922,6 @@ class Coussot_shape(Shape_result):
         
         .. math::
                 D = \frac{H^2}{2}
-                
-        Parameters
-        ----------
-        H_size : int, optional
-            Number of value wanted in the H array, by default 100.
         """
         if self._theta == 0:
             D = []
@@ -2021,7 +2011,7 @@ class Coussot_shape(Shape_result):
         from scipy.interpolate import interp1d
         
         d_min, d_max = self._d.min(), self._d.max()
-        d_curve = np.linspace(d_min, d_max, self.H_size)
+        d_curve = np.linspace(d_min, d_max, self._H_size)
 
         f = interp1d(self._d, self._h, kind='cubic')
         h_curve = f(d_curve)
@@ -2036,8 +2026,8 @@ class Coussot_shape(Shape_result):
         
         Returns
         -------
-        :attr:`_d` : np.ndarray
-            Spatial distribution of the computed solution. If None, no solution computed.
+        numpy.ndarray
+            Attribute :attr:`_d`. If None, no solution computed.
         """
         return self._d
     
@@ -2048,9 +2038,14 @@ class Front_result:
     This class defines multiple methods for flow simulation that compute 
     the position of the front flow at the specified moment. 
 
-    Attributes:
-    -----------
-        _g : float 
+    Parameters
+    ----------
+        h0 : float
+            Initial fluid depth.
+    
+    Attributes
+    ----------
+        _g = 9.81 : float 
             Gravitational constant.
         _h0 : float
             Initial fluid depth.
@@ -2058,11 +2053,6 @@ class Front_result:
             Dictionnary of spatial coordinates of the front flow for each time step (keys).
         _labels : dictionnary
             Dictionnary of spatial coordinates computation's method for each time step (keys).
-    
-    Parameters:
-    -----------
-        h0 : float
-            Initial fluid depth.
     """
     def __init__(self,
                  h0: float,
