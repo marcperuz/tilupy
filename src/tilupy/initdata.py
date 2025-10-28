@@ -13,58 +13,6 @@ import tilupy.make_mass
 import tilupy.raster
 
 
-'''def make_constant_slope(
-    folder_out,
-    theta=10,
-    m_radius=50,
-    m_height=50,
-    m_x=None,
-    m_y=None,
-    xmax=800,
-    ymax=550,
-    cellsize=2.5,
-):
-    """Init topography and mass for simulation on constant slope."""
-    # Create mesh
-    x = np.linspace(0, xmax, int(np.round(xmax / cellsize)))
-    y = np.linspace(0, ymax, int(np.round(ymax / cellsize)))
-    xmesh, ymesh = np.meshgrid(x, y)
-
-    # Topography slope
-    slope = np.tan(np.deg2rad(theta))
-
-    # Topography array
-    z = -slope * (xmesh - xmax)
-
-    # Create initial mass
-    if m_x is None:
-        m_x = 3 * m_radius
-    if m_y is None:
-        m_y = ymax / 2
-    m = (
-        1
-        - (xmesh - m_x) ** 2 / m_radius**2
-        - (ymesh - m_y) ** 2 / m_radius**2
-    )
-    m = np.maximum(m * m_height, 0)
-
-    # Write headers for ascii files
-    nx = z.shape[1]
-    ny = z.shape[0]
-    header_txt = "ncols {:.0f}\nnrows {:.0f}\nxllcorner 0\nyllcorner 0\n"
-    header_txt += "cellsize {:.4f}\nnodata_value -99999"
-    header_txt = header_txt.format(nx, ny, cellsize)
-
-    for a, name in zip([z, m], ["topo", "mass"]):
-        np.savetxt(
-            os.path.join(folder_out, name + ".asc"),
-            a,
-            header=header_txt,
-            comments="",
-        )
-'''
-
-
 def create_topo_constant_slope(folder_out: str, 
                                xmax: int = 30,
                                ymax: int = 25,
@@ -108,11 +56,15 @@ def create_topo_constant_slope(folder_out: str,
 
     Returns
     -------
-    [folder_path, x, y, z, m]: list[str, np.ndarray, np.ndarray, np.ndarray]
-        - folder_path : str, absolute path to the output directory.
-        - x, y : np.ndarray, meshgrid coordinates.
-        - z : np.ndarray, topography data.
-        - m : np.ndarray, initial mass distribution.
+    list[str, numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
+        folder_path : str 
+            Absolute path to the output directory.
+        x, y : numpy.ndarray, numpy.ndarray 
+            Meshgrid coordinates.
+        z : numpy.ndarray
+            Topography data.
+        m : numpy.ndarray
+            Initial mass distribution.
     """
     # Create mesh
     x = np.linspace(0, xmax, int(np.round(xmax / cell_size)) + 1)
@@ -190,7 +142,7 @@ def create_topo_constant_slope(folder_out: str,
 def gray99_topo_mass(dx: float = 0.1, 
                      dy: float = 0.1, 
                      res_type: str = "true_normal"
-                     ) -> list[np.ndarray]:
+                     ) -> list[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Create Gray99 topographic and mass test.
     
     Create an initial spherical calotte above the topography, resulting as a mass with a 
@@ -208,16 +160,18 @@ def gray99_topo_mass(dx: float = 0.1,
     dy : float, optional
         Cell size of the y axis, by default 0.1
     res_type : str, optional
-        Type of thickness output: 
+        Type of thickness output:
+        
             - 'true_normal': Real thickness in the direction normal to the topography. 
             - 'vertical': Thickness in the vertical direction. 
             - 'projected_normal': Thickness normal to the topography is computed from the vertical 
               thickness projected on the axe normal to the topography. 
+              
         The default is 'true_normal'.
 
     Returns
     -------
-    [X, Y, Z, M] :
+    list[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
         X : numpy.ndarray
             Mesh of X coordinates in the cartesian frame (nx*ny).
         Y : numpy.ndarray
