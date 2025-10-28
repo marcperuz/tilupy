@@ -23,14 +23,14 @@ class Benchmark:
     the results of various simulation models, allowing, among other things, 
     the comparison of results between models.
     
-    Attributes:
-    -----------
+    Attributes
+    ----------
         _loaded_results : dict[tilupy.read.Results]
             Dictionnary of :class:`tilupy.read.Results` object for each model specified in 
-            :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+            :meth:`load_numerical_result`.
         _models_tim : dict[list]
             Dictionnary of recorded time steps for each model specified in 
-            :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+            :meth:`load_numerical_result`.
         _simu_z : numpy.ndarray
             Topographic elevation for the simulation loaded.
     """
@@ -45,7 +45,7 @@ class Benchmark:
                               **kwargs,
                               ) -> None:
         """Load numerical simulation results using :func:`tilupy.read.get_results` for a given model and
-        store the :class:`tilupy.read.Results` object in :attr:`tilupy.benchmark.Benchmark._loaded_results`.
+        store the :class:`tilupy.read.Results` object in :attr:`_loaded_results`.
 
         Parameters
         ----------
@@ -57,9 +57,9 @@ class Benchmark:
         Raises
         ------
         ValueError
-            If size of stored :attr:`tilupy.benchmark.Benchmark._simu_z` is different with new loaded ones.
+            If size of stored :attr:`_simu_z` is different with new loaded ones.
         UserWarning
-            If stored :attr:`tilupy.benchmark.Benchmark._simu_z` are different with new loaded ones.
+            If stored :attr:`_simu_z` are different with new loaded ones.
         ValueError
             If the provided model is not in the allowed list of :data:`tilupy.read.ALLOWED_MODELS`.
         """
@@ -104,7 +104,7 @@ class Benchmark:
             Callable object representing the analytic solution model (model from :class:`tilupy.analytic_sol.Depth_result`)
         model : str
             Wanted model to compute the analytical solution from. Must be loaded first with 
-            :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+            :meth:`load_numerical_result`.
         T : float | list[float]
             Time or list of times at which to compute the analytic solution.
         **kwargs
@@ -162,7 +162,7 @@ class Benchmark:
         output : str
             Wanted output, need to be in :data:`tilupy.read.DATA_NAMES`.
         model : str
-           Wanted model to show the data field. Must be loaded with :meth:`tilupy.benchmark.Benchmark.load_numerical_result`
+           Wanted model to show the data field. Must be loaded with :meth:`load_numerical_result`
         time_steps : float | list[float]
             Value or list of time steps display output. 
             If None displays the output for all recorded time steps in the model's result. 
@@ -212,7 +212,7 @@ class Benchmark:
         output : str
             Wanted output, need to be in :data:`tilupy.read.TEMPORAL_DATA_2D` or :data:`tilupy.read.STATIC_DATA_2D`
         model : str
-            Wanted model to show the output profile. Must be loaded with :meth:`tilupy.benchmark.Benchmark.load_numerical_result`
+            Wanted model to show the output profile. Must be loaded with :meth:`load_numerical_result`
         extraction_method : str, optional
             Wanted profile extraction method. See :func:`tilupy.utils.get_profile`. By default "axis".
         extraction_params : dict, optional
@@ -273,13 +273,13 @@ class Benchmark:
         ----------
         output : str
             Wanted output, need to be in :data:`tilupy.read.TEMPORAL_DATA_1D`. If using a :data:`tilupy.read.TEMPORAL_DATA_2D`,
-            must use profile_extraction_args.
+            must use :data:`profile_extraction_args`.
         models : list[str]
-            Wanted models to show the temporal 1D data. Must be loaded with :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+            Wanted models to show the temporal 1D data. Must be loaded with :meth:`load_numerical_result`.
         profile_extraction_args : dict, optional
             Arguments for profile extraction. See :func:`tilupy.utils.get_profile`. By default None.
         analytic_solution : dict, optional
-            Arguments for plotting an analytic solution. See :meth:`tilupy.benchmark.Benchmark.compute_analytic_solution`. 
+            Arguments for plotting an analytic solution. See :meth:`compute_analytic_solution`. 
             By default None.
         time_steps : float | list[float], optional
             Value or list of time steps required to extract and display profiles. 
@@ -443,7 +443,7 @@ class Benchmark:
     def get_avrg_result(self, 
                         output: str
                         ) -> tilupy.read.TemporalResults | tilupy.read.StaticResults:
-        """Get average result computed with all loaded model (:meth:`tilupy.benchmark.Benchmark.load_numerical_result`).
+        """Get average result computed with all loaded model (:meth:`load_numerical_result`).
 
         Parameters
         ----------
@@ -558,7 +558,7 @@ class Benchmark:
                      flow_threshold: float = None
                      ) -> tuple[dict, dict]:
         """Compute area at each recorded time steps, computed with 'h', for each model loaded
-        using :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+        using :meth:`load_numerical_result`.
 
         Parameters
         ----------
@@ -619,7 +619,7 @@ class Benchmark:
                                 flow_threshold: float = None,
                                 ) -> tuple[dict, dict]:
         """Compute impacted area, computed with 'h_max', for each model loaded using 
-        :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+        :meth:`load_numerical_result`.
 
         Parameters
         ----------
@@ -674,7 +674,7 @@ class Benchmark:
                                               flow_threshold: float = None
                                               ) -> tuple[dict, np.ndarray]:
         """Compute impacted area, computed with 'h_max', RMS with average result for each model loaded
-        using :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+        using :meth:`load_numerical_result`.
 
         Parameters
         ----------
@@ -710,7 +710,7 @@ class Benchmark:
     def compute_rms_from_avrg(self,
                               output: str,
                               ) -> dict:
-        """Compute RMS with average result for each model loaded using :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+        """Compute RMS with average result for each model loaded using :meth:`load_numerical_result`.
 
         Parameters
         ----------
@@ -743,7 +743,7 @@ class Benchmark:
                                 flow_threshold: float = None
                                 ) -> tuple[dict, dict]:
         """Compute the distance between the initial position of the center of mass and the final furthest point
-        for each model loaded using :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+        for each model loaded using :meth:`load_numerical_result`.
 
         Parameters
         ----------
@@ -794,12 +794,12 @@ class Benchmark:
                                  flow_threshold: float = None,
                                  **extration_profile_params
                                  ) -> tuple[dict, dict, float, dict]:
-        """Compute average velocity for each model loaded.
+        """Compute average velocity for each model loaded using :meth:`load_numerical_result`.
 
         Parameters
         ----------
         distance : float, optional
-            Distance used to calculate average speed, if None use maximal_distance/2. 
+            Distance used to calculate average speed, if None use :data:`maximal_distance/2`. 
             By default None.
         look_up_direction : str, optional
             Direction to look for the flow front, must be "right" or "left", 
@@ -909,12 +909,12 @@ class Benchmark:
                                  flow_threshold: float = None,
                                  **extration_profile_params
                                  ) -> tuple[dict, dict, dict]:
-        """Compute RMS with Coussot's front shape for each model loaded.
+        """Compute RMS with Coussot's front shape for each model loaded using :meth:`load_numerical_result`.
 
         Parameters
         ----------
         coussot_params : dict
-            Arguments for generating Coussot's solution. See :class:`tilupy.analytic_sol.Coussot_Shape`.
+            Arguments for generating Coussot's solution. See :class:`tilupy.analytic_sol.Coussot_shape`.
         look_up_direction : str, optional
             Direction to look for the flow front, must be "right" or "left", 
             by default "right".
@@ -1035,45 +1035,41 @@ class Benchmark:
                                            avrg_velocity_distance: float = None,
                                            coussot_criteria: dict = None,
                                            ) -> None:
-        """Generate a xlsx file summarizing comparison criteria between flow models.
+        """Generate a csv file summarizing comparison criteria between flow models.
         
         Generates a file grouping comparison criteria between numerical flow models:
         
             - Criteria integrated throughout the simulation:
 
-                - Flow Area: flow area value and difference with mean result.
-                - Impacted Zone: RMS of impacted area versus mean result.
-                - Maximal Height: RMS of flow maximal height versus mean result.
-                - Maximal Momentum: RMS of flow maximal mementum versus mean result.
+                - Flow Area: flow area value and difference with mean result (:meth:`compute_impacted_area`).
+                - Impacted Zone: RMS of impacted area versus mean result (:meth:`compute_impacted_area_rms_from_avrg`).
+                - Maximal Height: RMS of flow maximal height versus mean result (:meth:`compute_rms_from_avrg`).
+                - Maximal Momentum: RMS of flow maximal mementum versus mean result (:meth:`compute_rms_from_avrg`).
                 - Average Velocity (if profile): time for flow to reach a given distance 
-                and average velocity calculated from these values.
+                and average velocity calculated from these values (:meth:`compute_average_velocity`).
             
             - Criteria for the final time step of the simulation:
 
-                - Final Height: RMS of flow final height versus mean result.
-                - Maximal Extension: distance from the initial center of mass and the final 
-                furthest point of the flow.
-                - Flow Front Position (if profile): maximum distance traveled by the flow 
-                and comparison with the average result.
-                - Front Shape (optional): RMS of the front shape versus Coussot's
-                theorical front shape (:class:`tilupy.analytic_sol.Coussot_shape`).
+                - Final Height: RMS of flow final height versus mean result (:meth:`compute_rms_from_avrg`).
+                - Maximal Extension: distance from the initial center of mass and the final furthest point of the flow (:meth:`compute_dist_centermass`).
+                - Flow Front Position (if profile): maximum distance traveled by the flow and comparison with the average result (:meth:`compute_average_velocity`).
+                - Front Shape (optional): RMS of the front shape versus Coussot's theorical front shape (:meth:`compute_rms_from_coussot`).
                 
             - Numerical criteria:
 
-                - Volume: value of the volume at final time steps (compared to initial volume) and RMS versus 
-                initial volume value.
+                - Volume: value of the volume at final time steps (compared to initial volume) and RMS versus initial volume value.
             
         Parameters
         ----------
         save : bool, optional
             If True, save the resulting tab at :data:`folder_out`. By default False.
         folder_out : str, optional
-            Path to the folder where the file is saved, if None generate 'xlsx_results'
+            Path to the folder where the file is saved, if None generate "xlsx_results"
             folder in code folder. By default None
         file_name : str, optional
-            Name of the folder, if None use :data:`results_[models]`. By default None.
+            Name of the folder, if None use "results_[models]". By default None.
         fmt : str, optional
-            Saving format of the table. Can be 'csv' or 'xlsx'. By default "csv".
+            Saving format of the table. Can be "csv" or "xlsx". By default "csv".
         available_profile: bool, optional
             If True, calculate criteria requiring a profile: avrg velocity and final front 
             position. By default False.
@@ -1083,7 +1079,7 @@ class Benchmark:
             Direction to look for the flow front, must be "right" or "left", 
             by default "right".
         avrg_velocity_distance : float, optional
-            Distance used to calculate average speed, if None use maximal_distance/2. 
+            Distance used to calculate average speed, if None use :data:`maximal_distance/2`. 
             By default None.
         coussot_criteria : dict, optional
             If None, ignore Coussot criteria. Otherwise, list of arguments to generate a 
@@ -1317,7 +1313,7 @@ class Benchmark:
                                            extration_profile_params: dict = None,
                                            flow_threshold: float = None,
                                            ) -> None:
-        """Generate a xlsx file summarizing comparison criteria between flow models and analytic solution.
+        """Generate a csv file summarizing comparison criteria between flow models and analytic solution.
         
         Generates a file grouping comparison criteria between numerical flow models and analytic solution:
         
@@ -1329,29 +1325,31 @@ class Benchmark:
             
             - Criteria for the final time step of the simulation:
 
-                - Flow Front Position: maximum distance traveled by the flow and 
-                comparison with the analytic solution.
+                - Flow Front Position: maximum distance traveled by the flow and comparison with the analytic solution.
                  
             - Numerical criteria:
 
-                - Volume: value of the volume at final time steps (compared to initial volume) and RMS versus 
-                initial volume value.
+                - Volume: value of the volume at final time steps (compared to initial volume) and RMS versus initial volume value.
             
         Parameters
         ----------
         analytic_solution: dict
-            Argument for the analytic solution. See :meth:`tilupy.benchmark.Benchmark.compute_analytic_solution`.
+            Argument for the analytic solution. See :meth:`compute_analytic_solution`.
+        save : bool, optional
+            If True, save the resulting tab at :data:`folder_out`. By default False.
+        folder_out : str, optional
+            Path to the folder where the file is saved, if None generate "xlsx_results"
+            folder in code folder. By default None
+        file_name : str, optional
+            Name of the folder, if None use "AS_comparison_[models]". By default None.
+        fmt : str, optional
+            Saving format of the table. Can be "csv" or "xlsx". By default "csv".
         compute_as_u: bool, optional
             If True, compute analytic solution for flow velocity. Can be disabled. By default True.
         extration_profile_params: dict, optional
             Argument for extracting profile. See :meth:`tilupy.read.Results.get_profile`. By default None.
         flow_threshold : float, optional
             Flow threshold when extracting front position from profile, by default None.
-        folder_out : str, optional
-            Path to the folder where the file is saved, if None generate 'xlsx_results'
-            folder in code folder. By default None
-        file_name : str, optional
-            Name of the folder, if None use :data:`AS_comparison_[models]`. By default None.
         
         Raises
         ------
