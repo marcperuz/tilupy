@@ -23,6 +23,12 @@ import tilupy.plot as plt_tlp
 import tilupy.raster
 
 
+ALLOWED_MODELS = ["shaltop",
+                 "lave2D",
+                 "saval2D"]
+"""Allowed models for result reading."""
+
+
 RAW_STATES = ["hvert", "h", "ux", "uy"]
 """Raw states at the output of a model.
 
@@ -454,11 +460,11 @@ class TemporalResults0D(TemporalResults):
         else:
             data = self._d
             
-        if "color" not in kwargs:
+        if "color" not in kwargs and self._scalar_names is None:
             color = "black"
             kwargs["color"] = color
         
-        axe.plot(self._t, data, **kwargs) # Remove label=self._scalar_names
+        axe.plot(self._t, data, label=self._scalar_names, **kwargs) # Remove label=self._scalar_names
 
         axe.grid(True, alpha=0.3)
         axe.set_xlim(left=min(self._t), right=max(self._t))
@@ -954,8 +960,13 @@ class TemporalResults2D(TemporalResults):
         if "label" not in kwargs["colorbar_kwargs"]:
             clabel = notations.get_label(self._notation)
             kwargs["colorbar_kwargs"]["label"] = clabel
-            
+               
         if plot_multiples:
+            if "vmin" not in kwargs:
+                kwargs["vmin"] = np.min(self._d)
+            if "vmax" not in kwargs:
+                kwargs["vmax"] = np.max(self._d)
+            
             cols_nb = 3
             if len(self._t) < 3:
                 cols_nb = len(self._t)
@@ -987,7 +998,7 @@ class TemporalResults2D(TemporalResults):
                 fig.delaxes(axes[i])
             
             max_val, idx = 0, 0
-            for i in range(len(axes)):
+            for i in range(len(self._t)):
                 max_val_t = np.max(axes[i].images[1].get_array())
                 if max_val_t > max_val:
                     max_val = max_val_t
@@ -2437,8 +2448,7 @@ class Results:
         costh = 1 / np.sqrt(1 + Fx**2 + Fy**2)
         return costh
 
-    # TODO
-    # Edit to have 3 TemporalResults0D
+
     def center_of_mass(self, h_thresh: float=None) -> tilupy.read.TemporalResults0D:
         """Compute center of mass coordinates depending on time.
 
@@ -2478,6 +2488,7 @@ class Results:
         coord[1, :] = np.nansum(tmp, axis=(0, 1))
         tmp = self._zinit[:, :, np.newaxis] * w
         coord[2, :] = np.nansum(tmp, axis=(0, 1))
+        
         # Make TemporalResults
         res = TemporalResults0D("centermass",
                                 coord,
