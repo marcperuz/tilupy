@@ -1729,6 +1729,7 @@ class Shape_result(ABC):
         """
         return self._x
     
+    
     @property
     def y(self):
         """Accessor of the lateral spatial distribution of the computed solution.
@@ -1761,6 +1762,10 @@ class Coussot_shape(Shape_result):
             Normalized distance of the front from the origin.
         _H : float or np.ndarray
             Normalized fluid depth.
+        _d : float or np.ndarray
+            Distance of the front from the origin.
+        _h : float or np.ndarray
+            Fluid depth.
     
     Parameters:
     -----------
@@ -1770,6 +1775,8 @@ class Coussot_shape(Shape_result):
             Threshold constraint.
         theta : float, optional
             Angle of the surface, in degree, by default 0.
+        h_final : float, optional
+            The final flow depth, by default 1.
         H_size : int, optional
             Number of value wanted in the H array, by default 100.
     """   
@@ -1777,6 +1784,7 @@ class Coussot_shape(Shape_result):
                  rho: float,
                  tau: float,
                  theta: float=0,
+                 h_final: float=1,
                  H_size: int=100
                  ):
         super().__init__(np.radians(theta))
@@ -1785,7 +1793,9 @@ class Coussot_shape(Shape_result):
         
         self.H_size = H_size
         self._D = None
-        self._H = np.linspace(0, 0.99, H_size)
+        self._d = None
+        self._H = np.linspace(0, self.h_to_H(h_final), H_size)
+        self._h = np.array([self.H_to_h(H) for H in self._H])
 
 
     def h_to_H(self, 
@@ -1877,7 +1887,7 @@ class Coussot_shape(Shape_result):
     
     
     def X_to_x(self,
-               X: np.ndarray
+               X: float
                ) -> np.ndarray:
         r"""Find the original value of the spatial coordinates from the normalized one
         by following:
@@ -1892,24 +1902,21 @@ class Coussot_shape(Shape_result):
     
         Parameters
         ----------
-        X : np.ndarray
+        X : float
             Normalized values of the spatial coordinates.
 
         Returns
         -------
-        np.ndarray
-            True values of the spatial coordinate.
+        float
+            True value of the spatial coordinate.
         """
-        x = []
-        for v in X:
-            if self._theta == 0:
-                x.append((v*self._tau)/(self._rho*self._g))
-            else:
-                x.append((v*self._tau*np.cos(self._theta))/(self._rho*self._g*np.sin(self._theta)*np.sin(self._theta)))
-        return x
+        if self._theta == 0:
+            return (X*self._tau)/(self._rho*self._g)
+        else:
+            return (X*self._tau*np.cos(self._theta))/(self._rho*self._g*np.sin(self._theta)*np.sin(self._theta))
 
 
-    def compute_rheological_test_front_morpho(self, h_init: float=None, h_final: float=None) -> None:
+    def compute_rheological_test_front_morpho(self) -> None:
         r"""Compute the shape of the frontal lobe from the normalized fluid depth for a rheological test on an inclined 
         surface by following :
         
@@ -1923,37 +1930,25 @@ class Coussot_shape(Shape_result):
                 
         Parameters
         ----------
-        h_init : float, optional
-            The initial flow depth, necessary if `\theta = 0`, by default None (replace by 1).
-        h_final : float, optional
-            The final flow depth, necessary if `\theta = 0`. If None, estimated using :meth:`compute_slump_test_hf`, by default None.
         H_size : int, optional
             Number of value wanted in the H array, by default 100.
         """
         if self._theta == 0:
-            if h_final is None:
-                h_final = self.compute_slump_test_hf(h_init) if h_init is not None else self.compute_slump_test_hf(1)
-            H_max = self.h_to_H(h_final)
-            H_list = np.linspace(0, H_max, self.H_size)
-            h = np.linspace(0, h_final, self.H_size)
-            self._h = np.array(h)
-
             D = []
-            for H_val in H_list:
+            d = []
+            for H_val in self._H:
                 D.append((H_val*H_val)/2)
+                d.append(self.X_to_x(D[-1]))
                 
         else:
-            h = []
-            for H_val in self._H:
-                h.append(self.H_to_h(H_val))
-            self._h = np.array(h)
-        
-            D = [] 
+            D = []
+            d = [] 
             for H_val in self._H:
                 D.append(- H_val - np.log(1 - H_val))
-            
-        self._D = D
-        self._x = self.X_to_x(self._D)
+                d.append(self.X_to_x(D[-1]))
+                
+        self._D = np.array(D)
+        self._d = np.array(d)
 
 
     def compute_rheological_test_lateral_morpho(self) -> None:
@@ -1963,18 +1958,14 @@ class Coussot_shape(Shape_result):
         .. math::
                 D = 1 - \sqrt{1 - H^2}
         """
-        h = []
-        for H_val in self._H:
-            h.append(self.H_to_h(H_val))
-        
-        self._h = np.array(h)
-
-        D = []                
+        D = []
+        d = []            
         for H_val in self._H:
             D.append(1 - np.sqrt(1 - (H_val**2)))
-        
-        self._D = D
-        self._y = self.X_to_x(self._D)
+            d.append(self.X_to_x(D[-1]))
+            
+        self._D = np.array(D)
+        self._d = np.array(d)
 
 
     def compute_slump_test_hf(self, h_init: float) -> float:
@@ -2001,16 +1992,15 @@ class Coussot_shape(Shape_result):
         return self.H_to_h(val*H_init)
         
     
-    def translate_front(self, x_final: float) -> None:
-        """Translate the shape of the frontal lobe to the wanted x coordinate.
+    def translate_front(self, d_final: float) -> None:
+        """Translate the shape of the frontal (or transversal) lobe to the wanted x (or y) coordinate.
 
         Parameters
         ----------
-        x_final : float
-            Final wanted x coordinate.
+        d_final : float
+            Final wanted coordinate.
         """
-        new_x = [v+x_final for v in self._x]
-        self._x = new_x
+        self._d += d_final
     
     
     def change_orientation_flow(self) -> None:
@@ -2020,9 +2010,37 @@ class Coussot_shape(Shape_result):
         ------
         There must not have been any prior translation to use this method.
         """
-        new_x = [-1*v for v in self._x]
-        self._x = new_x 
+        self._h = self._h[::-1]
+        new_d = [-1*v for v in self._d]
+        self._d = np.array(new_d[::-1])
+        
+    
+    def interpolate_on_d(self) -> None:
+        """Interpolate the profile on d-axis.
+        """
+        from scipy.interpolate import interp1d
+        
+        d_min, d_max = self._d.min(), self._d.max()
+        d_curve = np.linspace(d_min, d_max, self.H_size)
 
+        f = interp1d(self._d, self._h, kind='cubic')
+        h_curve = f(d_curve)
+        
+        self._d = d_curve
+        self._h = h_curve
+
+
+    @property
+    def d(self):
+        """Accessor of the spatial distribution of the computed solution.
+        
+        Returns
+        -------
+        :attr:`_d` : np.ndarray
+            Spatial distribution of the computed solution. If None, no solution computed.
+        """
+        return self._d
+    
 
 class Front_result:
     """Class computing front position of a simulated flow.
