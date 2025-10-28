@@ -2638,6 +2638,59 @@ class Results:
         self._u_max = None
         self._costh = None
     
+    
+    def get_profile(self,
+                    output: str,
+                    extraction_method: str = "axis",
+                    **extraction_params
+                    ) -> tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D:
+        """Extract a profile from a 2D data.
+
+        Parameters
+        ----------
+        output : str
+            Wanted data output.
+        extraction_mode : str, optional
+            Method to extract profiles:
+            
+                - "axis": Extracts a profile along an axis.
+                - "coordinates": Extracts a profile along specified coordinates.
+                - "shapefile": Extracts a profile along a shapefile (polylines).
+            
+            Be default "axis".
+        extraction_params : dict, optional
+            Different parameters to be entered depending on the extraction method chosen.
+            See :meth:`tilupy.read.TemporalResults2D.get_profile`.
+
+        Returns
+        -------
+        tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D
+            Extracted profile.
+            
+        data
+            Specific output depending on :data:`extraction_mode`:
+                
+                    - If :data:`extraction_mode == "axis"`: float
+                        Position of the profile.
+                    - If :data:`extraction_mode == "coordinates"`: tuple[numpy.ndarray]
+                        X coordinates, Y coordinates and distance values.
+                    - If :data:`extraction_mode == "shapefile"`: numpy.ndarray
+                        Distance values.
+
+        Raises
+        ------
+        ValueError
+            If :data:`output` doesn't generate a 2D data.
+        """
+        data = self.get_output(output)
+            
+        if not isinstance(data, tilupy.read.TemporalResults2D) and not isinstance(data, tilupy.read.StaticResults2D):
+            raise ValueError("Can only extract profile from 2D data.")
+        
+        profile, data = data.get_profile(extraction_method, **extraction_params)
+        
+        return profile, data
+    
 
     def plot(self,
              output: str,
@@ -3090,58 +3143,3 @@ def use_thickness_threshold(simu: tilupy.read.Results,
     thickness = simu.get_output("h")
     array[thickness.d < h_thresh] = 0
     return array
-
-
-def get_profile(simu: tilupy.read.Results, 
-                output: str,
-                extraction_method: str = "axis",
-                **extraction_params
-                ) -> tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D:
-    """Extract a profile from a 2D data.
-
-    Parameters
-    ----------
-    simu : tilupy.read.Results
-        Simulation result object.
-    output : str
-        Wanted data output.
-    extraction_mode : str, optional
-        Method to extract profiles:
-        
-            - "axis": Extracts a profile along an axis.
-            - "coordinates": Extracts a profile along specified coordinates.
-            - "shapefile": Extracts a profile along a shapefile (polylines).
-        
-        Be default "axis".
-    extraction_params : dict, optional
-        Different parameters to be entered depending on the extraction method chosen.
-        See :meth:`tilupy.read.TemporalResults2D.get_profile`.
-
-    Returns
-    -------
-    tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D
-        Extracted profile.
-        
-    data
-        Specific output depending on :data:`extraction_mode`:
-            
-                - If :data:`extraction_mode == "axis"`: float
-                    Position of the profile.
-                - If :data:`extraction_mode == "coordinates"`: tuple[numpy.ndarray]
-                    X coordinates, Y coordinates and distance values.
-                - If :data:`extraction_mode == "shapefile"`: numpy.ndarray
-                    Distance values.
-
-    Raises
-    ------
-    ValueError
-        If :data:`output` doesn't generate a 2D data.
-    """
-    data = simu.get_output(output)
-        
-    if not isinstance(data, tilupy.read.TemporalResults2D) and not isinstance(data, tilupy.read.StaticResults2D):
-        raise ValueError("Can only extract profile from 2D data.")
-    
-    profile, data = data.get_profile(extraction_method, **extraction_params)
-    
-    return profile, data
