@@ -23,143 +23,67 @@ class Benchmark:
     the results of various simulation models, allowing, among other things, 
     the comparison of results between models.
     
-    Global Attributes:
-    ------------------
-        _allowed_models : list[str]
-            List of implemented models in tilupy. 
-            For now, this list allows reading the results of:
-            "shaltop", "lave2D", "saval2D".
-        _current_model : str
-            Last model loaded in the class.
-        _loaded_result : list[tilupy.read.Results]
-            Last result of :attr:`_current_model` loaded in the class.
-        _allowed_extracting_outputs : list[str]
-            List of allowed outputs : "h", "u", "ux", "uy".
-        _x : numpy.ndarray
-            X-coordinates of the simulation.
-        _y : numpy.ndarray
-            Y-coordinates of the simulation.
-        _z : numpy.ndarray
-            Initial topographic elevation of the simulation.
-    
-    Extracted Attributes:
-    ---------------------
-        These attributes correspond to dictionaries storing the results extracted from model simulations.
-        Their name is constructed as follows:
-        
-        :data:`_{property}_num_{dimension}_{axis} = (model_name, list_values)`
-        
-        :data:`property`:
-            - :data:`h` for the fluid thickness (normal to the surface)
-            - :data:`u` for the fluid velocity (norm)
-            - :data:`ux` for the X component of the fluid velocity
-            - :data:`uy` for the Y component of the fluid velocity
-        
-        :data:`dimension`:
-            - :data:`1d` is for profile extraction. It is associated with an axis according 
-              to the profile that was extracted and with a parameters dictionary containing the
-              extraction details of the profiles (indexes of the extracted profiles) and the 
-              indexes of the maximal lateral extension for each profiles. The parameters dictionary
-              is constructed like so :
-            
-              :data:`_{property}_num_1d_params[time_step] = (model_name, direction_index, list_limit_index)`
-
-            - :data:`2d` is for surface extraction.
-        
-    Computed Attributes:
-    --------------------
-        These attributes correspond to list storing the results of computed analytical solutions, constructed as follows:
-        
-        :data:`_{property}_as_1d = [(time_step, list_values)]`
-
-        :data:`property`:
-            - :data:`h` for the fluid thickness (normal to the surface)
-            - :data:`u` for the fluid velocity (norm)
+    Attributes:
+    -----------
+        _loaded_results : dict[tilupy.read.Results]
+            Dictionnary of :class:`tilupy.read.Results` object for each model specified in 
+            :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+        _models_tim : dict[list]
+            Dictionnary of recorded time steps for each model specified in 
+            :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+        _simu_z : numpy.ndarray
+            Topographic elevation for the simulation loaded.
     """
     def __init__(self):
-        self._allowed_models = ["shaltop", "lave2D", "saval2D"]
-        
         self._loaded_results = {}
         self._models_tim = {}
-        self._x, self._y, self._z = None, None, None
+        self._simu_z = None
         
-        # self._allowed_extracting_outputs = ["h", "u", "ux", "uy"]
-        
-        # for var in self._allowed_extracting_outputs:
-        #     for suffix in ["num_1d_X", "num_1d_Y", "num_1d_params", "num_2d"]:
-        #         setattr(self, f"_{var}_{suffix}", {})
-        
-        # as_vars = ["h", "u"]
-        # for var in as_vars:
-        #     setattr(self, f"_{var}_as_1d", [])
-    
     
     def load_numerical_result(self, 
                               model: str, 
                               **kwargs,
                               ) -> None:
-        """Load numerical simulation results using :func:`tilupy.read.get_results` for a given model.
+        """Load numerical simulation results using :func:`tilupy.read.get_results` for a given model and
+        store the :class:`tilupy.read.Results` object in :attr:`tilupy.benchmark.Benchmark._loaded_results`.
 
         Parameters
         ----------
         model : str
-            Name of the model to load. Must be one of the :attr:`_allowed_models`.
+            Name of the model to load. Must be one of the :data:`tilupy.read.ALLOWED_MODELS`.
         **kwargs
             Keyword arguments passed to the result reader for the specific model.
 
         Raises
         ------
         ValueError
-            If size of stored :attr:`_x`, :attr:`_y` are different with new loaded ones.
+            If size of stored :attr:`tilupy.benchmark.Benchmark._simu_z` is different with new loaded ones.
         UserWarning
-            If stored :attr:`_x`, :attr:`_y` or :attr:`_z` are different with new loaded ones.
+            If stored :attr:`tilupy.benchmark.Benchmark._simu_z` are different with new loaded ones.
         ValueError
-            If the provided model is not in the allowed list.
-        
-        Notes
-        -----
-        Store x, y and z property of the result in :attr:`_x`, :attr:`_y`, :attr:`_z`. The result (instance of :class:`tilupy.read.Results`) is  
-        store in :attr:`_loaded_results`.
+            If the provided model is not in the allowed list of :data:`tilupy.read.ALLOWED_MODELS`.
         """
         if model in self._allowed_models:
             if model not in self._loaded_results:
                 self._loaded_results[model] = tilupy.read.get_results(model, **kwargs)
                 self._models_tim[model] = self._loaded_results[model].tim
                 
-            if self._x is None and self._y is None and self._z is None:
-                self._x, self._y, self._z = self._loaded_results[model].x, self._loaded_results[model].y, self._loaded_results[model].z
+            if self._simu_z is None:
+                self._simu_z = self._loaded_results[model].z
             
-            if len(self._x) != len(self._loaded_results[model].x):
-                raise ValueError("NX size not the same with previous result loaded.")
-            if len(self._y) != len(self._loaded_results[model].y):
-                raise ValueError("NY size not the same with previous result loaded.")
+            if self._simu_z.shape != self._loaded_results[model].z:
+                raise ValueError("Simulations loaded doesn't have same size.")
             
             try :
-                if not np.allclose(self._x, self._loaded_results[model].x, rtol=0.1, atol=0.1):
-                    mean_error = np.mean(self._x - self._loaded_results[model].x)
-                    self._x = self._loaded_results[model].x
-                    raise UserWarning(f"Stored X coordinates different from loaded ones; average error: {mean_error}")
-            except UserWarning as w:
-                print(f"[WARNING] {w}")
-            
-            try :
-                if not np.allclose(self._y, self._loaded_results[model].y, rtol=0.1, atol=0.1):
-                    mean_error = np.mean(self._y - self._loaded_results[model].y)
-                    self._y = self._loaded_results[model].y
-                    raise UserWarning(f"Stored Y coordinates different from loaded ones; average error: {mean_error}")
-            except UserWarning as w:
-                print(f"[WARNING] {w}")
-            
-            try :
-                if not np.allclose(self._z, self._loaded_results[model].z, rtol=0.1, atol=0.1):
-                    mean_error = np.mean(self._z - self._loaded_results[model].z)
-                    self._z = self._loaded_results[model].z
+                if not np.allclose(self._simu_z, self._loaded_results[model].z, rtol=0.1, atol=0.1):
+                    mean_error = np.mean(self._simu_z - self._loaded_results[model].z)
+                    self._simu_z = self._loaded_results[model].z
                     raise UserWarning(f"Stored elevation values different from loaded ones; average error: {mean_error}")
             except UserWarning as w:
                 print(f"[WARNING] {w}")
                 
         else:
-            raise ValueError(f" -> No correct model selected, choose between:\n       {self._allowed_models}")
+            raise ValueError(f" -> No correct model selected, choose between:\n       {tilupy.read.ALLOWED_MODELS}")
     
        
     def compute_analytic_solution(self,
@@ -176,11 +100,16 @@ class Benchmark:
         output : str
             Wanted output for the analytical solution. Can be : "h" or "u".
         model : Callable
-            Callable object representing the analytic solution model (model from :class:`tilupy.analytic_sol.Depth_results`)
+            Callable object representing the analytic solution model (model from :class:`tilupy.analytic_sol.Depth_result`)
         T : float | list[float]
             Time or list of times at which to compute the analytic solution.
         **kwargs
             Keyword arguments passed to the analytic solution for the specific model.
+        
+        Raises
+        ------
+        ValueError
+            If no solution found.
         """
         solution = model(**kwargs)
         
@@ -199,12 +128,6 @@ class Benchmark:
                                                      t=T,
                                                      coords=self._x,
                                                      coords_name='x')
-                # for i in range(len(T)):
-                    # self._h_as_1d.append((T[i], solution.h[i]))
-                    # self._h_as_1d.append((T[i], tilupy.read.StaticResults1D(name=output,
-                    #                                                         d=solution.h[i],
-                    #                                                         coords=self._x,
-                    #                                                         coords_name='x')))
             else:
                 raise ValueError("No analytic solution for fluid height.")
             
@@ -217,12 +140,6 @@ class Benchmark:
                                                      t=T,
                                                      coords=self._x,
                                                      coords_name='x')
-                # for i in range(len(T)):
-                #     # self._u_as_1d.append((T[i], solution.u[i]))
-                #     self._u_as_1d.append((T[i], tilupy.read.StaticResults1D(name=output,
-                #                                                             d=solution.u[i],
-                #                                                             coords=self._x,
-                #                                                             coords_name='x')))
             else:
                 raise ValueError("No analytic solution for fluid velocity.")
 
@@ -234,24 +151,20 @@ class Benchmark:
                     show_plot: bool = True,
                     **plot_kwargs,
                     ) -> matplotlib.axes._axes.Axes:
-        """Plot 2D surfaces for a given model.
+        """Plot output for a given model using :meth:`tilupy.read.Results.plot`.
 
         Parameters
         ----------
         output : str
-            Wanted data field. Can be: "h", "u", "ux", "uy".
+            Wanted output, need to be in :data:`tilupy.read.DATA_NAMES`.
         model : str
-           Wanted model to show the data field.
-        t : float | list[float]
-            Value or list of time steps required to extract and display data fields. 
-            If None displays the data fields for all recorded time steps in the model's result. 
+           Wanted model to show the data field. Must be loaded with :meth:`tilupy.benchmark.Benchmark.load_numerical_result`
+        time_steps : float | list[float]
+            Value or list of time steps display output. 
+            If None displays the output for all recorded time steps in the model's result. 
             By default None.
-        ax : matplotlib.axes._axes.Axes, optional
-            Existing matplotlib window, by default None.
-        figsize : tuple[float], optional
-            Size of the plotted figure if no ax is given (Width, Height; in inch). By default None.
         show_plot : bool, optional
-            If True, show the plot, by default True
+            If True, show the plot, by default True.
 
         Returns
         -------
@@ -261,13 +174,8 @@ class Benchmark:
         Raises
         ------
         ValueError
-            If the output asked is not allowed.
-        ValueError
             If model is not loaded.
-        ValueError
-            If the solution is not extracted.
         """
-     
         if model not in self._loaded_results.keys():
             raise ValueError(" -> First load model using load_numerical_result.")
         
@@ -292,41 +200,23 @@ class Benchmark:
                             show_plot: bool = True,
                             **plot_kwargs
                             )-> matplotlib.axes._axes.Axes:
-        """Plot 1D profiles for a given model or the analytic solution.
+        """Plot profile from 2D temporal or static output for a given model using 
+        :meth:`tilupy.read.Results.plot_profile`.
 
         Parameters
         ----------
         output : str
-            Wanted data profile. Can be: "h", "u", "ux", "uy".
+            Wanted output, need to be in :data:`tilupy.read.TEMPORAL_DATA_2D` or :data:`tilupy.read.STATIC_DATA_2D`
         model : str
-            Wanted model to show the profile. Can be 'as' for plotting the analytical solution.
-        axis : str, optional
-            Allows to choose the profile according to the desired axis, by default "X".
+            Wanted model to show the output profile. Must be loaded with :meth:`tilupy.benchmark.Benchmark.load_numerical_result`
+        extraction_method : str, optional
+            Wanted profile extraction method. See [XX]. By default "axis".
+        extraction_params : dict, optional
+            Profile extraction parameters. See [XX]. Be default None.
         time_steps : float | list[float], optional
             Value or list of time steps required to extract and display profiles. 
             If None displays the profiles for all recorded time steps in the model's result. 
             Only available for models. By default None.
-        direction_index : list[float] | str, optional
-            Index along each axis to extract the profile from: (X, Y). Depending on the information given, the extract method change:
-                - list[float]: position (in meter) of the wanted profiles.
-                - str: 'max' for finding the best profiles, based on the farthest flow front and the position of maximum fluid height.
-                - None: select the medians.
-            By default None.
-        flow_threshold : float, optional
-            Minimum value to consider as part of the flow, by default 0.001.
-        ax : matplotlib.axes._axes.Axes, optional
-            Existing matplotlib window, by default None.
-        figsize : tuple[float], optional
-            Size of the plotted figure if no ax is given (Width, Height; in inch). By default None.
-        linestyles : list[str], optional
-            Custom linestyles for each time step. If None, colors and styles are auto-assigned. By default None.
-        plot_multiples : bool, optional
-            If True, plot graph in small multiples. Only if :data:`time_steps` is list. By default False.
-        multiples_highlight : bool, optional
-            If True, display all time steps on each graph of the multiples and highlight the curve corresponding 
-            to the time step of the subgraph. Only if :data:`plot_multiples` is True. By default False.
-        plot_kwargs : dict, optional
-            Additional arguments for the plot function. By default None.
         show_plot : bool, optional
             If True, show the plot, by default True.
 
@@ -338,18 +228,9 @@ class Benchmark:
         Raises
         ------
         ValueError
-            If the output asked is not allowed.
-        ValueError
-            If model is not loaded or no analytical solution asked.
-        ValueError
-            If no analytical solution computed.
-        ValueError
-            If the profiles are not extracted. 
-        ValueError
-            If invalid axis.
+            If model is not loaded.
         """
-
-        if model not in self._loaded_results.keys() and model != "as":
+        if model not in self._loaded_results.keys():
             raise ValueError(" -> First load model using load_numerical_result")
 
         plot_kwargs = {} if plot_kwargs is None else plot_kwargs
@@ -382,6 +263,55 @@ class Benchmark:
                                    as_kwargs: dict = None,
                                    show_plot: bool = True,
                                    ) -> matplotlib.axes._axes.Axes:
+        """Plot multiple temporal 1D data in the same graph.
+
+        Parameters
+        ----------
+        output : str
+            Wanted output, need to be in :data:`tilupy.read.TEMPORAL_DATA_1D`. If using a :data:`tilupy.read.TEMPORAL_DATA_2D`,
+            must use profile_extraction_args.
+        models : list[str]
+            Wanted models to show the temporal 1D data. Must be loaded with :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+        profile_extraction_args : dict, optional
+            Arguments for profile extraction. See [XX]. By default None.
+        analytic_solution : dict, optional
+            Arguments for plotting an analytic solution. See :meth:`tilupy.benchmark.Benchmark.compute_analytic_solution`. 
+            By default None.
+        time_steps : float | list[float], optional
+            Value or list of time steps required to extract and display profiles. 
+            If None displays the profiles for all recorded time steps in the model's result. 
+            Only available for models. By default None.
+        axes : matplotlib.axes._axes.Axes, optional
+            Existing matplotlib axe, by default None.
+        rows_nb : int, optional
+            Number of rows when plotting multiple time steps. If None automatically computed. 
+            By default None.
+        cols_nb : int, optional
+            Number of colums when plotting multiple time steps. If None use 3 columns. 
+            By default None.
+        figsize : tuple[float], optional
+            Size of the plotted figure (Height, Width), by default None.
+        colors : list, optional
+            List of colors for each model plotted. If None use "black". By default None.
+        linestyles : list[str], optional
+            List of linestyles for each model plotted. If None use regular straight line. By default None.
+        plot_kwargs : dict, optional
+            Additional argument for model's line, by default None.
+        as_kwargs : dict, optional
+            Additional argument for analytical solution's line, by default None.
+        show_plot : bool, optional
+            If True, show the plot, by default True.
+
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            The created plot.
+
+        Raises
+        ------
+        ValueError
+            If models is not loaded.
+        """
         for model in models:
             if model not in self._loaded_results.keys():
                 raise ValueError(" -> First load model using load_numerical_result.")
@@ -624,7 +554,8 @@ class Benchmark:
     def compute_area(self,
                      flow_threshold: float = None
                      ) -> tuple[dict, dict]:
-        """Compute area, computed with 'h', for each model loaded.
+        """Compute area at each recorded time steps, computed with 'h', for each model loaded
+        using :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
 
         Parameters
         ----------
@@ -650,7 +581,7 @@ class Benchmark:
             flow_threshold = np.max(height_list[0]) * 0.01
         
         for h in height_list:
-            h[h<flow_threshold] = np.nan
+            h[h<flow_threshold] = 0
             h[h>=flow_threshold] = 1
         
         area_num = {}
@@ -684,7 +615,8 @@ class Benchmark:
     def compute_integrated_area(self,
                                 flow_threshold: float = None,
                                 ) -> tuple[dict, dict]:
-        """Compute integrated area, computed with 'h_max', for each model loaded.
+        """Compute integrated area, computed with 'h_max', for each model loaded using 
+        :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
 
         Parameters
         ----------
@@ -710,7 +642,7 @@ class Benchmark:
             flow_threshold = np.max(height_list[0]) * 0.01
         
         for h in height_list:
-            h[h<flow_threshold] = np.nan
+            h[h<flow_threshold] = 0
             h[h>=flow_threshold] = 1
         
         area_num = {}
@@ -727,80 +659,67 @@ class Benchmark:
             area_num[model_name[i]] = surface
         
             area_surf[model_name[i]] = tilupy.read.StaticResults2D(name='s',
-                                                                     d=height_list[i],
-                                                                     x=output_list[i].x,
-                                                                     y=output_list[i].y,
-                                                                     z=output_list[i].z)
+                                                                   d=height_list[i],
+                                                                   x=output_list[i].x,
+                                                                   y=output_list[i].y,
+                                                                   z=output_list[i].z)
         
         return area_surf, area_num 
     
     
     def compute_integrated_area_rms_from_avrg(self,
-                                              avrg_result: tilupy.read.StaticResults2D = None,
                                               flow_threshold: float = None
-                                              ) -> dict:
-        """Compute integrated area, computed with 'h_max', RMS with average result for each model loaded.
+                                              ) -> tuple[dict, np.ndarray]:
+        """Compute integrated area, computed with 'h_max', RMS with average result for each model loaded
+        using :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
 
         Parameters
         ----------
-        avrg_result : tilupy.read.StaticResults2D, optional
-            Existing average result, by default None.
         flow_threshold : float, optional
             Flow threshold to extract flow area, if None use 1% of initial maximal 
             flow height. By default None.
 
         Returns
         -------
-        dict
-            RMS value for each model: area_rms[model] = rms_value.
+        tuple[dict, np.ndarray]
+            area_rms: dict
+                RMS value for each model: area_rms[model] = rms_value.
+            avrg_area: numpy.ndarray
+                Average area surface.
         """
-        if avrg_result is None:
-            avrg_result = self.get_avrg_result("h_max")
-       
-        avrg_h = avrg_result.d
-        avrg_h[avrg_h<flow_threshold] = np.nan
-        avrg_h[avrg_h>=flow_threshold] = 1
+        area_surf, area_num = self.compute_integrated_area(flow_threshold=flow_threshold)
         
-        dx = avrg_result.x[1] - avrg_result.x[0]
-        dy = avrg_result.y[1] - avrg_result.y[0]
-        cell_surface = dx*dy
-
-        nb_cell = np.sum(avrg_h[:, :] == 1)
-        surface = (nb_cell*cell_surface)
+        mean_area = []
+        for model in area_surf:
+            mean_area.append(np.nan_to_num(area_surf[model].d))
         
-        avrg_area_num = surface
-
-        _, area_num = self.compute_integrated_area(flow_threshold=flow_threshold)
-        
+        avrg_area = np.mean(np.array(mean_area), axis=0)
+                
         area_rms = {}
         for model in area_num:
-            rms = (np.sqrt(np.sum((area_num[model] - avrg_area_num)**2)) /
-                   np.sqrt(np.sum((avrg_area_num)**2)))
+            rms = (np.sqrt(np.sum((area_surf[model].d - avrg_area)**2)) /
+                   np.sqrt(np.sum((avrg_area)**2)))
             area_rms[model] = rms
 
-        return area_rms
+        return area_rms, avrg_area
 
 
     def compute_rms_from_avrg(self,
                               output: str,
-                              avrg_result: tilupy.read.TemporalResults | tilupy.read.StaticResults = None
                               ) -> dict:
-        """Compute RMS with average result for each model loaded.
+        """Compute RMS with average result for each model loaded using :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
 
         Parameters
         ----------
         output : str
             Wanted output to compute the RMS.
-        avrg_result : tilupy.read.TemporalResults | tilupy.read.StaticResults, optional
-            Existing average result, by default None.
 
         Returns
         -------
         dict
             RMS value for each model: output_rms[model] = rms_value.
         """
-        if avrg_result is None:
-            avrg_result = self.get_avrg_result(output)
+        avrg_result = self.get_avrg_result(output)
             
         extracted_data = {}
         for model in self._loaded_results:
@@ -815,6 +734,55 @@ class Benchmark:
             output_rms[model] = rms
                 
         return output_rms
+    
+    
+    def compute_dist_centermass(self,
+                                flow_threshold: float = None
+                                ) -> tuple[dict, dict]:
+        """Compute the distance between the initial position of the center of mass and the final furthest point
+        for each model loaded using :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
+
+        Parameters
+        ----------
+        flow_threshold : float, optional
+            Flow threshold to extract flow area, if None use 1% of initial maximal 
+            flow height. By default None.
+
+        Returns
+        -------
+        tuple[dict, dict]
+            init_coord_centermass : dict
+                Coordinates of the initial center of mass for each model: 
+                init_coord_centermass[model] = [X, Y, Z].
+            model_max_dist : dict
+                Maximal distance for each model : model_max_dist[model] = dist.
+        """
+        init_coord_centermass = {}
+        for model in self._loaded_results:
+            centermass = self._loaded_results[model].get_output("centermass")
+            init_coord_centermass[model] = [centermass.d[0, 0], 
+                                            centermass.d[1, 0],
+                                            centermass.d[2, 0]]
+        
+        area_surf, _ = self.compute_integrated_area(flow_threshold=flow_threshold)
+
+        model_max_dist = {}
+        for model in self._loaded_results:
+            model_max_dist[model] = [None, None, 0.0]
+        
+        for model in self._loaded_results:
+            for i in range(len(area_surf[model].x)):
+                for j in range(len(area_surf[model].y)):
+                    if area_surf[model].d[j, i] == 1:
+                        distance = np.sqrt((area_surf[model].x[i] - init_coord_centermass[model][0])**2 +
+                                           (area_surf[model].y[j] - init_coord_centermass[model][1])**2 +
+                                           (area_surf[model].z[j,i] - init_coord_centermass[model][2])**2)
+                        if distance > model_max_dist[model][2]:
+                            model_max_dist[model][0] = area_surf[model].x[i]
+                            model_max_dist[model][1] = area_surf[model].y[j]
+                            model_max_dist[model][2] = distance
+        
+        return init_coord_centermass, model_max_dist
     
     
     def compute_average_velocity(self,
@@ -931,8 +899,8 @@ class Benchmark:
             model_avrg_vel[model] = distance / model_time[model]
                     
         return model_avrg_vel, model_time, distance, model_pos
-    
-    
+
+
     def compute_rms_from_coussot(self,
                                  look_up_direction: str = "right",
                                  flow_threshold: float = None,
@@ -981,8 +949,8 @@ class Benchmark:
             max_index = np.argmax(prof.d[:, -1])
             
             # Create Coussot profile
-            front_shape = Coussot_shape(**coussot_params)
-            front_shape.compute_rheological_test_front_morpho(h_final=np.max(prof.d[:, -1]))
+            front_shape = Coussot_shape(**coussot_params, h_final=np.max(prof.d[:, -1]))
+            front_shape.compute_rheological_test_front_morpho()
             
             if look_up_direction == "right":
                 front_shape.change_orientation_flow()
@@ -992,67 +960,71 @@ class Benchmark:
                 idx = get_back_index(prof.d[:max_index, -1])
                 front_pos = prof.coords[idx]                
             front_shape.translate_front(front_pos)
+            front_shape.interpolate_on_d()
+            
+            coussot_pos = front_shape.d.copy()
             
             # Find best position for Coussot's profile
-            interp_front = interp1d(front_shape.x, front_shape.h, bounds_error=False, fill_value=np.nan)
-
-            max_dx = (prof.coords[1] - prof.coords[0]) * 2
-            dx_range = np.linspace(-max_dx, max_dx, 1000)
-            best_dx = None
-            best_error = np.inf
-
-            for dx in dx_range:
-                y_shifted = interp_front(prof.coords - dx)
-                error = np.nanmean((prof.d[:, -1] - y_shifted)**2)
-                if error < best_error:
-                    best_error = error
-                    best_dx = dx
+            max_dx = (prof.coords[1] - prof.coords[0]) * 5
+            max_index = np.argmax(prof.d[:, -1])
             
-            # print(best_dx)
+            dx_range = np.linspace(-max_dx, max_dx, 5)
+            best_dx = None
+            min_rms = 1e30
+            # x_index = [None, None]
+            
+            for dx in dx_range:
+                temp_pos = coussot_pos + dx
+            
+                # Extract front value of profile 
+                if look_up_direction == "right":
+                    x_index_max = np.argmin(np.abs(prof.coords[max_index:] - np.max(temp_pos))) + max_index
+                    x_index_min = np.argmin(np.abs(prof.coords[max_index:] - np.min(temp_pos))) + max_index
+                else:
+                    x_index_max = np.argmin(np.abs(prof.coords[:max_index] - np.max(temp_pos)))
+                    x_index_min = np.argmin(np.abs(prof.coords[:max_index] - np.min(temp_pos)))
+
+                reduc_idx = np.linspace(0, len(temp_pos) - 1, len(prof.coords[x_index_min:x_index_max]), dtype=int)
+                
+                rms = np.sqrt(np.mean(((prof.d[x_index_min:x_index_max, -1]) 
+                                    - (front_shape.h[reduc_idx]))**2))
+                
+                rms /= np.sqrt(np.mean(((front_shape.h[reduc_idx]))**2))
+
+                if rms <= min_rms:
+                    min_rms = rms
+                    best_dx = dx
+                    # x_index = [x_index_min, x_index_max]
+            
+            output_rms[model] = min_rms
+
             front_shape.translate_front(best_dx)
             model_front_pos[model] = front_pos + best_dx
+            
             model_coussot[model] = tilupy.read.StaticResults1D(name="h",
                                                                d=front_shape.h,
-                                                               coords=front_shape.x,
+                                                               coords=front_shape.d,
                                                                coords_name="x")
                         
-            # Extract front value of profile 
-            x_index_max = np.argmin(np.abs(prof.coords - np.max(front_shape.x)))
-            x_index_min = np.argmin(np.abs(prof.coords - np.min(front_shape.x)))
-            
-            reduc_idx = np.linspace(0, len(front_shape.x) - 1, len(prof.coords[x_index_min:x_index_max]), dtype=int)
-            
-            # print((prof.d[x_index_min:x_index_max, -1] 
-            #                        - np.array(front_shape.h[::-1])[reduc_idx])**2)
-            # print(np.sum((prof.d[x_index_min:x_index_max, -1] 
-            #                        - np.array(front_shape.h[::-1])[reduc_idx])**2))
-            # print(np.sqrt(np.sum((prof.d[x_index_min:x_index_max, -1] 
-            #                        - np.array(front_shape.h[::-1])[reduc_idx])**2)))
-            # print(np.sqrt(np.sum((np.array(front_shape.h)[reduc_idx])**2)))
-            
-            # a = np.sqrt(np.sum((prof.d[x_index_min:x_index_max, -1] 
-            #                        - np.array(front_shape.h[::-1])[reduc_idx])**2))
-            # b = np.sqrt(np.sum((np.array(front_shape.h)[reduc_idx])**2))
-            # print(a/b)
-            
-            # Compute RMS
-            rms = (np.sqrt(np.sum((prof.d[x_index_min:x_index_max, -1] 
-                                   - np.array(front_shape.h[::-1])[reduc_idx])**2)) /
-                   np.sqrt(np.sum((np.array(front_shape.h)[reduc_idx])**2)))
-            
-            output_rms[model] = rms
-            
             # prof.plot()
-            # plt.plot(np.array(front_shape.x)[reduc_idx], np.array(front_shape.h)[reduc_idx])
+            # plt.plot(front_shape.d[reduc_idx], front_shape.h[reduc_idx], color='red')
             # plt.show()
             
-        # print(output_rms)
+            # plt.plot([0, np.max(front_shape.h[reduc_idx])], [0, np.max(front_shape.h[reduc_idx])], color='red')
+            # plt.plot(prof.d[x_index[0]:x_index[1], -1], front_shape.h[reduc_idx])
+            # plt.xlabel("Solution numérique")
+            # plt.ylabel("Solution de Coussot")
+            # plt.show()
+        
         return output_rms, model_front_pos, model_coussot
 
     
     def generate_simulation_comparison_csv(self,
+                                           save: bool = False,
                                            folder_out: str = None,
                                            file_name: str = None,
+                                           fmt: str = "csv",
+                                           available_profile: bool = False,
                                            flow_threshold: float = 1e-1,
                                            profile_direction: str = "right",
                                            avrg_velocity_distance: float = None,
@@ -1062,33 +1034,44 @@ class Benchmark:
         
         Generates a file grouping comparison criteria between numerical flow models:
         
-            - Criterias integrated throughout the simulation:
+            - Criteria integrated throughout the simulation:
 
-                - Flow Area: flow area value and RMS versus mean result.
+                - Flow Area: flow area value and difference with mean result.
+                - Impacted Zone: RMS of impacted area versus mean result.
                 - Maximal Height: RMS of flow maximal height versus mean result.
-                - Average Velocity: time for flow to reach a given distance and 
-                average velocity calculated from these values.
+                - Maximal Momentum: RMS of flow maximal mementum versus mean result.
+                - Average Velocity (if profile): time for flow to reach a given distance 
+                and average velocity calculated from these values.
             
-            - Criterias for the final time step of the simulation:
+            - Criteria for the final time step of the simulation:
 
                 - Final Height: RMS of flow final height versus mean result.
-                - Flow Front Position: maximum distance traveled by the flow and 
-                comparison with the average result.
+                - Maximal Extension: distance from the initial center of mass and the final 
+                furthest point of the flow.
+                - Flow Front Position (if profile): maximum distance traveled by the flow 
+                and comparison with the average result.
                 - Front Shape (optional): RMS of the front shape versus Coussot's
                 theorical front shape (:class:`tilupy.analytic_sol.Coussot_shape`).
                 
-            - Numerical criterias:
+            - Numerical criteria:
 
-                - Volume: value of the volume at final time steps and RMS versus 
+                - Volume: value of the volume at final time steps (compared to initial volume) and RMS versus 
                 initial volume value.
             
         Parameters
         ----------
+        save : bool, optional
+            If True, save the resulting tab at :data:`folder_out`. By default False.
         folder_out : str, optional
             Path to the folder where the file is saved, if None generate 'xlsx_results'
             folder in code folder. By default None
         file_name : str, optional
             Name of the folder, if None use :data:`results_[models]`. By default None.
+        fmt : str, optional
+            Saving format of the table. Can be 'csv' or 'xlsx'. By default "csv".
+        available_profile: bool, optional
+            If True, calculate criteria requiring a profile: avrg velocity and final front 
+            position. By default False.
         flow_threshold : float, optional
             Flow threshold when extracting front position from profile, by default 1e-1.
         profile_direction : str, optional
@@ -1110,22 +1093,23 @@ class Benchmark:
         import openpyxl
         import os
 
-        if folder_out is None:
-            folder_out = os.path.join(os.path.dirname(__file__), "xlsx_results")
+        if save:
+            if folder_out is None:
+                folder_out = os.path.join(os.path.dirname(__file__), "xlsx_results")
+                
+            os.makedirs(folder_out, exist_ok=True)
             
-        os.makedirs(folder_out, exist_ok=True)
+            if file_name is None:
+                file_name = "results"
+                for model in self._loaded_results:
+                    file_name += "_" + model
+            
+            if not file_name.endswith("." + fmt):
+                file_name = file_name + "." + fmt
+            saving_path = os.path.join(folder_out, file_name)
         
-        if file_name is None:
-            file_name = "results"
-            for model in self._loaded_results:
-                file_name += "_" + model
-        
-        if not file_name.endswith(".xlsx"):
-            file_name = file_name + ".xlsx"
-        saving_path = os.path.join(folder_out, file_name)
-        
-        if os.path.exists(saving_path):
-            raise ValueError(f"Existing file: {saving_path}")
+            if os.path.exists(saving_path):
+                raise ValueError(f"Existing file: {saving_path}")
         
         # Create table columns
         cols = ["", ""]
@@ -1136,20 +1120,28 @@ class Benchmark:
         
         
         # --------------------------------------------------------------------------------------------
-        #                        Criterias integrated throughout the simulation 
+        #                        Criteria integrated throughout the simulation 
         # --------------------------------------------------------------------------------------------
-        table_content.append(["Criterias integrated throughout the simulation"])
+        table_content.append(["Criteria integrated throughout the simulation"])
         
         # --------------------------------------- Flow area ------------------------------------------
         line = ["Flow Area", "Total Area [m2]"]
         _, area_num = self.compute_integrated_area(flow_threshold=flow_threshold)
         
+        mean_list = []
         for model in self._loaded_results:
+            mean_list.append(area_num[model])
             line.append(area_num[model])
         table_content.append(line)
         
-        line = ["", "RMS (avrg)"]
-        rms_area = self.compute_integrated_area_rms_from_avrg(flow_threshold=flow_threshold)
+        line = ["", "Compared to avrg"]
+        mean_area = np.mean(np.array(mean_list))
+        for model in self._loaded_results:
+            line.append((area_num[model] - mean_area)/mean_area)
+        table_content.append(line)    
+            
+        line = ["Impacted Zone", "RMS (avrg)"]
+        rms_area, _ = self.compute_integrated_area_rms_from_avrg(flow_threshold=flow_threshold)
         
         for model in self._loaded_results:
             line.append(rms_area[model])
@@ -1162,28 +1154,37 @@ class Benchmark:
         for model in self._loaded_results:
             line.append(rms_height[model])
         table_content.append(line)
+        
+        # ------------------------------------- Maximal momentum ---------------------------------------
+        line = ["Maximal Momentum", "RMS (avrg)"]
+        rms_hu = self.compute_rms_from_avrg(output="hu_max")
+
+        for model in self._loaded_results:
+            line.append(rms_hu[model])
+        table_content.append(line)
 
         # ----------------------------------- Average flow speed -------------------------------------
-        avrg_vel, time, dist, model_pos = self.compute_average_velocity(distance=avrg_velocity_distance,
-                                                                        look_up_direction=profile_direction,
-                                                                        flow_threshold=flow_threshold)
-        line = ["Average Velocity", f"Time [s] to complete d={dist}m"]
+        if available_profile:
+            avrg_vel, time, dist, model_pos = self.compute_average_velocity(distance=avrg_velocity_distance,
+                                                                            look_up_direction=profile_direction,
+                                                                            flow_threshold=flow_threshold)
+            line = ["Average Velocity", f"Time [s] to complete d={dist}m"]
 
-        for model in self._loaded_results:
-            line.append(time[model])
-        table_content.append(line)
-        
-        line = ["", f"Average velocity [m/s]"]
-        
-        for model in self._loaded_results:
-            line.append(avrg_vel[model])
-        table_content.append(line)
+            for model in self._loaded_results:
+                line.append(time[model])
+            table_content.append(line)
+            
+            line = ["", f"Average velocity [m/s]"]
+            
+            for model in self._loaded_results:
+                line.append(avrg_vel[model])
+            table_content.append(line)
 
 
         # --------------------------------------------------------------------------------------------
-        #                       Criterias for the final time step of the simulation
+        #                       Criteria for the final time step of the simulation
         # --------------------------------------------------------------------------------------------
-        table_content.append(["Criterias for the final time step of the simulation"])
+        table_content.append(["Criteria for the final time step of the simulation"])
 
         # --------------------------------------- Final height ---------------------------------------
         line = ["Final Height", "RMS (avrg)"]
@@ -1194,22 +1195,41 @@ class Benchmark:
         table_content.append(line)
         
         # -------------------------------- Position of the flow front --------------------------------
-        line = ["Flow Front Position", "Max distance [m]"]
-
+        line = ["Maximal Extension", "Distance [m]"]
+        _, model_max_dist = self.compute_dist_centermass(flow_threshold=flow_threshold)
+        
         for model in self._loaded_results:
-            line.append(model_pos[model][2])
+            line.append(model_max_dist[model][2])
         table_content.append(line)
         
         line = ["", "Compared to avrg"]
 
         list_pos = []
         for model in self._loaded_results:
-            list_pos.append(model_pos[model][2])
+            list_pos.append(model_max_dist[model][2])
         mean_dist = np.mean(np.array(list_pos))
         
         for model in self._loaded_results:
-            line.append(abs(model_pos[model][2]-mean_dist)/mean_dist)
+            line.append((model_max_dist[model][2]-mean_dist)/mean_dist)
         table_content.append(line)
+        
+        if available_profile:
+            line = ["Flow Front (Profile)", "Distance [m]"]
+
+            for model in self._loaded_results:
+                line.append(model_pos[model][2])
+            table_content.append(line)
+            
+            line = ["", "Compared to avrg"]
+
+            list_pos = []
+            for model in self._loaded_results:
+                list_pos.append(model_pos[model][2])
+            mean_dist = np.mean(np.array(list_pos))
+            
+            for model in self._loaded_results:
+                line.append((model_pos[model][2]-mean_dist)/mean_dist)
+            table_content.append(line)
 
         # ---------------------------------- Front shape comparison ---------------------------------- 
         if coussot_criteria is not None:
@@ -1226,7 +1246,7 @@ class Benchmark:
         # --------------------------------------------------------------------------------------------
         #                                     Numeralical criterias
         # --------------------------------------------------------------------------------------------
-        table_content.append(["Numerical criterias"])
+        table_content.append(["Numerical criteria"])
         
         # ------------------------------------------- Volume -----------------------------------------
         model_volume = {}
@@ -1234,72 +1254,82 @@ class Benchmark:
             volume = self._loaded_results[model].get_output("volume")
             model_volume[model] = volume
             
-        line = ["Flow Volume", "At final time step [m3]"]
+        line = ["Flow Volume", "At final time step (Vinit)"]
         
         for model in self._loaded_results:
-            line.append(model_volume[model].d[-1])
+            line.append((model_volume[model].d[-1] - model_volume[model].d[0]) / 
+                        model_volume[model].d[0])
         table_content.append(line)
         
         line = ["", "RMS (Vinit)"]
                         
         for model in self._loaded_results:
-            rms = np.sqrt(np.mean(model_volume[model].d**2))
-            vinit = model_volume[model].d[0]
-            rms_vinit = (rms - vinit) / vinit
+            rms_vinit = 0
+            for v in model_volume[model].d:
+                rms_vinit += np.sqrt((v - model_volume[model].d[0])**2) / model_volume[model].d[0]
             line.append(rms_vinit)
         table_content.append(line)
         
         
         # --------------------------------------------------------------------------------------------
-        #                                       Save table in [xlsx]
+        #                                          Saving table
         # --------------------------------------------------------------------------------------------
         df = pd.DataFrame(table_content, columns=cols)
-        df.to_excel(saving_path, index=False, engine="openpyxl")
-        
+        if save:
+            if fmt == "csv":
+                df.to_csv(saving_path, index=False, encoding="utf-8")
+                
+            if fmt == "xlsx":
+                df.to_excel(saving_path, index=False, engine="openpyxl")
+                
         # --------------------------------------- Reformat table -------------------------------------
-        wb = openpyxl.load_workbook(saving_path)
-        ws = wb.active
-        
-        # Add border style
-        bordure_fine = openpyxl.styles.Border(left=openpyxl.styles.Side(style="thin"),
-                                              right=openpyxl.styles.Side(style="thin"),
-                                              top=openpyxl.styles.Side(style="thin"),
-                                              bottom=openpyxl.styles.Side(style="thin"))
+                wb = openpyxl.load_workbook(saving_path)
+                ws = wb.active
+                
+                # Add border style
+                bordure_fine = openpyxl.styles.Border(left=openpyxl.styles.Side(style="thin"),
+                                                    right=openpyxl.styles.Side(style="thin"),
+                                                    top=openpyxl.styles.Side(style="thin"),
+                                                    bottom=openpyxl.styles.Side(style="thin"))
 
-        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
-            for cell in row:
-                cell.border = bordure_fine
-        wb.save(saving_path)
+                for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
+                    for cell in row:
+                        cell.border = bordure_fine
+                wb.save(saving_path)
+            
+            print(f"Saved in: {saving_path}")
         
-        print(f"Saved in: {saving_path}")
+        return df
 
 
     def generate_analytical_comparison_csv(self,
                                            analytic_solution: dict,
+                                           save: bool = False,
+                                           folder_out: str = None,
+                                           file_name: str = None,
+                                           fmt: str = "csv",
                                            compute_as_u: bool = True,
                                            extration_profile_params: dict = None,
                                            flow_threshold: float = None,
-                                           folder_out: str = None,
-                                           file_name: str = None,
                                            ) -> None:
         """Generate a xlsx file summarizing comparison criteria between flow models and analytic solution.
         
         Generates a file grouping comparison criteria between numerical flow models and analytic solution:
         
-            - Criterias integrated throughout the simulation:
+            - Criteria integrated throughout the simulation:
 
                 - Total Height: RMS of flow height versus analytical solution.
-                - Total h*u: RMS of flow h*u versus analytical solution.
+                - Total Momentum: RMS of flow h*u versus analytical solution.
                 - Total Front Position: RMS of flow front versus analytical solution.
             
-            - Criterias for the final time step of the simulation:
+            - Criteria for the final time step of the simulation:
 
                 - Flow Front Position: maximum distance traveled by the flow and 
                 comparison with the analytic solution.
                  
-            - Numerical criterias:
+            - Numerical criteria:
 
-                - Volume: value of the volume at final time steps and RMS versus 
+                - Volume: value of the volume at final time steps (compared to initial volume) and RMS versus 
                 initial volume value.
             
         Parameters
@@ -1327,27 +1357,28 @@ class Benchmark:
         import openpyxl
         import os
 
-        if folder_out is None:
-            folder_out = os.path.join(os.path.dirname(__file__), "xlsx_results")
+        if save:
+            if folder_out is None:
+                folder_out = os.path.join(os.path.dirname(__file__), "xlsx_results")
+                
+            os.makedirs(folder_out, exist_ok=True)
+            
+            if file_name is None:
+                file_name = "AS_compare"
+                for model in self._loaded_results:
+                    file_name += "_" + model
+            
+            if not file_name.endswith("." + fmt):
+                file_name = file_name + "." + fmt
+            saving_path = os.path.join(folder_out, file_name)
         
-        os.makedirs(folder_out, exist_ok=True)
-        
-        if file_name is None:
-            file_name = "AS_comparison"
-            for model in self._loaded_results:
-                file_name += "_" + model
-        
-        if not file_name.endswith(".xlsx"):
-            file_name = file_name + ".xlsx"
-        saving_path = os.path.join(folder_out, file_name)
-        
-        if os.path.exists(saving_path):
-            raise ValueError(f"Existing file: {saving_path}")
+            if os.path.exists(saving_path):
+                raise ValueError(f"Existing file: {saving_path}")
         
         extration_profile_params = {} if extration_profile_params is None else extration_profile_params
         
         # Create table columns
-        cols = [f"AS: {str(analytic_solution['model']).split('.')[-1][:-2]}", ""]
+        cols = ["", ""]
         for model in self._loaded_results:
             cols.append(model)
         
@@ -1374,9 +1405,9 @@ class Benchmark:
                 flow_threshold = np.max(model_AS_h[model].d) * 0.01
         
         # --------------------------------------------------------------------------------------------
-        #                        Criterias integrated throughout the simulation 
+        #                        Criteria integrated throughout the simulation 
         # --------------------------------------------------------------------------------------------
-        table_content.append(["Criterias integrated throughout the simulation"])
+        table_content.append(["Criteria integrated throughout the simulation"])
         
         # ---------------------------------- Height difference ---------------------------------------
         model_h = {}
@@ -1402,7 +1433,7 @@ class Benchmark:
                                                      **extration_profile_params)
                 model_u[model] = profile
                 
-            line = ["Total h*u Difference", "RMS (AS)"]
+            line = ["Total Momentum Difference", "RMS (AS)"]
             for model in self._loaded_results:
                 hu = model_h[model].d * model_u[model].d
                 as_hu = model_AS_h[model].d * model_AS_u[model]
@@ -1442,12 +1473,12 @@ class Benchmark:
         table_content.append(line)
         
         # --------------------------------------------------------------------------------------------
-        #                       Criterias for the final time step of the simulation
+        #                       Criteria for the final time step of the simulation
         # --------------------------------------------------------------------------------------------
-        table_content.append(["Criterias for the final time step of the simulation"])
+        table_content.append(["Criteria for the final time step of the simulation"])
         
         # ---------------------------- Front position at final time step -----------------------------
-        line = ["Front position", "Maximum distance [m]"]
+        line = ["Front position", "Distance [m]"]
         
         for model in self._loaded_results:
             line.append(model_position[model][-1] - model_position[model][0])
@@ -1456,99 +1487,68 @@ class Benchmark:
         
         line = ["", "Compared to AS"]
         
+        # model_as_position[model] différent selon model
         for model in self._loaded_results:
-            line.append((np.sqrt((model_position[model][-1] - model_as_position[model][-1])**2)) /
-                        np.sqrt(np.sum((model_as_position[model])**2)))
+            line.append((model_position[model][-1] - model_as_position[model][-1]) /
+                         model_as_position[model][-1])
         
         table_content.append(line)
         
         # --------------------------------------------------------------------------------------------
-        #                                     Numeralical criterias
+        #                                     Numeralical criteria
         # --------------------------------------------------------------------------------------------
-        table_content.append(["Numerical criterias"])
+        table_content.append(["Numerical criteria"])
         
         # ------------------------------------------- Volume -----------------------------------------
-        line = ["Flow Volume", "RMS (Vinit)"]
-        
         model_volume = {}
         for model in self._loaded_results:
             volume = self._loaded_results[model].get_output("volume")
             model_volume[model] = volume
+            
+        line = ["Flow Volume", "At final time step (Vinit)"]
         
         for model in self._loaded_results:
-            rms = np.sqrt(np.mean(model_volume[model].d**2))
-            vinit = model_volume[model].d[0]
-            rms_vinit = (rms - vinit) / vinit
+            line.append((model_volume[model].d[-1] - model_volume[model].d[0]) / 
+                        model_volume[model].d[0])
+        table_content.append(line)
+        
+        line = ["", "RMS (Vinit)"]
+                        
+        for model in self._loaded_results:
+            rms_vinit = 0
+            for v in model_volume[model].d:
+                rms_vinit += np.sqrt((v - model_volume[model].d[0])**2) / model_volume[model].d[0]
             line.append(rms_vinit)
         table_content.append(line)
-        
-        line = ["", "Final time step [m3]"]
-        
-        for model in self._loaded_results:
-            line.append(model_volume[model].d[-1])
-        table_content.append(line)
             
             
         # --------------------------------------------------------------------------------------------
-        #                                       Save table in [xlsx]
+        #                                          Saving table
         # --------------------------------------------------------------------------------------------
         df = pd.DataFrame(table_content, columns=cols)
-        df.to_excel(saving_path, index=False, engine="openpyxl")
-        
+        if save:
+            if fmt == "csv":
+                df.to_csv(saving_path, index=False, encoding="utf-8")
+                
+            if fmt == "xlsx":
+                df.to_excel(saving_path, index=False, engine="openpyxl")
+                
         # --------------------------------------- Reformat table -------------------------------------
-        wb = openpyxl.load_workbook(saving_path)
-        ws = wb.active
+                wb = openpyxl.load_workbook(saving_path)
+                ws = wb.active
+                
+                # Add border style
+                bordure_fine = openpyxl.styles.Border(left=openpyxl.styles.Side(style="thin"),
+                                                    right=openpyxl.styles.Side(style="thin"),
+                                                    top=openpyxl.styles.Side(style="thin"),
+                                                    bottom=openpyxl.styles.Side(style="thin"))
+
+                for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
+                    for cell in row:
+                        cell.border = bordure_fine
+                wb.save(saving_path)
+            
+            print(f"Saved in: {saving_path}")
         
-        # Add border style
-        bordure_fine = openpyxl.styles.Border(left=openpyxl.styles.Side(style="thin"),
-                                              right=openpyxl.styles.Side(style="thin"),
-                                              top=openpyxl.styles.Side(style="thin"),
-                                              bottom=openpyxl.styles.Side(style="thin"))
-
-        for row in ws.iter_rows(min_row=1, max_row=ws.max_row, max_col=ws.max_column):
-            for cell in row:
-                cell.border = bordure_fine
-        wb.save(saving_path)
+        return df
         
-        print(f"Saved in: {saving_path}")
-        
-
-"""
-from openpyxl import load_workbook
-
-wb = load_workbook("tableau_resultats.xlsx")
-ws = wb.active
-
-# Exemple de fusions
-ws.merge_cells("A2:A3")
-
-# Enregistrer le résultat
-wb.save("tableau_resultats.xlsx")
-"""
-
-"""
-from openpyxl import load_workbook
-from openpyxl.styles import Font, Alignment
-
-# Charger le fichier
-wb = load_workbook("tableau_resultats.xlsx")
-ws = wb.active
-
-# Exemple : mettre en gras et centrer une cellule
-cell = ws["A1"]
-cell.font = Font(bold=True)
-cell.alignment = Alignment(horizontal="center", vertical="center")
-
-# Exemple : appliquer à toute une ligne d'en-têtes
-for cell in ws[1]:
-    cell.font = Font(bold=True)
-    cell.alignment = Alignment(horizontal="center", vertical="center")
-
-# Exemple : centrer toutes les cellules du tableau
-for row in ws.iter_rows(min_row=2, max_col=6, max_row=ws.max_row):
-    for cell in row:
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-
-# Enregistrer
-wb.save("tableau_resultats.xlsx")
-"""
