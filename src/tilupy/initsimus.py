@@ -13,7 +13,7 @@ def write(model_name: str,
           ):
     """
     Dynamically imports the corresponding initiation module from
-    `tilupy.models.<code>.initsimus` and use the corresponding `write_simu()` function.
+    :data:`tilupy.models.<code>.initsimus` and use the corresponding :data:`write_simu()` function.
 
     Parameters
     ----------
@@ -35,11 +35,6 @@ def write(model_name: str,
         Output folder where simulation inputs will be saved.
     **kwargs
         Additional arguments for specific models.
-        lave2D:
-            simulation_name : str
-                Simulation/project name.
-            lave2D_exe_folder : str
-                Path to the folder containing "Lave2_Arc.exe" and "vf2marc.exe".
     """
     module = importlib.import_module("tilupy.models." + model_name + ".initsimus")
         
