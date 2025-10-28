@@ -15,7 +15,26 @@ import shapely.ops
 import tilupy.read
 
 
-def CSI(pred, obs):
+def CSI(pred: np.ndarray, obs: np.ndarray) -> float:
+    """Compute the Critical Success Index (CSI).
+
+    Measure the fraction of observed and/or predicted events that were correctly predicted.
+
+    Parameters
+    ----------
+    pred : numpy.ndarray
+        Array of predicted binary values (e.g., 1 for event predicted, 0 otherwise).
+        Shape and type must match :paramref:`obs`.
+    obs : numpy.ndarray
+        Array of observed binary values (e.g., 1 for event observed, 0 otherwise).
+        Shape and type must match :paramref:`pred`.
+
+    Returns
+    -------
+    float
+        The Critical Success Index (CSI), a score between 0 and 1.
+        A score of 1 indicates perfect prediction, while 0 indicates no skill.
+    """
     ipred = pred > 0
     iobs = obs > 0
 
@@ -26,9 +45,48 @@ def CSI(pred, obs):
     return TP / (TP + FP + FN)
 
 
-def diff_runout(
-    x_contour, y_contour, point_ref, section=None, orientation="W-E"
-):
+def diff_runout(x_contour: np.ndarray, 
+                y_contour: np.ndarray, 
+                point_ref: tuple[float, float], 
+                section: np.ndarray | shapely.geometry.LineString = None, 
+                orientation: str = "W-E"
+                ) -> float:
+    """Compute runout distance difference between a reference point and its projection on a contour,
+    optionally along a specified section line.
+
+    This function calculates the distance from a reference point to a contour (e.g., a polygon boundary),
+    or the distance along a section line (e.g., a transect) between the reference point and its intersection
+    with the contour. The section line can be oriented in four cardinal directions.
+
+    Parameters
+    ----------
+    x_contour : numpy.ndarray
+        Array of x-coordinates defining the contour.
+    y_contour : numpy.ndarray
+        Array of y-coordinates defining the contour. Must be the same length as :paramref:`x_contour`.
+    point_ref : tuple[float, float]
+        Reference point coordinates (x, y) from which the distance is calculated.
+    section : numpy.ndarray or shapely.geometry.LineString, optional
+        Coordinates of the section line as an array of shape (N, 2) or a Shapely LineString.
+        If None, the function returns the Euclidean distance from :paramref:`point_ref` to the contour.
+        By default None.
+    orientation : str, optional
+        Orientation of the section line. Must be one of:
+            
+            - "W-E" (West-East, default)
+            - "E-W" (East-West)
+            - "S-N" (South-North)
+            - "N-S" (North-South)
+        This determines how the intersection point is selected if multiple intersections exist.
+        By default "W-E".
+
+    Returns
+    -------
+    float
+        If `section` is None: Euclidean distance from :paramref:`point_ref` to the contour.
+        If `section` is provided: Distance along the section line between :paramref:`point_ref` and the contour intersection.
+        The distance is signed, depending on the projection direction.
+    """
     npts = len(x_contour)
     contour = geom.LineString(
         [(x_contour[i], y_contour[i]) for i in range(npts)]
@@ -70,7 +128,34 @@ def diff_runout(
     return section.project(intersection) - section.project(point)
 
 
-def revert_line(line, orientation="W-E"):
+def revert_line(line: shapely.geometry.LineString, 
+                orientation: str = "W-E"
+                ) -> shapely.geometry.LineString:
+    """Revert a line geometry if its orientation does not match the specified direction.
+
+    This function checks the orientation of the input line (based on the coordinates of its first and last points)
+    and reverses it if necessary to ensure it matches the specified cardinal direction.
+    The line is reversed in-place if the initial orientation is opposite to the specified one.
+
+    Parameters
+    ----------
+    line : shapely.geometry.LineString
+        Input line geometry to be checked and potentially reverted.
+    orientation : str, optional
+        Desired cardinal direction for the line. Must be one of:
+            
+            - "W-E" (West-East, default): The line should start at the west end (smaller x-coordinate).
+            - "E-W" (East-West): The line should start at the east end (larger x-coordinate).
+            - "S-N" (South-North): The line should start at the south end (smaller y-coordinate).
+            - "N-S" (North-South): The line should start at the north end (larger y-coordinate).
+        By default "W-E".
+
+    Returns
+    -------
+    shapely.geometry.LineString
+        The input line, potentially reverted to match the specified orientation.
+        If the line already matches the orientation, it is returned unchanged.
+    """
     pt_init = line.coords[0]
     pt_end = line.coords[-1]
     if orientation == "W-E":
@@ -89,7 +174,50 @@ def revert_line(line, orientation="W-E"):
     return line
 
 
-def get_contour(x, y, z, zlevels, indstep=1, maxdist=30, closed_contour=True):
+def get_contour(x: np.ndarray,
+                y: np.ndarray,
+                z: np.ndarray,
+                zlevels: list[float],
+                indstep: int = 1, 
+                maxdist: float = 30, 
+                closed_contour: bool = True
+                ) -> tuple[dict[float, np.ndarray], 
+                           dict[float, np.ndarray]]:
+    """Extract contour lines from a 2D grid of values at specified levels.
+
+    This function computes contour lines for a given 2D field :paramref:`z` defined on the grid :data:`(x, y)`,
+    at the specified levels :paramref:`zlevels`. It can optionally ensure that contours are closed by padding
+    the input arrays, and filter out contours that are not closed within a maximum distance threshold.
+
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        1D array of x-coordinates defining the grid.
+    y : numpy.ndarray
+        1D array of y-coordinates defining the grid.
+    z : numpy.ndarray
+        2D array of values defined on the grid :data:`(x, y)`.
+    zlevels : list[float]
+        List of contour levels at which to extract the contours.
+    indstep : int, optional
+        Step used to subsample the contour points, by default 1 (no subsampling).
+    maxdist : float, optional
+        Maximum allowed distance between the first and last points of a contour line.
+        If the distance exceeds this value and `closed_contour` is False, the contour is discarded,
+        by default 30.
+    closed_contour : bool, optional
+        If True, the input arrays are padded to ensure closed contours, by default True.
+
+    Returns
+    -------
+    tuple[dict[float, np.ndarray], dict[float, np.ndarray]]
+        xcontour : dict
+            Maps each contour level to an array of x-coordinates of the contour line.
+        ycontour : dict
+            Maps each contour level to an array of y-coordinates of the contour line.
+        If a contour is discarded due to `maxdist`, the corresponding value is `None`.
+    """
     # Add sup_value at the border of the array, to make sure contour
     # lines are closed
     if closed_contour:
@@ -142,7 +270,8 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
                 extraction_mode: str = "axis",
                 data_threshold: float = 1e-3,
                 **extraction_params,
-                ) -> tuple[tilupy.read.TemporalResults1D, float | np.ndarray]:
+                ) -> tuple[tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D, 
+                           float | tuple[np.ndarray] | np.ndarray]:
     """Extract profile with different modes and options.
 
     Parameters
@@ -199,7 +328,7 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
         
     Returns
     -------
-    tilupy.read.TemporalResults1D
+    tilupy.read.TemporalResults1D or tilupy.read.StaticResults1D
         Extracted profiles.
     float or numpy.ndarray
         Specific output depending on :data:`extraction_mode`:
@@ -380,7 +509,7 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
                                                   d=data_field[y_indexes, x_indexes, :],
                                                   t=data.t,
                                                   coords=distance,
-                                                  coords_name='dist'),
+                                                  coords_name='d'),
                     (x_values, 
                      y_values, 
                      distance))
@@ -388,7 +517,7 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
             return (tilupy.read.StaticResults1D(name=data.name,
                                                 d=data_field[y_indexes, x_indexes],
                                                 coords=distance,
-                                                coords_name='dist'),
+                                                coords_name='d'),
                     (x_values, 
                      y_values, 
                      distance))
@@ -490,21 +619,21 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
                                                   d=all_values.T,
                                                   t=data.t,
                                                   coords=valid_distances,
-                                                  coords_name="dist",
+                                                  coords_name="d",
                                                   notation=data.notation),
                     valid_distances)
         else:
             return (tilupy.read.StaticResults1D(name=data.name,
                                                 d=all_values.T,
                                                 coords=valid_distances,
-                                                coords_name="dist",
+                                                coords_name="d",
                                                 notation=data.notation),
                     valid_distances)
     else :
         raise ValueError("Invalid 'extraction_mode': 'axis', 'coordinates' or 'shapefile'.")
 
 
-def format_path_linux(path):
+def format_path_linux(path: str) -> str:
     """
     Change a Windows-type path to a path formatted for Linux. \\ are changed
     to /, and partitions like "C:" are changed to "/mnt/c/"
