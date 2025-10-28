@@ -38,16 +38,18 @@ def calotte(x: np.ndarray,
         Downwards offset between the sphere center and the topography, in the
         direction normal to the topography, by default 0.
     res_type : string, optional
-        Type of thickness output: 
+        Type of thickness output:
+        
             - 'true_normal': Real thickness in the direction normal to the topography. 
             - 'vertical': Thickness in the vertical direction. 
             - 'projected_normal': Thickness normal to the topography is computed from the vertical 
               thickness projected on the axe normal to the topography. 
+              
         The default is 'projected_normal'.
 
     Returns
     -------
-    m : numpy.ndarray
+    numpy.ndarray
         Array of mass height, in the direction normal to topography.
     """
     z = np.flip(z, axis=0).T
