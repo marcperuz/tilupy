@@ -1,3 +1,14 @@
 body {
     text-align: justify;
 }
+
+/* Supprime la boîte monospace pour les références de classe */
+a.reference.internal > code.xref.py {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    color: #2596be !important; /* Violet */
+    font-weight: normal !important;
+}
