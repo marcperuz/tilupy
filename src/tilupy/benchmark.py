@@ -63,7 +63,7 @@ class Benchmark:
         ValueError
             If the provided model is not in the allowed list of :data:`tilupy.read.ALLOWED_MODELS`.
         """
-        if model in self._allowed_models:
+        if model in tilupy.read.ALLOWED_MODELS:
             if model not in self._loaded_results:
                 self._loaded_results[model] = tilupy.read.get_results(model, **kwargs)
                 self._models_tim[model] = self._loaded_results[model].tim
@@ -71,7 +71,7 @@ class Benchmark:
             if self._simu_z is None:
                 self._simu_z = self._loaded_results[model].z
             
-            if self._simu_z.shape != self._loaded_results[model].z:
+            if self._simu_z.shape != self._loaded_results[model].z.shape:
                 raise ValueError("Simulations loaded doesn't have same size.")
             
             try :
@@ -88,7 +88,8 @@ class Benchmark:
        
     def compute_analytic_solution(self,
                                   output: str,
-                                  model: Callable, 
+                                  solution: Callable,
+                                  model: str,
                                   T: float | list[float], 
                                   **kwargs
                                   ) -> None:
@@ -99,8 +100,11 @@ class Benchmark:
         ----------
         output : str
             Wanted output for the analytical solution. Can be : "h" or "u".
-        model : Callable
+        solution : Callable
             Callable object representing the analytic solution model (model from :class:`tilupy.analytic_sol.Depth_result`)
+        model : str
+            Wanted model to compute the analytical solution from. Must be loaded first with 
+            :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
         T : float | list[float]
             Time or list of times at which to compute the analytic solution.
         **kwargs
@@ -111,7 +115,7 @@ class Benchmark:
         ValueError
             If no solution found.
         """
-        solution = model(**kwargs)
+        solution = solution(**kwargs)
         
         if isinstance(T, float) or isinstance(T, int):
             T = [T]
@@ -120,25 +124,25 @@ class Benchmark:
             raise ValueError(" -> Available output: 'h', 'u'.")
         
         if output == 'h':
-            solution.compute_h(self._x, T)
+            solution.compute_h(self._loaded_results[model].x, T)
             
             if solution.h is not None:
                 return tilupy.read.TemporalResults1D(name=output,
                                                      d=solution.h[:].T,
                                                      t=T,
-                                                     coords=self._x,
+                                                     coords=self._loaded_results[model].x,
                                                      coords_name='x')
             else:
                 raise ValueError("No analytic solution for fluid height.")
             
         if output == 'u':
-            solution.compute_u(self._x, T)
+            solution.compute_u(self._loaded_results[model].x, T)
             
             if solution.u is not None:
                 return tilupy.read.TemporalResults1D(name=output,
                                                      d=solution.u[:].T,
                                                      t=T,
-                                                     coords=self._x,
+                                                     coords=self._loaded_results[model].x,
                                                      coords_name='x')
             else:
                 raise ValueError("No analytic solution for fluid velocity.")
@@ -834,9 +838,8 @@ class Benchmark:
         # Extract profile
         model_profile = {}
         for model in self._loaded_results:
-            profile, _ = tilupy.read.get_profile(simu=self._loaded_results[model],
-                                                 output="h",
-                                                 **extration_profile_params)
+            profile, _ = self._loaded_results[model].get_profile(output="h",
+                                                                 **extration_profile_params)
             model_profile[model] = profile
             
             if flow_threshold is None:
@@ -902,14 +905,17 @@ class Benchmark:
 
 
     def compute_rms_from_coussot(self,
+                                 coussot_params: dict,
                                  look_up_direction: str = "right",
                                  flow_threshold: float = None,
-                                 **coussot_params
+                                 **extration_profile_params
                                  ) -> tuple[dict, dict, dict]:
         """Compute RMS with Coussot's front shape for each model loaded.
 
         Parameters
         ----------
+        coussot_params : dict
+            Arguments for generating Coussot's solution. See :class:`tilupy.analytic_sol.Coussot_Shape`.
         look_up_direction : str, optional
             Direction to look for the flow front, must be "right" or "left", 
             by default "right".
@@ -942,8 +948,8 @@ class Benchmark:
         model_coussot = {}
         for model in self._loaded_results:
             # Extract profile
-            prof, _ = tilupy.read.get_profile(self._loaded_results[model],
-                                              "h")
+            prof, _ = self._loaded_results[model].get_profile(output="h",
+                                                              **extration_profile_params)
             if flow_threshold is None:
                 flow_threshold = np.max(prof.d[:, 0])*0.01
             max_index = np.argmax(prof.d[:, -1])
@@ -1236,7 +1242,7 @@ class Benchmark:
             line = ["Front Shape", "RMS (Coussot)"]
             model_rms, _, _ = self.compute_rms_from_coussot(look_up_direction=profile_direction,
                                                             flow_threshold=flow_threshold,
-                                                            **coussot_criteria)
+                                                            coussot_params=coussot_criteria)
             
             for model in self._loaded_results:
                 line.append(model_rms[model])
@@ -1339,7 +1345,7 @@ class Benchmark:
         compute_as_u: bool, optional
             If True, compute analytic solution for flow velocity. Can be disabled. By default True.
         extration_profile_params: dict, optional
-            Argument for extracting profile. See :meth:`tilupy.read.get_profile`. By default None.
+            Argument for extracting profile. See :meth:`tilupy.read.Results.get_profile`. By default None.
         flow_threshold : float, optional
             Flow threshold when extracting front position from profile, by default None.
         folder_out : str, optional
@@ -1392,11 +1398,13 @@ class Benchmark:
         for model in self._loaded_results:
             as_h_profile = self.compute_analytic_solution(output="h",
                                                           T=self._models_tim[model],
+                                                          model=model,
                                                           **analytic_solution)
             model_AS_h[model] = as_h_profile
             if compute_as_u:
                 as_u_profile = self.compute_analytic_solution(output="u",
                                                               T=self._models_tim[model],
+                                                              model=model,
                                                               **analytic_solution)
                 
                 model_AS_u[model] = np.nan_to_num(as_u_profile.d, nan=0)
@@ -1412,9 +1420,8 @@ class Benchmark:
         # ---------------------------------- Height difference ---------------------------------------
         model_h = {}
         for model in self._loaded_results:
-            profile, _ = tilupy.read.get_profile(simu=self._loaded_results[model],
-                                                 output="h",
-                                                 **extration_profile_params)
+            profile, _ = self._loaded_results[model].get_profile(output="h",
+                                                                 **extration_profile_params)
             model_h[model] = profile
             
         line = ["Total Height Difference", "RMS (AS)"]
@@ -1428,9 +1435,8 @@ class Benchmark:
         if compute_as_u:
             model_u = {}
             for model in self._loaded_results:
-                profile, _ = tilupy.read.get_profile(simu=self._loaded_results[model],
-                                                     output="u",
-                                                     **extration_profile_params)
+                profile, _ = self._loaded_results[model].get_profile(output="u",
+                                                                     **extration_profile_params)
                 model_u[model] = profile
                 
             line = ["Total Momentum Difference", "RMS (AS)"]
