@@ -214,9 +214,9 @@ class Benchmark:
         model : str
             Wanted model to show the output profile. Must be loaded with :meth:`tilupy.benchmark.Benchmark.load_numerical_result`
         extraction_method : str, optional
-            Wanted profile extraction method. See [XX]. By default "axis".
+            Wanted profile extraction method. See :func:`tilupy.utils.get_profile`. By default "axis".
         extraction_params : dict, optional
-            Profile extraction parameters. See [XX]. Be default None.
+            Profile extraction parameters. See :func:`tilupy.utils.get_profile`. Be default None.
         time_steps : float | list[float], optional
             Value or list of time steps required to extract and display profiles. 
             If None displays the profiles for all recorded time steps in the model's result. 
@@ -277,7 +277,7 @@ class Benchmark:
         models : list[str]
             Wanted models to show the temporal 1D data. Must be loaded with :meth:`tilupy.benchmark.Benchmark.load_numerical_result`.
         profile_extraction_args : dict, optional
-            Arguments for profile extraction. See [XX]. By default None.
+            Arguments for profile extraction. See :func:`tilupy.utils.get_profile`. By default None.
         analytic_solution : dict, optional
             Arguments for plotting an analytic solution. See :meth:`tilupy.benchmark.Benchmark.compute_analytic_solution`. 
             By default None.
@@ -329,9 +329,8 @@ class Benchmark:
         profile_models = {}
         for model in models:
             if output in tilupy.read.TEMPORAL_DATA_2D:
-                prof, data = tilupy.read.get_profile(self._loaded_results[model],
-                                                    output=output,
-                                                    **profile_extraction_args)
+                prof, data = self._loaded_results[model].get_profile(output=output,
+                                                                     **profile_extraction_args)
                 profile_models[model] = [prof, data]
             elif output in tilupy.read.TEMPORAL_DATA_1D:
                 prof = self._loaded_results[model].get_output(output)
