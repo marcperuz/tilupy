@@ -1,6 +1,7 @@
 matplotlib
 numpy
 pandas
+openpyxl
 pytest
 rasterio
 requests
