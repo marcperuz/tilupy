@@ -34,8 +34,6 @@ def simu_data():
         (("shaltop", "h_int_xy"), (1, tiread.TemporalResults0D)),
     ],
 )
-
-
 def test_get_output(folder_data, simu_data, args, expected):
     folder_simus = os.path.join(folder_data, simu_data["simu_name"], args[0])
     res = tiread.get_results(
@@ -43,6 +41,25 @@ def test_get_output(folder_data, simu_data, args, expected):
     )
     # pytest.set_trace()
     output = res.get_output(args[1])
+    assert output.d.ndim == expected[0]
+    assert isinstance(output, expected[1])
+    
+
+@pytest.mark.parametrize(
+    "args, expected",
+    [
+        (("shaltop", "h"), (2, tiread.TemporalResults1D)),
+        (("shaltop", "u"), (2, tiread.TemporalResults1D)),
+        (("shaltop", "h_max"), (1, tiread.StaticResults1D)),
+    ],
+)
+def test_get_profile(folder_data, simu_data, args, expected):
+    folder_simus = os.path.join(folder_data, simu_data["simu_name"], args[0])
+    res = tiread.get_results(
+        args[0], file_params=simu_data["param_file"], folder=folder_simus
+    )
+    # pytest.set_trace()
+    output, _ = res.get_profile(args[1])
     assert output.d.ndim == expected[0]
     assert isinstance(output, expected[1])
 
@@ -58,8 +75,6 @@ def test_get_output(folder_data, simu_data, args, expected):
         (("shaltop", "shearx_int"), (2, tiread.StaticResults2D)),
     ],
 )
-
-
 def test_plot(folder_data, folder_plots, simu_data, args, expected):
     folder_simus = os.path.join(folder_data, simu_data["simu_name"], args[0])
     folder_output = os.path.join(folder_plots, simu_data["simu_name"], args[0])
@@ -150,13 +165,38 @@ def simu_data_lave2D():
         ("hvert_int_xy", (1, tiread.TemporalResults0D)),
     ],
 )
-# @pytest.mark.skip(reason="A corriger")
-@pytest.mark.xfail
 def test_get_output_lave2D(simu_data_lave2D, args, expected):
     res = tiread.get_results("lave2D",
                              folder=simu_data_lave2D["folder"], 
                              name=simu_data_lave2D["simu_name"], 
                              raster=simu_data_lave2D["raster_name"])
+    
+    output = res.get_output(args)
+    
+    assert output.d.ndim == expected[0]
+    assert isinstance(output, expected[1])
+    
+@pytest.fixture
+def simu_data_saval2D():
+    res = dict(folder=os.path.join(os.path.dirname(__file__), "data", "gray99", "saval2D"),
+               raster_name="mntsimulation",
+               )
+    return res
+
+@pytest.mark.parametrize(
+    "args, expected",
+    [
+        ("h_init", (2, tiread.StaticResults2D)),
+        ("h_max", (2, tiread.StaticResults2D)),
+        ("h_int", (2, tiread.StaticResults2D)),
+        ("h_int_x", (2, tiread.TemporalResults1D)),
+        ("hvert_int_xy", (1, tiread.TemporalResults0D)),
+    ],
+)
+def test_get_output_saval2D(simu_data_saval2D, args, expected):
+    res = tiread.get_results("saval2D",
+                             folder=simu_data_saval2D["folder"],
+                             raster_topo=simu_data_saval2D["raster_name"])
     
     output = res.get_output(args)
     

@@ -16,12 +16,12 @@ def simu_data():
     "args, expected",
     [
         ("h", (3, tiread.TemporalResults2D)),
-        ("qx", (3, tiread.TemporalResults2D)),
-        ("qy", (3, tiread.TemporalResults2D)),
-        ("q", (3, tiread.TemporalResults2D)),
         ("u", (3, tiread.TemporalResults2D)),
+        ("hu", (3, tiread.TemporalResults2D)),
+        ("hu2", (3, tiread.TemporalResults2D)),
         ("ux", (3, tiread.TemporalResults2D)),
         ("uy", (3, tiread.TemporalResults2D)),
+        ("hvert", (3, tiread.TemporalResults2D)),
     ],
 )
 
