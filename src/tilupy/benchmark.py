@@ -927,9 +927,7 @@ class Benchmark:
                 Position of Coussot's profile for each model: model_front_pos[model] = pos_value.
             model_coussot: dict
                 Coussot's profile for each model: model_coussot[model] = StaticResults1D.
-        """
-        from scipy.interpolate import interp1d
-        
+        """        
         def get_front_index(profile):
             idx = np.where(profile <= flow_threshold)[0]
             return (idx[0] - 1) if len(idx) else len(profile) - 1
@@ -1171,7 +1169,7 @@ class Benchmark:
                 line.append(time[model])
             table_content.append(line)
             
-            line = ["", f"Average velocity [m/s]"]
+            line = ["", "Average velocity [m/s]"]
             
             for model in self._loaded_results:
                 line.append(avrg_vel[model])

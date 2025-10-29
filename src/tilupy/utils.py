@@ -481,7 +481,7 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
             raise ValueError("Invild dimension. 'ycoord' must be a 1d array.")
         
         if len(extraction_params["xcoord"]) != len(extraction_params["ycoord"]):
-            raise ValueError(f"'xcoord' and 'ycoord' must have same size: ({len(extraction_params["xcoord"])}, {len(extraction_params["ycoord"])})")
+            raise ValueError(f"'xcoord' and 'ycoord' must have same size: ({len(extraction_params['xcoord'])}, {len(extraction_params['ycoord'])})")
         
         # Extract index from nearest value of xcoord and ycoord
         x_distances = np.abs(x_coord[None, :] - extraction_params["xcoord"][:, None])
