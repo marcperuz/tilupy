@@ -225,6 +225,9 @@ class Notation:
         if language is None:
             language = LABEL_OPTIONS["language"]
 
+        if isinstance(self._long_name, dict):
+            return self._long_name[language]
+        
         res = getattr(self._long_name, language)
         if gender is not None:
             res = res[gender]
