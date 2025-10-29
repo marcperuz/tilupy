@@ -22,6 +22,9 @@ Implemented states :
     - u : flow velocity (norm)
 """
 
+COMPUTED_OUTPUT = ["hvert", "hu", "hu2"]
+
+
 
 class Results(tilupy.read.Results):
     """Results of lave2D simulations.
@@ -243,7 +246,7 @@ class Results(tilupy.read.Results):
                     u[:, :, i_time + 1] = u_out
         
         if self._tim is None: 
-            self._tim = tim
+            self._tim = np.array(tim)
         
         available_outputs = {"h": h[:],
                              "u": u[:],
@@ -253,6 +256,34 @@ class Results(tilupy.read.Results):
             d = available_outputs[name]
             t = self._tim
         
+        if name in COMPUTED_OUTPUT:
+            if name == "hu":
+                d = available_outputs['h'] * available_outputs['u']
+                t = self._tim
+
+            elif name == "hu2":
+                d = available_outputs['h'] * available_outputs['u'] * available_outputs['u']
+                t = self._tim
+            
+            elif name == "hvert":
+                if self._costh is None:
+                    self._costh = self.compute_costh()
+                d = available_outputs["h"] / self._costh[:, :, np.newaxis]
+                t = self._tim
+        
+        # if name == "ek":
+        #     if self._costh is None:
+        #             self._costh = self.compute_costh()
+            
+        #     d = []
+        #     for i in range(len(self._tim)):
+        #         d.append(np.sum((available_outputs['h'][:, :, i] 
+        #                          * available_outputs['u'][:, :, i] 
+        #                          * available_outputs['u'][:, :, i])
+        #                         / self._costh[:, :]))
+        #     d = np.array(d)
+        #     t = self._tim
+                 
         if t is None:
             return tilupy.read.AbstractResults(name, d, notation=notation)
 
