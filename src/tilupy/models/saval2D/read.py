@@ -10,24 +10,24 @@ import os
 import numpy as np
 import tilupy.read
 
-
-STATES_OUTPUT = ["h", "qx", "qy"]
+# hv = hn * costh
+STATES_OUTPUT = ["h", "hux", "huy"]
 """State variables of the flow available with saval2D.
 
 Implemented states :
 
     - h : flow thickness (normal to the surface)
-    - qx : flow rate component in X direction
-    - qy : flow rate component in Y direction
+    - hux : momentum component in X direction
+    - huy : momentum component in Y direction
 """
 
-COMPUTED_OUTPUT = ["u", "q", "ux", "uy"]
+COMPUTED_OUTPUT = ["u", "hu", "hu2", "hvert", "ux", "uy"]
 """Computed variables of the flow available with saval2D.
 
 Available outputs :
 
     - u : flow velocity (norm)
-    - q : flow rate
+    - hu : momentum
     - ux : velocity component in X direction
     - uy : velocity component in Y direction
 """
@@ -214,7 +214,10 @@ class Results(tilupy.read.Results):
         return t_list            
     
     
-    def _extract_output(self, name):
+    def _extract_output(self, 
+                        name: str, 
+                        **kwargs
+                        ) -> tilupy.read.TemporalResults2D | tilupy.read.TemporalResults0D | tilupy.read.AbstractResults:
         """Result extraction for saval2D files.
 
         Parameters
@@ -279,15 +282,15 @@ class Results(tilupy.read.Results):
             tim.append(t_list[T])
 
         if self._tim is None:
-            self._tim = tim
+            self._tim = np.array(tim)
     
         available_outputs = {"h": h_list,
                              "u": u_list,
-                             "q": q_list,
+                             "hu": q_list,
                              "ux": ux_list,
                              "uy": uy_list,
-                             "qx": qx_list,
-                             "qy": qy_list,
+                             "hux": qx_list,
+                             "huy": qy_list,
                              }
 
         if name in STATES_OUTPUT:
@@ -295,8 +298,32 @@ class Results(tilupy.read.Results):
             t = self._tim
         
         if name in COMPUTED_OUTPUT:
-            d = np.stack(available_outputs[name], axis=-1)
-            t = self._tim
+            if name == "hu2":
+                d = np.stack(available_outputs["hu"], axis=-1) * np.stack(available_outputs["u"], axis=-1)
+                t = self._tim
+            
+            elif name == "hvert":
+                if self._costh is None:
+                    self._costh = self.compute_costh()
+                d = np.stack(available_outputs["h"], axis=-1) / self._costh[:, :, np.newaxis]
+                t = self._tim
+            else:
+                d = np.stack(available_outputs[name], axis=-1)
+                t = self._tim
+        
+        # if name == "ek":
+        #     if self._costh is None:
+        #             self._costh = self.compute_costh()
+            
+        #     d = []
+        #     for i in range(len(self._tim)):
+        #         d.append(np.sum((np.stack(available_outputs["hu"], axis=-1)[:, :, i] * 
+        #                          np.stack(available_outputs["u"], axis=-1)[:, :, i] *
+        #                          self._dx *
+        #                          self._dy)
+        #                         / self._costh[:, :]))
+        #     d = np.array(d)
+        #     t = self._tim
         
         if t is None:
             return tilupy.read.AbstractResults(name, d, notation=notation)
