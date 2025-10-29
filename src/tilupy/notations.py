@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from __future__ import annotations
 import tilupy
 import pandas as pd
 
@@ -64,7 +65,33 @@ class Notation:
         self._gender = gender
         self._symbol = symbol
         self._unit = unit
+    
+    
+    @property
+    def name(self):
+        """Get name.
 
+        Returns
+        -------
+        str
+            Attribute :attr:`_name`
+        """
+        return self._name
+    
+    @name.setter
+    def name(self, value: str):
+        """Set name.
+        
+        Parameters
+        ----------
+        value : str
+            Name value
+        """
+        if value is None:
+            self._name = None
+        else:
+            self._name = value
+    
     @property
     def unit(self):
         """Get unit.
@@ -116,6 +143,31 @@ class Notation:
             self._gender = Gender(**value)
         else:
             self._gender = value
+            
+    @property
+    def symbol(self):
+        """Get symbol.
+
+        Returns
+        -------
+        str
+            Attribute :attr:`_symbol`
+        """
+        return self._symbol
+    
+    @symbol.setter
+    def symbol(self, value: str):
+        """Set symbol.
+        
+        Parameters
+        ----------
+        value : str
+            Symbol value
+        """
+        if value is None:
+            self._symbol = None
+        else:
+            self._symbol = value
 
     @property
     def long_name(self):
