@@ -51,8 +51,8 @@ plt.show()
 # .. math::
 # 	D^* = \frac{\rho g d}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
 
-case_2 = Coussot_shape(rho=1000, tau=50, theta=0)
-case_2.compute_rheological_test_front_morpho(h_final=1)
+case_2 = Coussot_shape(rho=1000, tau=50, theta=0, h_final=1)
+case_2.compute_rheological_test_front_morpho()
 plt.plot(case_2.d, case_2.h, color="black")
 plt.show()
 
