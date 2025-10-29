@@ -333,7 +333,7 @@ class Benchmark:
                 profile_models[model] = [prof, None]
                 
         if time_steps is None:
-            time_steps = self._models_tim[0]
+            time_steps = self._models_tim[list(self._loaded_results.keys())[0]]
         
         if analytic_solution is not None:
             as_profile = self.compute_analytic_solution(output=output,
