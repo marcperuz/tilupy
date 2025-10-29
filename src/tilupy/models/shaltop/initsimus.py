@@ -15,7 +15,17 @@ README_PARAM_MATCH = dict(tmax="tmax", CFL="cflhyp", h_min="eps0", dt_im_output=
 """Dictionary of correspondence between parameters in read_me file and param file."""
 
 SHALTOP_LAW_ID = dict(No_Friction=1, Herschel_Bulkley=61, Voellmy=8, Bingham=6, Coulomb=1, Coulomb_muI=7)
-"""Dictionary of correspondence between the name of rheological laws and the corresponding ID in SHALTOP."""
+"""Dictionary of correspondence between the name of rheological laws and the corresponding ID in SHALTOP.
+
+Correspondence :
+
+    - No_Friction = 1
+    - Coulomb = 1
+    - Coulomb_muI = 7
+    - Voellmy = 8
+    - Bingham = 6
+    - Herschel_Bulkley = 61
+"""
 
 
 def raster_to_shaltop_txtfile(file_in: str, 
@@ -41,6 +51,7 @@ def raster_to_shaltop_txtfile(file_in: str,
     -------
     dict
         Dictionary containing grid metadata:
+        
             - 'x0': X coordinate of the first column.
             - 'y0': Y coordinate of the first row.
             - 'dx': Grid spacing along X.
@@ -84,10 +95,6 @@ def write_params_file(params: dict,
         current working directory.
     file_name : str, optional
         Name of the parameter file. Default is "params.txt".
-
-    Returns
-    -------
-    None
     """
     if directory is None:
         directory = os.getcwd()
@@ -136,16 +143,13 @@ def write_simu(raster_topo: str,
         Rheology to use for the simulation. 
     rheology_params : dict
         Necessary parameters for the rheology. For instance:
+        
             - delta1
             - ksi
             - tau_density
             etc.
     folder_out : str, optional
         Output folder where simulation inputs will be saved.
-    
-    Returns
-    -------
-    None
     
     Raises
     ------
@@ -233,10 +237,6 @@ def write_job_files(dirs: list[str],
         If True, add a number in front of each line of the conf file. Required
         to identify slurm jobs.
         The default is True.
-
-    Returns
-    -------
-    None
     """
     ntasks = len(dirs)
     nnodes = int(np.ceil(ntasks / ncores_per_node))
@@ -319,10 +319,6 @@ def make_simus(law: str,
         will be created.
     readme_file : str
         Path to the README file containing simulation parameters and metadata.
-    
-    Returns
-    -------
-    None
     """
     # Get topography and initial mass, and write them in Shaltop format
     zfile = os.path.join(folder_data, "topo.asc")

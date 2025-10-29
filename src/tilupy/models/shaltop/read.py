@@ -20,18 +20,35 @@ LOOKUP_NAMES = dict(h="rho",
                     ep="ep",
                     etot="etot",
                     )
-"""Dictionary of correspondance."""
+"""Dictionary of correspondance, to match code output names."""
 
 # Classify results
-STATES_OUTPUT = ["h", "ux", "uy", "hvert"]
-"""State variables of the flow available with shaltop.
+AVAILABLE_OUTPUT = ["h", "hvert", "u", "hu", "hu2", "ux", "uy"]
+"""All output available for a shaltop simulation.
 
 Implemented states:
 
-    - h : flow thickness (normal to the surface)
-    - ux : velocity component in X direction
-    - uy : velocity component in Y direction
-    - hvert : true vertical flow thickness
+    - h : Flow thickness (normal to the surface)
+    - hvert : True vertical flow thickness
+    - ux : Velocity component in X direction
+    - uy : Velocity component in Y direction
+
+Output computed from other output:
+
+    - u : Norm of the velocity (from ux and uy)
+    - hu : Momentum flux (from h and u)
+    - hu2 : Convective momentum flux (from h and u)
+"""
+
+READ_FROM_FILE_OUTPUT = ["h_max", "u_max", "hu_max", "hu2_int"]
+"""Output read from the file.
+
+Read output:
+
+    - h_max : Maximum value of h integrating all time steps
+    - u_max : Maximum value of u integrating all time steps
+    - hu_max : Maximum value of hu integrating all time steps
+    - hu2_int : Integral of values of hu2 for each time steps
 """
 
 FORCES_OUTPUT = []
@@ -39,14 +56,13 @@ FORCES_OUTPUT = []
    
    Generated from:
    
-        - facc : acceleration force
-        - fcurv : curvature force
-        - ffric : friction force
-        - fgrav : gravitational force
-        - finert : inertial force
-        - fpression : pressure force
-    For each, both X and Y components are included.
-    
+        - faccx, faccy : acceleration force
+        - fcurvx, fcurvy : curvature force
+        - ffricx, ffricy : friction force
+        - fgravx, fgravy : gravitational force
+        - finertx, finerty : inertial force
+        - fpressionx, fpressiony : pressure force
+        
    Additional variables:
     
         - shearx, sheary, shearz : shear stresses
@@ -79,6 +95,7 @@ Implemented energy:
     - ep : potential energy
     - etot : total energy
 """
+
 
 def read_params(file: str) -> dict:
     """Read simulation parameters from file.
@@ -172,60 +189,22 @@ class Results(tilupy.read.Results):
     
     In addition to these attributes, there are those necessary for the operation of 
     reading the shaltop results.
-    
-    Global attributes:
-    ------------------
-        _code : str
-            Name of the code that generated the result.
-        _folder : str
-            Path to find code files (like parameters).
-        _folder_output :
-            Path to find the results of the code.
-        _zinit : numpy.ndarray
-            Surface elevation of the simulation.
-        _tim : list
-            Lists of recorded time steps.
-        _x : numpy.ndarray
-            X-coordinates of the simulation.
-        _y : numpy.ndarray
-            Y-coordinates of the simulation.
-    
-    Quick access attributes:
-    ------------------------
-        _h : tilupy.read.TemporalResults2D
-            Fluid height over time.
-        _h_max : tilupy.read.TemporalResults0D
-            Max fluid hieght over time.
-        _u : tilupy.read.TemporalResults2D
-            Norm of fluid velocity over time.
-        _u_max : tilupy.read.TemporalResults0D
-            Max norm of fluid velocity over time.
-        _costh : numpy.ndarray
-            Value of cos[theta] at any point on the surface.
             
-    Specific attributes:
-    --------------------
+    Parameters
+    ----------
+        folder : str
+            Path to the folder containing the simulation files.
+        file_params : str
+            Name of the simulation parameters file.
+    
+    Attributes
+    ----------
         _htype : str
             Always "normal".
         _tforces : list
             Times of output.
         _params : dict
             Dictionary of the simulation parameters.
-        _dx : float
-            Cell size in the X direction.
-        _dy : float
-            Cell size in the Y direction.
-        _nx : int
-            Number of cells in the X direction.
-        _ny : int
-            Number of cells in the Y direction.
-        
-    Parameters:
-    -----------
-    folder : str
-        Path to the folder containing the simulation files.
-    file_params : str
-        Name of the simulation parameters file.
     """
     def __init__(self, folder=None, file_params=None, **varargs):
         super().__init__()
@@ -298,7 +277,8 @@ class Results(tilupy.read.Results):
 
         varargs : dict
             All parameters needed to compute the axes :
-            x0, y0, nx, ny, per, pery and coord_pos.
+            :data:`x0`, :data:`y0`, :data:`nx`, :data:`ny`, :data:`per`, 
+            :data:`pery` and :data:`coord_pos`.
         
         Returns
         -------
@@ -377,11 +357,13 @@ class Results(tilupy.read.Results):
                         **kwargs
                         ) -> tilupy.read.StaticResults2D | tilupy.read.TemporalResults0D:
         """Read output from specific files.
+        
+        Can access to data in :data:`READ_FROM_FILE_OUTPUT`.
 
         Parameters
         ----------
         name : str
-            Wanted output. Can access to : "u", "momentum", "h" and "hu2".
+            Wanted output. Can access to: "u", "hu", "h" and "hu2".
         operator : str
             Wanted operator. Can be "max" for every output except "hu2" or "int" only for "hu2".
         axis : str, optional
@@ -394,7 +376,7 @@ class Results(tilupy.read.Results):
         """
         res = None
 
-        if name in ["u", "momentum", "h"]:
+        if name in ["u", "hu", "h"]:
             if operator in ["max"] and axis in [None, "t"]:
                 file = os.path.join(self._folder_output, 
                                     LOOKUP_NAMES[name] + operator + ".bin")
@@ -418,13 +400,13 @@ class Results(tilupy.read.Results):
                         name: str, 
                         **kwargs
                         )-> tilupy.read.TemporalResults2D | tilupy.read.TemporalResults0D | tilupy.read.AbstractResults:
-        """Result extraction for lave2D files.
+        """Result extraction for shaltop files.
 
         Parameters
         ----------
         name : str
-            Wanted output. Can access to variables in :data:`STATES_OUTPUT`, :data:`INTEGRATED_OUTPUT`, 
-            :data:`FORCES_OUTPUT`, "u", "hu" and "hu2".
+            Wanted output. Can access to variables in :data:`AVAILABLE_OUTPUT`, :data:`INTEGRATED_OUTPUT` 
+            and :data:`FORCES_OUTPUT`.
 
         Returns
         -------
@@ -436,7 +418,7 @@ class Results(tilupy.read.Results):
         t = None
         notation = None
 
-        if name in STATES_OUTPUT:
+        if name in ["h", "ux", "uy", "hvert"]:
             if self._costh is None:
                 self._costh = self.compute_costh()
                 

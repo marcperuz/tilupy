@@ -8,17 +8,21 @@ import tilupy.read
 from scipy.interpolate import RegularGridInterpolator
 
 
-STATES_OUTPUT = ["h", "u"]
-"""State variables of the flow available with lave2D.
+# Classify results
+AVAILABLE_OUTPUT = ["h", "hvert", "u", "hu", "hu2"]
+"""All output available for a shaltop simulation.
 
-Implemented states :
+Implemented states:
 
-    - h : flow thickness (normal to the surface)
-    - u : flow velocity (norm)
+    - h : Flow thickness (normal to the surface)
+    - u : Norm of the velocity (from ux and uy)
+    
+Output computed from other output:
+    
+    - hvert : True vertical flow thickness
+    - hu : Momentum flux (from h and u)
+    - hu2 : Convective momentum flux (from h and u)
 """
-
-COMPUTED_OUTPUT = ["hvert", "hu", "hu2"]
-
 
 
 class Results(tilupy.read.Results):
@@ -33,38 +37,20 @@ class Results(tilupy.read.Results):
     In addition to these attributes, there are those necessary for the operation of 
     reading the lave2D results.
     
-    Global attributes:
-    ------------------
-        _code : str
-            Name of the code that generated the result.
-        _folder : str
-            Path to find code files (like parameters).
-        _folder_output :
-            Path to find the results of the code.
-        _zinit : numpy.ndarray
-            Surface elevation of the simulation.
-        _tim : list
-            Lists of recorded time steps.
-        _x : numpy.ndarray
-            X-coordinates of the simulation.
-        _y : numpy.ndarray
-            Y-coordinates of the simulation.
+    Parameters
+    ----------
+        folder : str
+            Path to the folder containing the simulation files.
+        name : str
+            Simulation/Project name.
+        raster : str
+            Raster name.
+        grid : str, optional
+            - If grid=="cell", use cell, output nx and ny sizes are the size of topography raster, minus 1.
+            - If grid=="edges" (default), use edges, output will have same dimension as topography raster.
     
-    Quick access attributes:
-    ------------------------
-        _h : tilupy.read.TemporalResults2D
-            Fluid height over time.
-        _h_max : tilupy.read.TemporalResults0D
-            Max fluid hieght over time.
-        _u : tilupy.read.TemporalResults2D
-            Norm of fluid velocity over time.
-        _u_max : tilupy.read.TemporalResults0D
-            Max norm of fluid velocity over time.
-        _costh : numpy.ndarray
-            Value of cos[theta] at any point on the surface.
-            
-    Specific attributes:
-    --------------------
+    Attributes
+    ----------
         _name : str
             Name of the lave2D project.
         _grid : str
@@ -74,26 +60,6 @@ class Results(tilupy.read.Results):
             Path to the raster file.
         _params : dict
             Dictionary storing all simulation parameters.
-        _dx : float
-            Cell size in the X direction.
-        _dy : float
-            Cell size in the Y direction.
-        _nx : int
-            Number of cells in the X direction.
-        _ny : int
-            Number of cells in the Y direction.
-        
-    Parameters:
-    -----------
-    folder : str
-        Path to the folder containing the simulation files.
-    name : str
-        Simulation/Project name.
-    raster : str
-        Raster name.
-    grid : str, optional
-        - If grid=="cell", use cell, output nx and ny sizes are the size of topography raster, minus 1.
-        - If grid=="edges" (default), use edges, output will have same dimension as topography raster.
     """
     def __init__(self, folder, name, raster, grid="edges"):
         super().__init__()
@@ -161,13 +127,13 @@ class Results(tilupy.read.Results):
     def _extract_output(self, 
                         name: str, 
                         **kwargs
-                        ) -> tilupy.read.TemporalResults2D | tilupy.read.TemporalResults0D | tilupy.read.AbstractResults:
+                        ) -> tilupy.read.TemporalResults2D | tilupy.read.AbstractResults:
         """Result extraction for lave2D files.
 
         Parameters
         ----------
         name : str
-            Wanted output. Can access to variables in :data:`STATES_OUTPUT`.
+            Wanted output. Can access to variables in :data:`AVAILABLE_OUTPUT`.
 
         Returns
         -------
@@ -243,28 +209,27 @@ class Results(tilupy.read.Results):
         if self._tim is None: 
             self._tim = np.array(tim)
         
-        available_outputs = {"h": h[:],
+        extracted_outputs = {"h": h[:],
                              "u": u[:],
                              }
 
-        if name in STATES_OUTPUT:
-            d = available_outputs[name]
+        if name in ["h", "u"]:
+            d = extracted_outputs[name]
             t = self._tim
         
-        if name in COMPUTED_OUTPUT:
-            if name == "hu":
-                d = available_outputs['h'] * available_outputs['u']
-                t = self._tim
+        if name == "hu":
+            d = extracted_outputs['h'] * extracted_outputs['u']
+            t = self._tim
 
-            elif name == "hu2":
-                d = available_outputs['h'] * available_outputs['u'] * available_outputs['u']
-                t = self._tim
-            
-            elif name == "hvert":
-                if self._costh is None:
-                    self._costh = self.compute_costh()
-                d = available_outputs["h"] / self._costh[:, :, np.newaxis]
-                t = self._tim
+        elif name == "hu2":
+            d = extracted_outputs['h'] * extracted_outputs['u'] * extracted_outputs['u']
+            t = self._tim
+        
+        elif name == "hvert":
+            if self._costh is None:
+                self._costh = self.compute_costh()
+            d = extracted_outputs["h"] / self._costh[:, :, np.newaxis]
+            t = self._tim
         
         # if name == "ek":
         #     if self._costh is None:
@@ -291,14 +256,9 @@ class Results(tilupy.read.Results):
                                                      x=self._x, 
                                                      y=self._y, 
                                                      z=self._zinit)
-            if d.ndim == 1:
-                return tilupy.read.TemporalResults0D(name, 
-                                                     d, 
-                                                     t, 
-                                                     notation=notation)
         return None
 
 
     def _read_from_file(self, *args, **kwargs):
         """Not useful"""
-        return "No lava2D file allows output extraction."
+        return "No _read_from_file for Lave2D."

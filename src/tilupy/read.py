@@ -90,8 +90,8 @@ Implemented 2D temporal data :
     - u : Fluid velocity
     - ux : X-component of fluid velocity
     - uy : Y-component of fluid velocity
-    - hu : Volume flow rate
-    - hu2 : Quadratic flow, convective term in equations
+    - hu : Momentum flux
+    - hu2 : Convective momentum flux
 """
 
 STATIC_DATA_0D = []
@@ -215,7 +215,6 @@ class AbstractResults:
             Values of the property.
         _notation : tilupy.notations.Notation
             Instance of the class :class:`tilupy.notations.Notation`.
-
     """
     def __init__(self, name: str, 
                  d: np.ndarray, 

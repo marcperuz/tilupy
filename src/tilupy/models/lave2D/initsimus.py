@@ -91,29 +91,8 @@ class ModellingDomain:
     It stores the topographic data (z), the grid geometry (x, y, dx, dy, nx, ny),
     and the numbering of edges used for discretization of the domain.
     
-    Attributes:
-    -----------
-        _z : numpy.ndarray
-            Elevation values of the mesh nodes ([ny, nx]).
-        _nx : int
-            Number of grid points along the X direction.
-        _ny : int
-            Number of grid points along the Y direction.
-        _dx : float
-            Grid resolution in the X direction.
-        _dy : float
-            Grid resolution in the Y direction.
-        _x : numpy.ndarray
-            Array of X coordinates.
-        _y : numpy.ndarray
-            Array of Y coordinates.
-        _h_edges : numpy.ndarray
-            Matrix of horizontal edge numbers ([ny, nx-1]).
-        _v_edges : numpy.ndarray
-            Matrix of vertical edge numbers ([ny-1, nx]).
-    
-    Parameters:
-    -----------
+    Parameters
+    ----------
         raster : numpy.ndarray, str, or None, optional
             - If numpy.ndarray: used directly as the elevation grid (z).
             - If str: path to a raster file readable by :func:`tilupy.raster.read_raster`.
@@ -134,6 +113,27 @@ class ModellingDomain:
             Grid spacing along X, by default 1.0.
         dy : float, optional
             Grid spacing along Y, by default 1.0.
+    
+    Attributes
+    ----------
+        _z : numpy.ndarray
+            Elevation values of the mesh nodes ([ny, nx]).
+        _nx : int
+            Number of grid points along the X direction.
+        _ny : int
+            Number of grid points along the Y direction.
+        _dx : float
+            Grid resolution in the X direction.
+        _dy : float
+            Grid resolution in the Y direction.
+        _x : numpy.ndarray
+            Array of X coordinates.
+        _y : numpy.ndarray
+            Array of Y coordinates.
+        _h_edges : numpy.ndarray
+            Matrix of horizontal edge numbers ([ny, nx-1]).
+        _v_edges : numpy.ndarray
+            Matrix of vertical edge numbers ([ny-1, nx]).
     """
     def __init__(self,
                  raster: np.ndarray = None,
@@ -192,11 +192,7 @@ class ModellingDomain:
         
         Calls :func:`tilupy.initsimus.make_edges_matrices` to build the edge numbering
         for the grid defined by nx and ny. 
-        Results are stored in attributes :attr:`_h_edges` and :attr:`v_edges`.
-        
-        Returns
-        -------
-        None
+        Results are stored in attributes :attr:`_h_edges` and :attr:`_v_edges`.
         """
         self._h_edges, self._v_edges = make_edges_matrices(self._nx - 1, self._ny - 1)
 
@@ -212,6 +208,7 @@ class ModellingDomain:
             Y coordinate of the point.
         cardinal : str
             Cardinal direction of the edge ('N', 'S', 'E', 'W'):
+            
                 - 'N': top edge of the cell
                 - 'S': bottom edge of the cell
                 - 'E': right edge of the cell
@@ -225,7 +222,7 @@ class ModellingDomain:
         Raises
         ------
         AssertionError
-            If :meth:`set_edges` has not been called before (i.e. :attr:`_h_edges` and :attr:`v_edges` are None).
+            If :meth:`set_edges` has not been called before (i.e. :attr:`_h_edges` and :attr:`_v_edges` are None).
         """
         assert (self._h_edges is not None) and (self._v_edges is not None), "h_edges and v_edges must be computed to get edge number"
         ix = np.argmin(np.abs(self._x[:-1] + self._dx / 2 - xcoord))
@@ -292,8 +289,15 @@ class Simu:
     This class manages the setup of lave2D. It creates the necessary input files (topography, numeric
     parameters, rheology, boundary conditions, initial mass) that will be read by lave2D.
     
-    Attributes:
-    -----------
+    Parameters
+    ----------
+        folder : str
+            Directory where simulation files are written. Created if it does not exist.
+        name : str
+            Base name of the simulation (used as file prefix).
+    
+    Attributes
+    ----------
         _folder : str
             Path to the directory where simulation input and output files are stored.
         _name : str
@@ -308,13 +312,6 @@ class Simu:
             Maximum simulation time.
         _dtsorties : float
             Time step for output results.
-    
-    Parameters:
-    -----------
-        folder : str
-            Directory where simulation files are written. Created if it does not exist.
-        name : str
-            Base name of the simulation (used as file prefix).
     """
     def __init__(self, folder: str, name: str):
         os.makedirs(folder, exist_ok=True)
@@ -428,10 +425,10 @@ class Simu:
 
         Rheological parameters are tau/rho and K/tau. See :
         
-        - Coussot, P., 1994. Steady, laminar, flow of concentrated mud suspensions in open channel. Journal of Hydraulic Research 32, 535-559. doi.org/10.1080/00221686.1994.9728354 
-            --> Eq 8 and text after eq 22 for the default value of K/tau
-        - Rickenmann, D. et al., 2006. Comparison of 2D debris-flow simulation models with field events. Computational Geosciences 10, 241-264. doi.org/10.1007/s10596-005-9021-3 
-            --> Eq 9
+            - Coussot, P., 1994. Steady, laminar, flow of concentrated mud suspensions in open channel. Journal of Hydraulic Research 32, 535-559. doi.org/10.1080/00221686.1994.9728354 
+                --> Eq 8 and text after eq 22 for the default value of K/tau
+            - Rickenmann, D. et al., 2006. Comparison of 2D debris-flow simulation models with field events. Computational Geosciences 10, 241-264. doi.org/10.1007/s10596-005-9021-3 
+                --> Eq 9
 
         tau_rho : float
             Yield stress divided by density (:math:`\tau/\rho`).
