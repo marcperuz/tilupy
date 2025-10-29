@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun 14 18:16:45 2023
 
-@author: peruzzetto
-"""
-
-import tilupy.raster
 import tilupy.read
+# import tilupy.raster
 
 import os
 import argparse

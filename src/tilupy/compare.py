@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.axes_grid1 as mplt
 
-import tilupy.dem
+# import tilupy.dem
 import tilupy.plot as plt_fn
 import tilupy.notations
 import tilupy

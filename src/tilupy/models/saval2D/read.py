@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun  5 11:07:44 2024
-
-@author: peruzzetto
-"""
 
 import os
 

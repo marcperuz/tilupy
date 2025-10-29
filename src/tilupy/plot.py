@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jun  2 16:16:39 2021
-
-@author: peruzzetto
-"""
-
 
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
 import seaborn as sns
 import pytopomap.plot as pyplt
 

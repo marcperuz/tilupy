@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jun  3 12:20:34 2021
 
-@author: peruzzetto
-"""
-import pandas as pd
 import tilupy
+import pandas as pd
+
 
 LABEL_OPTIONS = dict(language="english", label_type="symbol")
 """Dictionary of configuration options for label generation.

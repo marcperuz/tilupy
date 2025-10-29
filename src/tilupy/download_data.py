@@ -1,12 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jul 13 10:39:05 2023
-
-@author: peruzzetto
-"""
 
 import requests
-
 import os
 
 def import_frankslide_dem(folder_out: str = None, 

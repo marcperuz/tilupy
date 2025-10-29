@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Jun  1 14:20:52 2021
 
-@author: peruzzetto
-"""
 from __future__ import annotations
 from abc import abstractmethod
 from typing import Callable

@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue May 25 15:18:31 2021
-
-@author: peruzzetto
-"""
 
 import os
 import posixpath

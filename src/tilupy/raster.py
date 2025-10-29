@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Jun  3 12:29:52 2021
-
-@author: peruzzetto
-"""
 
 import numpy as np
 import importlib
