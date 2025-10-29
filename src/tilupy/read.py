@@ -1750,6 +1750,10 @@ class Results:
             Cell size along X-coordinates.
         _dy : float
             Cell size along Y-coordinates.
+        _nx : float
+            Number of cells along X-coordinates.
+        _ny : float
+            Number of cells along Y-coordinates.
             
         _h : tilupy.read.TemporalResults2D
             Quick access attributes for fluid height over time.
@@ -1779,6 +1783,8 @@ class Results:
         self._y = None
         self._dx = None
         self._dy = None
+        self._nx = None
+        self._ny = None
 
 
     def compute_costh(self) -> np.ndarray:
@@ -2416,6 +2422,30 @@ class Results:
             Attribute :attr:`_dy`
         """
         return self._dy
+
+
+    @property
+    def nx(self):
+        """Get number of cells along X.
+        
+        Returns
+        -------
+        numpy.ndarray
+            Attribute :attr:`_nx`
+        """
+        return self._nx
+    
+    
+    @property
+    def ny(self):
+        """Get number of cells along Y.
+        
+        Returns
+        -------
+        numpy.ndarray
+            Attribute :attr:`_ny`
+        """
+        return self._ny
     
     
     @property
