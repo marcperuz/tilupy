@@ -200,17 +200,8 @@ DATA_NAMES = TEMPORAL_DATA_0D + TEMPORAL_DATA_1D + TEMPORAL_DATA_2D + STATIC_DAT
 class AbstractResults:
     """Abstract class for :class:`tilupy.read.TemporalResults` and :class:`tilupy.read.StaticResults`.
 
-    Attributes:
-    -----------
-        _name : str
-            Name of the property.
-        _d : numpy.ndarray
-            Values of the property.
-        _notation : tilupy.notations.Notation
-            Instance of the class :class:`tilupy.notations.Notation`.
-
-    Parameters:
-    -----------
+    Parameters
+    ----------
         name : str
             Name of the property.
         d : numpy.ndarray
@@ -219,6 +210,16 @@ class AbstractResults:
             Dictionnary of argument for creating an instance of the class :class:`tilupy.notations.Notation`. 
             If None use the function :func:`tilupy.notations.get_notation`. By default None.
         kwargs
+        
+    Attributes
+    ----------
+        _name : str
+            Name of the property.
+        _d : numpy.ndarray
+            Values of the property.
+        _notation : tilupy.notations.Notation
+            Instance of the class :class:`tilupy.notations.Notation`.
+
     """
     def __init__(self, name: str, 
                  d: np.ndarray, 
@@ -274,19 +275,8 @@ class AbstractResults:
 class TemporalResults(AbstractResults):
     """Abstract class for time dependent result of simulation.
 
-    Attributes:
-    -----------
-        _name : str
-            Name of the property.
-        _d : numpy.ndarray
-            Values of the property.
-        _notation : tilupy.notations.Notation
-            Instance of the class :class:`tilupy.notations.Notation`.
-        _t : numpy.ndarray
-            Time steps.
-            
-    Parameters:
-    -----------
+    Parameters
+    ----------
         name : str
             Name of the property.
         d : numpy.ndarray
@@ -296,6 +286,17 @@ class TemporalResults(AbstractResults):
         notation : dict, optional
             Dictionnary of argument for creating an instance of the class :class:`tilupy.notations.Notation`. 
             If None use the function :func:`tilupy.notations.get_notation`. By default None.
+    
+    Attributes
+    ----------
+        _name : str
+            Name of the property.
+        _d : numpy.ndarray
+            Values of the property.
+        _notation : tilupy.notations.Notation
+            Instance of the class :class:`tilupy.notations.Notation`.
+        _t : numpy.ndarray
+            Time steps.
     """
     def __init__(self, name: str, d: np.ndarray, t: np.ndarray, notation: dict=None):
         super().__init__(name, d, notation=notation)
@@ -394,21 +395,8 @@ class TemporalResults0D(TemporalResults):
     """
     Class for simulation results described where the data is one or multiple scalar functions of time.
     
-    Attributes:
-    -----------
-        _name : str
-            Name of the property.
-        _d : numpy.ndarray
-            Values of the property.
-        _notation : tilupy.notations.Notation
-            Instance of the class :class:`tilupy.notations.Notation`.
-        _t : numpy.ndarray
-            Time steps.
-        _scalar_names : list[str]
-            List of names of the scalar fields.
-    
-    Parameters:
-    -----------
+    Parameters
+    ----------
         name : str
             Name of the property.
         d : numpy.ndarray
@@ -424,6 +412,19 @@ class TemporalResults0D(TemporalResults):
         notation : dict, optional
             Dictionnary of argument for creating an instance of the class :class:`tilupy.notations.Notation`. 
             If None use the function :func:`tilupy.notations.get_notation`. By default None.
+    
+    Attributes
+    ----------
+        _name : str
+            Name of the property.
+        _d : numpy.ndarray
+            Values of the property.
+        _notation : tilupy.notations.Notation
+            Instance of the class :class:`tilupy.notations.Notation`.
+        _t : numpy.ndarray
+            Time steps.
+        _scalar_names : list[str]
+            List of names of the scalar fields.
     """
 
     def __init__(self, name: str, 
@@ -550,23 +551,8 @@ class TemporalResults1D(TemporalResults):
     """
     Class for simulation results described by one dimension for space and one dimension for time. 
     
-    Attributes:
-    -----------
-        _name : str
-            Name of the property.
-        _d : numpy.ndarray
-            Values of the property.
-        _notation : tilupy.notations.Notation
-            Instance of the class :class:`tilupy.notations.Notation`.
-        _t : numpy.ndarray
-            Time steps.
-        _coords: numpy.ndarray
-            Spatial coordinates.
-        _coords_name: str
-            Spatial coordinates name.
-    
-    Parameters:
-    -----------
+    Parameters
+    ----------
         name : str
             Name of the property.
         d : numpy.ndarray
@@ -583,6 +569,21 @@ class TemporalResults1D(TemporalResults):
         notation : dict, optional
             Dictionnary of argument for creating an instance of the class :class:`tilupy.notations.Notation`. 
             If None use the function :func:`tilupy.notations.get_notation`. By default None.
+    
+    Attributes
+    ----------
+        _name : str
+            Name of the property.
+        _d : numpy.ndarray
+            Values of the property.
+        _notation : tilupy.notations.Notation
+            Instance of the class :class:`tilupy.notations.Notation`.
+        _t : numpy.ndarray
+            Time steps.
+        _coords: numpy.ndarray
+            Spatial coordinates.
+        _coords_name: str
+            Spatial coordinates name.
     """
     def __init__(self, name: str, 
                  d: np.ndarray, 
@@ -615,9 +616,11 @@ class TemporalResults1D(TemporalResults):
             By default None.
         plot_type: str, optional
             Wanted plot :
+            
                 - "simple" : Every curve in the same graph
                 - "multiples" : Every curve in separate graph
                 - "'shotgather" : Shotgather graph
+                
             By default "simple".
         ax : matplotlib.axes._axes.Axes, optional
             Existing matplotlib window, if None create one. By default None
@@ -838,25 +841,8 @@ class TemporalResults2D(TemporalResults):
     """
     Class for simulation results described by a two dimensional space and one dimension for time. 
     
-    Attributes:
-    -----------
-        _name : str
-            Name of the property.
-        _d : numpy.ndarray
-            Values of the property.
-        _notation : tilupy.notations.Notation
-            Instance of the class :class:`tilupy.notations.Notation`.
-        _t : numpy.ndarray
-            Time steps.
-        _x : numpy.ndarray
-            X coordinate values.
-        _y : numpy.ndarray
-            X coordinate values.
-        _z : numpy.ndarray
-            Elevation values of the surface.
-    
-    Parameters:
-    -----------
+    Parameters
+    ----------
         name : str
             Name of the property.
         d : numpy.ndarray
@@ -875,6 +861,23 @@ class TemporalResults2D(TemporalResults):
         notation : dict, optional
             Dictionnary of argument for creating an instance of the class :class:`tilupy.notation.Notation`. 
             If None use the function :func:`tilupy.notation.get_notation`. By default None.
+    
+    Attributes
+    ----------
+        _name : str
+            Name of the property.
+        _d : numpy.ndarray
+            Values of the property.
+        _notation : tilupy.notations.Notation
+            Instance of the class :class:`tilupy.notations.Notation`.
+        _t : numpy.ndarray
+            Time steps.
+        _x : numpy.ndarray
+            X coordinate values.
+        _y : numpy.ndarray
+            X coordinate values.
+        _z : numpy.ndarray
+            Elevation values of the surface.
     """
     def __init__(self, 
                  name: str, 
@@ -930,10 +933,6 @@ class TemporalResults2D(TemporalResults):
             A custom function to apply additional plotting on the axes, by default None.
         sup_plt_fn_args : dict, optional
             Arguments to pass to :data:`sup_plt_fn`, by default None.
-
-        Returns
-        -------
-        None
 
         Raises
         ------
@@ -1048,9 +1047,11 @@ class TemporalResults2D(TemporalResults):
             File format for saving result, by default "asc".
         time : str | int, optional
             Time instants to save the results. 
-            If time is string, must be "initial" or "final".
-            If time is int, used as index in :attr:`_t`.
-            If None use every instant in :attr:`_t`.
+            
+                - If time is string, must be "initial" or "final".
+                - If time is int, used as index in :attr:`_t`.
+                - If None use every instant in :attr:`_t`.
+                
             By default None.
         x : np.ndarray, optional
             X coordinate values, if None use :attr:`_x`. By default None.
@@ -1217,9 +1218,6 @@ class TemporalResults2D(TemporalResults):
                                      y=self._y,
                                      z=self._z,
                                      notation=self._notation)
-    
-
-   
 
 
     @property
@@ -1261,17 +1259,8 @@ class TemporalResults2D(TemporalResults):
 class StaticResults(AbstractResults):
     """Abstract class for result of simulation without time dependence.
 
-    Attributes:
-    -----------
-        _name : str
-            Name of the property.
-        _d : numpy.ndarray
-            Values of the property.
-        _notation : tilupy.notations.Notation
-            Instance of the class :class:`tilupy.notations.Notation`.
-            
-    Parameters:
-    -----------
+    Parameters
+    ----------
         name : str
             Name of the property.
         d : numpy.ndarray
@@ -1279,6 +1268,15 @@ class StaticResults(AbstractResults):
         notation : dict, optional
             Dictionnary of argument for creating an instance of the class :class:`tilupy.notations.Notation`. 
             If None use the function :func:`tilupy.notations.get_notation`. By default None.
+    
+    Attributes
+    ----------
+        _name : str
+            Name of the property.
+        _d : numpy.ndarray
+            Values of the property.
+        _notation : tilupy.notations.Notation
+            Instance of the class :class:`tilupy.notations.Notation`.        
     """
     def __init__(self, name: str, d: np.ndarray, notation: dict=None):
         super().__init__(name, d, notation=notation)
@@ -1301,17 +1299,8 @@ class StaticResults0D(StaticResults):
     """
     Class for simulation results described where the data is one or multiple scalar. 
     
-    Attributes:
-    -----------
-        _name : str
-            Name of the property.
-        _d : numpy.ndarray
-            Values of the property.
-        _notation : tilupy.notations.Notation
-            Instance of the class :class:`tilupy.notations.Notation`.
-            
-    Parameters:
-    -----------
+    Parameters
+    ----------
         name : str
             Name of the property.
         d : numpy.ndarray
@@ -1319,6 +1308,15 @@ class StaticResults0D(StaticResults):
         notation : dict, optional
             Dictionnary of argument for creating an instance of the class :class:`tilupy.notations.Notation`. 
             If None use the function :func:`tilupy.notations.get_notation`. By default None.
+    
+    Attributes
+    ----------
+        _name : str
+            Name of the property.
+        _d : numpy.ndarray
+            Values of the property.
+        _notation : tilupy.notations.Notation
+            Instance of the class :class:`tilupy.notations.Notation`.        
     """
     def __init__(self, name: str, d: np.ndarray, notation: dict=None):
         super().__init__(name, d, notation=notation)
@@ -1328,21 +1326,8 @@ class StaticResults1D(StaticResults):
     """
     Class for simulation results described by one dimension for space. 
     
-    Attributes:
-    -----------
-        _name : str
-            Name of the property.
-        _d : numpy.ndarray
-            Values of the property.
-        _notation : tilupy.notations.Notation
-            Instance of the class :class:`tilupy.notations.Notation`.
-        _coords: numpy.ndarray
-            Spatial coordinates.
-        _coords_name: str
-            Spatial coordinates name.
-    
-    Parameters:
-    -----------
+    Parameters
+    ----------
         name : str
             Name of the property.
         d : numpy.ndarray
@@ -1354,6 +1339,19 @@ class StaticResults1D(StaticResults):
         notation : dict, optional
             Dictionnary of argument for creating an instance of the class :class:`tilupy.notations.Notation`. 
             If None use the function :func:`tilupy.notations.get_notation`. By default None.
+    
+    Attributes
+    ----------
+        _name : str
+            Name of the property.
+        _d : numpy.ndarray
+            Values of the property.
+        _notation : tilupy.notations.Notation
+            Instance of the class :class:`tilupy.notations.Notation`.
+        _coords: numpy.ndarray
+            Spatial coordinates.
+        _coords_name: str
+            Spatial coordinates name.
     """
     def __init__(self, 
                  name: str, 
@@ -1435,23 +1433,8 @@ class StaticResults2D(StaticResults):
     Class for simulation results described by a two dimensional space result. 
     Inherits from StaticResults.
     
-    Attributes:
-    -----------
-        _name : str
-            Name of the property.
-        _d : numpy.ndarray
-            Values of the property.
-        _notation : tilupy.notations.Notation
-            Instance of the class :class:`tilupy.notations.Notation`.
-        _x : numpy.ndarray
-            X coordinate values.
-        _y : numpy.ndarray
-            X coordinate values.
-        _z : numpy.ndarray
-            Elevation values of the surface.
-    
-    Parameters:
-    -----------
+    Parameters
+    ----------
         name : str
             Name of the property.
         d : numpy.ndarray
@@ -1465,6 +1448,21 @@ class StaticResults2D(StaticResults):
         notation : dict, optional
             Dictionnary of argument for creating an instance of the class :class:`tilupy.notations.Notation`. 
             If None use the function :func:`tilupy.notations.get_notation`. By default None.
+    
+    Attributes
+    ----------
+        _name : str
+            Name of the property.
+        _d : numpy.ndarray
+            Values of the property.
+        _notation : tilupy.notations.Notation
+            Instance of the class :class:`tilupy.notations.Notation`.
+        _x : numpy.ndarray
+            X coordinate values.
+        _y : numpy.ndarray
+            X coordinate values.
+        _z : numpy.ndarray
+            Elevation values of the surface.
     """
     def __init__(self, 
                  name: str, 
@@ -1731,8 +1729,13 @@ class Results:
     simulation. The quick attributes are only computed if needed and can be deleted
     to clean memory.
     
-    Global attributes:
-    ------------------
+    Parameters
+    ----------
+    args and kwargs :
+        Specific arguments for each models.
+        
+    Attributes
+    ----------
         _code : str
             Name of the code that generated the result.
         _folder : str
@@ -1751,26 +1754,18 @@ class Results:
             Cell size along X-coordinates.
         _dy : float
             Cell size along Y-coordinates.
-    
-    Quick access attributes:
-    ------------------------
+            
         _h : tilupy.read.TemporalResults2D
-            Fluid height over time.
+            Quick access attributes for fluid height over time.
         _h_max : tilupy.read.TemporalResults0D
-            Max fluid hieght over time.
+            Quick access attributes for max fluid hieght over time.
         _u : tilupy.read.TemporalResults2D
-            Norm of fluid velocity over time.
+            Quick access attributes for norm of fluid velocity over time.
         _u_max : tilupy.read.TemporalResults0D
-            Max norm of fluid velocity over time.
+            Quick access attributes for max norm of fluid velocity over time.
         _costh : numpy.ndarray
-            Value of cos[theta] at any point on the surface. 
-    
-    Parameters:
-    -----------
-    args and kwargs :
-        Specific arguments for each models.
+            Quick access attributes for value of cos[theta] at any point on the surface. 
     """
-
     def __init__(self, *args, **kwargs):
         self._h = None
         self._h_max = None
@@ -1904,9 +1899,9 @@ class Results:
         ----------
         output_name : str
             Name of the wanted output, composed of the output name and potentially 
-            an operator and an axis : `output_operator_axis`.
+            an operator and an axis: :data:`output_operator_axis`.
         from_file : bool, optional
-            If True, find the output in a specific file. By default True
+            If True, find the output in a specific file. By default True.
 
         Returns
         -------
@@ -1984,7 +1979,7 @@ class Results:
 
 
     def clear_quick_results(self) -> None:
-        """Clear memory by erasing quick access attributes.
+        """Clear memory by erasing quick access attributes: :attr:`_h`, :attr:`_h_max`, :attr:`_u`, :attr:`_u_max`, :attr:`_costh`.
         """
         self._h = None
         self._h_max = None
@@ -1997,7 +1992,7 @@ class Results:
                     output: str,
                     extraction_method: str = "axis",
                     **extraction_params
-                    ) -> tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D:
+                    ) -> tuple[tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D, np.ndarray]:
         """Extract a profile from a 2D data.
 
         Parameters
@@ -2018,12 +2013,12 @@ class Results:
 
         Returns
         -------
-        tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D
-            Extracted profile.
-            
-        data
-            Specific output depending on :data:`extraction_mode`:
-                
+        tuple[tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D, np.ndarray]
+            profile : tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D
+                Extracted profile.
+            data : numpy.ndarray or float or tuple[nympy.ndarray, nympy.ndarray]
+                Specific output depending on :data:`extraction_mode`:
+                    
                     - If :data:`extraction_mode == "axis"`: float
                         Position of the profile.
                     - If :data:`extraction_mode == "coordinates"`: tuple[numpy.ndarray]
@@ -2060,7 +2055,40 @@ class Results:
              display_plot: bool = True,
              **plot_kwargs
              ) -> matplotlib.axes._axes.Axes:
-        
+        """Plot output extracted from model's result.
+
+        Parameters
+        ----------
+        output : str
+            Wanted output to be plotted. Must be in :data:`DATA_NAMES`.
+        from_file : bool, optional
+            If True, find the output in a specific file. By default True.
+        h_thresh : float, optional
+            Threshold value to be taken into account when extracting output, by default None.
+        time_steps : float or list[float], optional
+            Time steps to show when plotting temporal data. If None shows every time
+            steps recorded. By default None.
+        save : bool, optional
+            If True, save the plot as an image to the computer, by default False.
+        folder_out : str, optional
+            Path to the folder where to save the plot, by default None.
+        dpi : int, optional
+            Resolution for the saved plot, by default 150.
+        fmt : str, optional
+            Format of the saved plot, by default "png".
+        file_suffix : str, optional
+            Suffix to add to the file name when saving, by default None.
+        file_prefix : str, optional
+            Prefix to add to the file name when saving, by default None.
+        display_plot : bool, optional
+            If True, enables the display of the plot; otherwise, it disables the display to save memory. 
+            By default True.
+
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            Wanted plot.
+        """
         if not display_plot:
             backend = plt.get_backend()
             plt.close("all")
@@ -2075,11 +2103,10 @@ class Results:
 
         data = self.get_output(output, from_file=from_file, h_thresh=h_thresh)
 
+        add_time_on_plot = False
         if (isinstance(time_steps, float) or isinstance(time_steps, int)) and isinstance(data, tilupy.read.TemporalResults):
             t_index = np.argmin(np.abs(self._tim - time_steps))
             add_time_on_plot = self._tim[t_index]
-        else:
-            add_time_on_plot = False
         
         if time_steps is not None and isinstance(data, tilupy.read.TemporalResults):
             data = data.extract_from_time_step(time_steps)
@@ -2137,6 +2164,46 @@ class Results:
                      display_plot: bool = True,
                      **plot_kwargs
                      ) -> matplotlib.axes._axes.Axes:
+        """Plot a 1D output extracted from a 2D output.
+
+        Parameters
+        ----------
+        output : str
+            Wanted 2D output to extract the profile from. Must be in :data:`STATIC_DATA_2D`
+            or in :data:`TEMPORAL_DATA_2D`.
+        from_file : bool, optional
+            If True, find the output in a specific file. By default True.
+        extraction_mode : str, optional
+            Method to extract profiles:
+            
+                - "axis": Extracts a profile along an axis.
+                - "coordinates": Extracts a profile along specified coordinates.
+                - "shapefile": Extracts a profile along a shapefile (polylines).
+            Be default "axis".
+        extraction_params : dict, optional
+            Different parameters to be entered depending on the extraction method chosen.
+            See :meth:`tilupy.utils.get_profile`.
+        time_steps : float or list[float], optional
+            Time steps to show when plotting temporal data. If None shows every time
+            steps recorded. By default None.
+        save : bool, optional
+            If True, save the plot as an image to the computer, by default False.
+        folder_out : str, optional
+            Path to the folder where to save the plot, by default None.
+        display_plot : bool, optional
+            If True, enables the display of the plot; otherwise, it disables the display to save memory. 
+            By default True.        
+        
+        Returns
+        -------
+        matplotlib.axes._axes.Axes
+            Wanted plot.
+
+        Raises
+        ------
+        ValueError
+            If the :data:`output` is not a 2D output.
+        """
         if not display_plot:
             backend = plt.get_backend()
             plt.close("all")
@@ -2224,7 +2291,7 @@ class Results:
             (e.g., "h", "u_mean_t", "centermass", or topographic data like "zinit").
         folder_out : str, optional
             Destination folder for saving files. If None, defaults to
-            `_folder_output/processed`. By default None.
+            :data:`_folder_output/processed`. By default None.
         file_name : str, optional
             Base name of the output file (without extension). If None, uses
             :data:`output_name`. By default None.
@@ -2236,10 +2303,6 @@ class Results:
         **kwargs : dict
             Extra arguments passed to the underlying save function. For raster data,
             forwarded to :func:`tilupy.raster.write_raster`.
-
-        Returns
-        -------
-        None
 
         Raises
         ------
@@ -2450,7 +2513,7 @@ def get_results(code, **kwargs) -> tilupy.read.Results:
     Parameters
     ----------
     code : str
-        Short name of the simulation model : "lave2d", "shaltop", "ravaflow".
+        Short name of the simulation model: must be in :data:`ALLOWED_MODELS`.
     **kwargs : dict
         Additional keyword arguments passed to the :class:`tilupy.read.Results` constructor
         of the imported module.
