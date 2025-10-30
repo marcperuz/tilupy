@@ -34,10 +34,6 @@ extensions = [
     'sphinx.ext.intersphinx',
 ]
 
-autoapi_type = 'python'
-autoapi_dirs = ['../../src']
-autoapi_template_dir = '_templates'
-
 # Napoleon settings
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
@@ -65,6 +61,7 @@ sphinx_gallery_conf = {
 }
 
 # sphinx-autoapi configuration
+autoapi_dirs = ['../../src']
 autoapi_options = {
     "members",
     "undoc-members",
@@ -72,6 +69,9 @@ autoapi_options = {
     "show-module-summary",
     "special-members",  # optionnel, si tu veux aussi les __init__ etc.
 }
+autoapi_type = 'python'
+autoapi_template_dir = '_templates'
+autoapi_private_members = False
 
 # intersphinx configuration
 intersphinx_mapping = {
