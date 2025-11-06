@@ -337,6 +337,7 @@ class Benchmark:
         
         if analytic_solution is not None:
             as_profile = self.compute_analytic_solution(output=output,
+                                                        model=list(self._loaded_results.keys())[0],
                                                         T=time_steps,
                                                         **analytic_solution)
         
@@ -397,7 +398,7 @@ class Benchmark:
                 if "linewidth" not in as_kwargs:
                     as_kwargs["linewidth"] = 1
                 
-                axes[T].plot(as_profile.coords, as_profile.d[:, T], label=f"{str(analytic_solution['model']).split('.')[-1][:-2]}", **as_kwargs)
+                axes[T].plot(as_profile.coords, as_profile.d[:, T], label=f"{str(analytic_solution['solution']).split('.')[-1][:-2]}", **as_kwargs)
             
             # Formatting fig                
             axes[T].set_xlim(left=min(profile_models[models[0]][0].coords), right=max(profile_models[models[0]][0].coords))
@@ -946,7 +947,6 @@ class Benchmark:
             if flow_threshold is None:
                 flow_threshold = np.max(prof.d[:, 0])*0.01
             max_index = np.argmax(prof.d[:, -1])
-            
             # Create Coussot profile
             front_shape = Coussot_shape(**coussot_params, h_final=np.max(prof.d[:, -1]))
             front_shape.compute_rheological_test_front_morpho()
@@ -968,7 +968,7 @@ class Benchmark:
             max_index = np.argmax(prof.d[:, -1])
             
             dx_range = np.linspace(-max_dx, max_dx, 5)
-            best_dx = None
+            best_dx = 0.0
             min_rms = 1e30
             # x_index = [None, None]
             
@@ -996,7 +996,6 @@ class Benchmark:
                     # x_index = [x_index_min, x_index_max]
             
             output_rms[model] = min_rms
-
             front_shape.translate_front(best_dx)
             model_front_pos[model] = front_pos + best_dx
             
@@ -1024,6 +1023,7 @@ class Benchmark:
                                            file_name: str = None,
                                            fmt: str = "csv",
                                            available_profile: bool = False,
+                                           extration_profile_params: dict = None,
                                            flow_threshold: float = 1e-1,
                                            profile_direction: str = "right",
                                            avrg_velocity_distance: float = None,
@@ -1113,6 +1113,8 @@ class Benchmark:
         
         table_content = []
         
+        if extration_profile_params is None and available_profile:
+            extration_profile_params = {} 
         
         # --------------------------------------------------------------------------------------------
         #                        Criteria integrated throughout the simulation 
@@ -1162,8 +1164,9 @@ class Benchmark:
         if available_profile:
             avrg_vel, time, dist, model_pos = self.compute_average_velocity(distance=avrg_velocity_distance,
                                                                             look_up_direction=profile_direction,
-                                                                            flow_threshold=flow_threshold)
-            line = ["Average Velocity", f"Time [s] to complete d={dist}m"]
+                                                                            flow_threshold=flow_threshold,
+                                                                            **extration_profile_params)
+            line = ["Velocity", f"Time [s] to complete d={dist}m"]
 
             for model in self._loaded_results:
                 line.append(time[model])
@@ -1182,7 +1185,7 @@ class Benchmark:
         table_content.append(["Criteria for the final time step of the simulation"])
 
         # --------------------------------------- Final height ---------------------------------------
-        line = ["Final Height", "RMS (avrg)"]
+        line = ["Final Thickness Repartition", "RMS (avrg)"]
         rms_height = self.compute_rms_from_avrg(output="h_final")
 
         for model in self._loaded_results:
@@ -1249,20 +1252,20 @@ class Benchmark:
             volume = self._loaded_results[model].get_output("volume")
             model_volume[model] = volume
             
-        line = ["Flow Volume", "At final time step (Vinit)"]
-        
-        for model in self._loaded_results:
-            line.append((model_volume[model].d[-1] - model_volume[model].d[0]) / 
-                        model_volume[model].d[0])
-        table_content.append(line)
-        
-        line = ["", "RMS (Vinit)"]
+        line = ["Volume Variation", "RMS of Total Volume Variation"]
                         
         for model in self._loaded_results:
             rms_vinit = 0
             for v in model_volume[model].d:
                 rms_vinit += np.sqrt((v - model_volume[model].d[0])**2) / model_volume[model].d[0]
             line.append(rms_vinit)
+        table_content.append(line)
+        
+        line = ["", "(Vf - Vi) / Vi"]
+        
+        for model in self._loaded_results:
+            line.append((model_volume[model].d[-1] - model_volume[model].d[0]) / 
+                        model_volume[model].d[0])
         table_content.append(line)
         
         
@@ -1319,6 +1322,7 @@ class Benchmark:
             
             - Criteria for the final time step of the simulation:
 
+                - Final Height: RMS of flow final height versus analytical solution.
                 - Flow Front Position: maximum distance traveled by the flow and comparison with the analytic solution.
                  
             - Numerical criteria:
@@ -1474,8 +1478,16 @@ class Benchmark:
         # --------------------------------------------------------------------------------------------
         table_content.append(["Criteria for the final time step of the simulation"])
         
+        # --------------------------------------- Final height ---------------------------------------
+        line = ["Final Thickness Repartition", "RMS (AS)"]
+        for model in self._loaded_results:
+            line.append((np.sqrt(np.sum((model_h[model].d[:, -1] - model_AS_h[model].d[:, -1])**2)) /
+                         np.sqrt(np.sum((model_AS_h[model].d[:, -1])**2))))
+        
+        table_content.append(line)
+        
         # ---------------------------- Front position at final time step -----------------------------
-        line = ["Front position", "Distance [m]"]
+        line = ["Final Front Position", "Distance [m]"]
         
         for model in self._loaded_results:
             line.append(model_position[model][-1] - model_position[model][0])
@@ -1502,20 +1514,20 @@ class Benchmark:
             volume = self._loaded_results[model].get_output("volume")
             model_volume[model] = volume
             
-        line = ["Flow Volume", "At final time step (Vinit)"]
-        
-        for model in self._loaded_results:
-            line.append((model_volume[model].d[-1] - model_volume[model].d[0]) / 
-                        model_volume[model].d[0])
-        table_content.append(line)
-        
-        line = ["", "RMS (Vinit)"]
+        line = ["Volume Variation", "RMS of Total Volume Variation"]
                         
         for model in self._loaded_results:
             rms_vinit = 0
             for v in model_volume[model].d:
                 rms_vinit += np.sqrt((v - model_volume[model].d[0])**2) / model_volume[model].d[0]
             line.append(rms_vinit)
+        table_content.append(line)
+        
+        line = ["", "(Vf - Vi) / Vi"]
+        
+        for model in self._loaded_results:
+            line.append((model_volume[model].d[-1] - model_volume[model].d[0]) / 
+                        model_volume[model].d[0])
         table_content.append(line)
             
             
