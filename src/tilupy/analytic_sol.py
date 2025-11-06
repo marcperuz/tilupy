@@ -1785,7 +1785,10 @@ class Coussot_shape(Shape_result):
         self._H_size = H_size
         self._D = None
         self._d = None
-        self._H = np.linspace(0, self.h_to_H(h_final), H_size)
+        if theta>0 and self.h_to_H(h_final) >=1:
+            self._H = np.linspace(0, 0.99999999, H_size)
+        else:
+            self._H = np.linspace(0, self.h_to_H(h_final), H_size)
         self._h = np.array([self.H_to_h(H) for H in self._H])
 
 
