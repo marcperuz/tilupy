@@ -431,7 +431,8 @@ class TemporalResults0D(TemporalResults):
         self._scalar_names = scalar_names
 
 
-    def plot(self, axe: matplotlib.axes._axes.Axes=None, 
+    def plot(self, 
+             ax: matplotlib.axes._axes.Axes=None, 
              figsize: tuple[float]=None, 
              **kwargs
              ) -> matplotlib.axes._axes.Axes:
@@ -439,7 +440,7 @@ class TemporalResults0D(TemporalResults):
 
         Parameters
         ----------
-        axe : matplotlib.axes._axes.Axes, optional
+        ax : matplotlib.axes._axes.Axes, optional
             Existing matplotlib window, if None create one. By default None.
         figsize : tuple[float], optional
             Size of the figure, by default None.
@@ -449,8 +450,8 @@ class TemporalResults0D(TemporalResults):
         matplotlib.axes._axes.Axes
             The created plot.
         """
-        if axe is None:
-            fig, axe = plt.subplots(1, 1, figsize=figsize, layout="constrained")
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=figsize, layout="constrained")
 
         if isinstance(self._d, np.ndarray):
             data = self._d.T
@@ -461,14 +462,14 @@ class TemporalResults0D(TemporalResults):
             color = "black"
             kwargs["color"] = color
         
-        axe.plot(self._t, data, label=self._scalar_names, **kwargs) # Remove label=self._scalar_names
+        ax.plot(self._t, data, label=self._scalar_names, **kwargs) # Remove label=self._scalar_names
 
-        axe.grid(True, alpha=0.3)
-        axe.set_xlim(left=min(self._t), right=max(self._t))
-        axe.set_xlabel(notations.get_label("t"))
-        axe.set_ylabel(notations.get_label(self._notation))
+        ax.grid(True, alpha=0.3)
+        ax.set_xlim(left=min(self._t), right=max(self._t))
+        ax.set_xlabel(notations.get_label("t"))
+        ax.set_ylabel(notations.get_label(self._notation))
 
-        return axe
+        return ax
 
 
     def save(self):
