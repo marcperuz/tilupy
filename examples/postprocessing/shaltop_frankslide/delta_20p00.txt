@@ -1,0 +1,17 @@
+nx 201
+ny 201
+per 4020
+pery 4020
+tmax 100
+dt_im 10
+file_z_init topography.d
+file_m_init init_mass.d
+initz 0
+ipr 0
+hinit_vert 1
+eps0 1E-13
+icomp 1
+x0 1000
+y0 2000
+folder_output delta_20p00
+delta1 20
