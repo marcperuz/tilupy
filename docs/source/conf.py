@@ -2,6 +2,9 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
+import matplotlib
+
+matplotlib.use("Agg")
 
 import os
 import sys
@@ -53,9 +56,17 @@ napoleon_attr_annotations = True
 # sphinx-gallery configuration
 sphinx_gallery_conf = {
     # path to your example scripts
-    'examples_dirs': ['../../examples/Simulation_examples', '../../examples/Analytic_Solutions_Height', '../../examples/Analytic_Solutions_Front', '../../examples/Analytic_Solutions_Shape'],
+    'examples_dirs': ['../../examples/preprocessing',
+                      '../../examples/postprocessing',
+                      '../../examples/Analytic_Solutions_Height',
+                      '../../examples/Analytic_Solutions_Front',
+                      '../../examples/Analytic_Solutions_Shape'],
     # path to where to save gallery generated output
-    'gallery_dirs': ['auto_examples/Simulation_examples', 'auto_examples/Analytic_Solutions_Height', 'auto_examples/Analytic_Solutions_Front', 'auto_examples/Analytic_Solutions_Shape'],
+    'gallery_dirs': ['auto_examples/preprocessing',
+                     'auto_examples/postprocessing',
+                     'auto_examples/Analytic_Solutions_Height',
+                     'auto_examples/Analytic_Solutions_Front',
+                     'auto_examples/Analytic_Solutions_Shape'],
     # specify that examples should be ordered according to filename
     'within_subsection_order': FileNameSortKey,
 }
