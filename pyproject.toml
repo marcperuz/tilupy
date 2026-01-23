@@ -18,7 +18,7 @@ classifiers = [
 ]
 keywords = ["thin-layer", "shallow-water", "display", "simulation", "model", "processing", "benchmark"]
 dependencies = [
-    "seaborn", "requests", "scipy", "pytopomap"
+    "seaborn", "requests", "scipy", "pytopomap", "shapely", "rasterio"
 ]
 requires-python = ">=3.10"
 
