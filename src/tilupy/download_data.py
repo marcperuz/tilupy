@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import requests
+import zipfile
+import io
 import os
 
 def import_frankslide_dem(folder_out: str = None, 
@@ -66,3 +68,22 @@ def import_frankslide_pile(folder_out: str = None,
     open(file_save, 'w').write(r.text)
     
     return file_save
+
+def import_shaltop_frankslide(folder_out: str = './shaltop_frankslide'):
+    """Import shaltop results for the Frankslide.
+
+    Parameters
+    ----------
+    folder_out : str, optional
+        Folder where data will be saved. By default "./shaltop_frankslide".
+    
+    Returns
+    -------
+    None
+    
+    """
+    url = ("https://raw.githubusercontent.com/marcperuz/tilupy/"
+           +"main/data/shaltop/shaltop_frankslide.zip")
+    r = requests.get(url)
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    z.extractall(folder_out)
