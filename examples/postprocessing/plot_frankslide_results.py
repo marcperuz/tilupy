@@ -9,7 +9,6 @@ We show here how simulation results can be loaded, and 2D results displayed as f
 
 # %%
 # Initial import
-import os
 import matplotlib.pyplot as plt
 import tilupy.read
 
