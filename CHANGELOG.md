@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## [v2.0.1](https://github.com/marcperuz/tilupy/releases/tag/v2.0.1) - 2026-01-23 17:35:09+00:00
+
+Minor updates, add required dependencies and downloading tools.
+
+### Documentation
+
+- README:
+  - update README with link to readthedocs ([bf46533](https://github.com/marcperuz/tilupy/commit/bf465335a833333df2569dab984aca2a786ca8cb))
+
+- examples:
+  - add missing data ([d11c015](https://github.com/marcperuz/tilupy/commit/d11c015ad71bd054a3f6e37881466623fbab6653))
+  - add new examples for documentation with sphinx-galler ([ab16cf4](https://github.com/marcperuz/tilupy/commit/ab16cf48d6be694108b0b24612f19210269d7061))
+
+### Refactor
+
+- examples:
+  - remove unused import ([a3d4df7](https://github.com/marcperuz/tilupy/commit/a3d4df7034a16b1c3e7b23d79b4bb7388a93e41a))
+
 ## [v2.0.0](https://github.com/marcperuz/tilupy/releases/tag/v2.0.0) - 2025-11-06 15:02:35+00:00
 
 Major version update with tools for Lave2D and Saval2D + processing function for benchmarks.
