@@ -12,7 +12,7 @@ import tilupy.cmd
 
 # %% 
 # Specify where simulation results are located. You can dowload an example folder containing
-# shaltop results with the first two commented lines
+# shaltop results by uncommenting the first two lines.
 
 #import tilupy.download_data
 #tilupy.download_data.import_shaltop_frankslide()
