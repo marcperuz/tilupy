@@ -62,7 +62,7 @@ def eval_simus(
     methods,
     calib_parameters,
     methods_kws,
-    code="shaltop",
+    model_name="shaltop",
     recorded_params=["delta1"],
     calib_parameter_name="h_threshs",
 ):
@@ -92,7 +92,7 @@ def eval_simus(
         simus_list = []
         for i in range(simus.shape[0]):
             simus_list.append(
-                read.get_results(code, **simus.iloc[i, :].to_dict())
+                read.get_results(model_name, **simus.iloc[i, :].to_dict())
             )
         simus2 = simus.copy()
     else:
@@ -113,22 +113,30 @@ def eval_simus(
 
     res = pd.DataFrame(columns=simus2.columns, index=np.arange(nn))
 
+    # If simus is provided as a datframe, columns are kept in the output
+    if not isinstance(simus, list):
+        for i, simu in enumerate(simus_list):
+            istart = i * nc
+            iend = (i + 1) * nc
+            res.iloc[istart:iend, :] = simus2.loc[i, :].copy()
+
+    ind_param = res.columns.get_loc(param)
+    ind_calib_param = res.columns.get_loc(calib_parameter_name)
+    inds_method = [res.columns.get_loc(method) for method in methods]
     for i, simu in enumerate(simus_list):
-        # Initiate fields
         istart = i * nc
         iend = (i + 1) * nc
-        res.iloc[istart:iend, :] = simus2.loc[i, :].copy()
         for j, method in enumerate(methods):
             kws = methods_kws[j]
             kws[calib_parameter_name] = calib_parameters
             _, calib_res = fn[method](simu, **kws)
             for param in recorded_params:
                 res.iloc[
-                    istart:iend, res.columns.get_loc(param)
-                ] = simu.params[param]
+                    istart:iend, ind_param
+                ] = simu._params[param]
             res.iloc[
-                istart:iend, res.columns.get_loc(calib_parameter_name)
+                istart:iend, ind_calib_param
             ] = calib_parameters
-            res.iloc[istart:iend, res.columns.get_loc(method)] = calib_res
+            res.iloc[istart:iend, inds_method[j]] = calib_res
 
     return res
