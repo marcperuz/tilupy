@@ -116,9 +116,7 @@ def plot_res():
         (("int", "xy"), None),
     ],
 )
-def test_plot_spatial_stat(
-    args, expected, gaussian_temporal_results, folder_plots
-):
+def test_plot_spatial_stat(args, expected, gaussian_temporal_results, folder_plots):
     os.makedirs(folder_plots, exist_ok=True)
     file_out = "gaussian_{}_{}.png".format(args[0], args[1])
     file_out = os.path.join(folder_plots, file_out)

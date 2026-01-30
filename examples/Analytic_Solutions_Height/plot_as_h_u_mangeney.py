@@ -120,7 +120,7 @@ The following example replicates the case shown in Figure 3 of Mangeney et al. (
 """
 
 # %%
-# 
+#
 # -------------------
 
 # %%
@@ -132,12 +132,12 @@ from tilupy.analytic_sol import Mangeney_dry
 x = np.linspace(-100, 1000, 1000)
 
 # %%
-# 
+#
 # -------------------
 
 # %%
 # Case 1: No friction (:math:`\delta = 0°`), slope :math:`\theta = 30°`, initial height :math:`h_0 = 20 m`.
-case_1 = Mangeney_dry(h_0=20, x_0= 0, theta=30, delta=0)
+case_1 = Mangeney_dry(h_0=20, x_0=0, theta=30, delta=0)
 
 
 # %%
@@ -152,12 +152,12 @@ case_1.compute_u(x, [0, 5, 10, 15])
 ax = case_1.plot(show_u=True, linestyles=["", ":", "--", "-"])
 
 # %%
-# 
+#
 # -------------------
 
 # %%
 # Case 2: Add basal friction (:math:`\delta = 20°`), same slope and initial height.
-case_2 = Mangeney_dry(h_0=20, x_0= 0, theta=30, delta=20)
+case_2 = Mangeney_dry(h_0=20, x_0=0, theta=30, delta=20)
 
 
 # %%
@@ -168,6 +168,6 @@ ax = case_2.plot(show_h=True, linestyles=["", ":", "--", "-"])
 
 # %%
 # Original reference:
-#  
-# Mangeney, A., Heinrich, P., & Roche, R., 2000, Analytical solution for testing debris avalanche numerical models, 
+#
+# Mangeney, A., Heinrich, P., & Roche, R., 2000, Analytical solution for testing debris avalanche numerical models,
 # Pure and Applied Geophysics, vol. 157, p. 1081-1096.

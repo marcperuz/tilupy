@@ -9,20 +9,21 @@ import tilupy.make_mass
 import tilupy.raster
 
 
-def create_topo_constant_slope(folder_out: str, 
-                               xmax: int = 30,
-                               ymax: int = 25,
-                               cell_size: float = 0.5,
-                               theta: int = 5,
-                               mass_type: str = 'r',
-                               r_center: tuple = (7.5, 12.5),
-                               r_radius: tuple = (3.75, 3.75),
-                               s_vertex: list = [0, 5, 0, 25],
-                               h_max: float = 3.75,
-                               description: str = "No informations."
-                               ) -> list[str, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def create_topo_constant_slope(
+    folder_out: str,
+    xmax: int = 30,
+    ymax: int = 25,
+    cell_size: float = 0.5,
+    theta: int = 5,
+    mass_type: str = "r",
+    r_center: tuple = (7.5, 12.5),
+    r_radius: tuple = (3.75, 3.75),
+    s_vertex: list = [0, 5, 0, 25],
+    h_max: float = 3.75,
+    description: str = "No informations.",
+) -> list[str, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Generates a synthetic topography and initial mass, saves them as ASCII files, 
+    Generates a synthetic topography and initial mass, saves them as ASCII files,
     and stores all configuration parameters in a dedicated folder.
 
     Parameters
@@ -53,9 +54,9 @@ def create_topo_constant_slope(folder_out: str,
     Returns
     -------
     list[str, numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]
-        folder_path : str 
+        folder_path : str
             Absolute path to the output directory.
-        x, y : numpy.ndarray, numpy.ndarray 
+        x, y : numpy.ndarray, numpy.ndarray
             Meshgrid coordinates.
         z : numpy.ndarray
             Topography data.
@@ -72,59 +73,67 @@ def create_topo_constant_slope(folder_out: str,
 
     # Topography array
     z = -slope * (xmesh - xmax)
-    
+
     # Initial mass
-    if mass_type != 'r' and mass_type != 's':
-        mass_type = 'r'
-        
+    if mass_type != "r" and mass_type != "s":
+        mass_type = "r"
+
     p = dict(
         hmax=h_max,
         mass_type=mass_type,
-        r_center = r_center if mass_type=='r' else None,
-        r_radius = r_radius if mass_type=='r' else None,
-        s_vertex = s_vertex if mass_type=='s' else None,
+        r_center=r_center if mass_type == "r" else None,
+        r_radius=r_radius if mass_type == "r" else None,
+        s_vertex=s_vertex if mass_type == "s" else None,
     )
 
-    if p["mass_type"] == 'r':
+    if p["mass_type"] == "r":
         m = (
             1
             - (xmesh - p["r_center"][0]) ** 2 / p["r_radius"][0] ** 2
             - (ymesh - p["r_center"][1]) ** 2 / p["r_radius"][1] ** 2
         )
         m = np.maximum(m * p["hmax"], 0)
-        
-    elif p["mass_type"] == 's':
+
+    elif p["mass_type"] == "s":
         xmin_r, xmax_r, ymin_r, ymax_r = p["s_vertex"]
         in_x = np.logical_and(xmesh >= xmin_r, xmesh <= xmax_r)
         in_y = np.logical_and(ymesh >= ymin_r, ymesh <= ymax_r)
         mask = np.logical_and(in_x, in_y)
         m = np.zeros_like(z)
         m[mask] = p["hmax"]
-    
+
     nbr_cell = np.count_nonzero(m > 0)
-    
+
     p["nbr_cell"] = nbr_cell
-    
-    folder_name = f"x{xmax}_y{ymax}_" + "dx{:04.2f}_".format(cell_size).replace(".", "p") + "theta{:02.0f}_".format(theta) + mass_type + f"{nbr_cell}"
+
+    folder_name = (
+        f"x{xmax}_y{ymax}_"
+        + "dx{:04.2f}_".format(cell_size).replace(".", "p")
+        + "theta{:02.0f}_".format(theta)
+        + mass_type
+        + f"{nbr_cell}"
+    )
     folder_path = os.path.join(folder_out, folder_name)
-    
+
     # Create folder
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
         print(f"Create folder: {folder_name}")
     else:
         print(f"Existing topography: {folder_name}")
-        
+
     # Create parameters file
     with open(os.path.join(folder_path, "parameters.txt"), "w") as file:
-        file.write(f"xmax {xmax}\nymax {ymax}\ncell_size {cell_size}\ntheta {theta}\n\n")
+        file.write(
+            f"xmax {xmax}\nymax {ymax}\ncell_size {cell_size}\ntheta {theta}\n\n"
+        )
 
         for param, value in p.items():
             file.write(f"{param} {value}\n")
 
         file.write("\n")
         file.write(description)
-    
+
     # Save topography
     file_topo_out = os.path.join(folder_path, "topography.asc")
     file_mass_out = os.path.join(folder_path, "init_mass.asc")
@@ -135,20 +144,19 @@ def create_topo_constant_slope(folder_out: str,
     return folder_path, x, y, z, m
 
 
-def gray99_topo_mass(dx: float = 0.1, 
-                     dy: float = 0.1, 
-                     res_type: str = "true_normal"
-                     ) -> list[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def gray99_topo_mass(
+    dx: float = 0.1, dy: float = 0.1, res_type: str = "true_normal"
+) -> list[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Create Gray99 topographic and mass test.
-    
-    Create an initial spherical calotte above the topography, resulting as a mass with a 
-    height of 0.22 m and a radius of 0.32 m (more precisely it is the length in the downslope 
-    direction), following the indications in Gray et al 99 (p. 1859). 
-    The correspondig radius of the sphere, and the offset from the topography in the topography 
-    normal direction (norm_offset) are deduced from these parameters. 
-    
+
+    Create an initial spherical calotte above the topography, resulting as a mass with a
+    height of 0.22 m and a radius of 0.32 m (more precisely it is the length in the downslope
+    direction), following the indications in Gray et al 99 (p. 1859).
+    The correspondig radius of the sphere, and the offset from the topography in the topography
+    normal direction (norm_offset) are deduced from these parameters.
+
     See also Gig 3 in Wieland, Gray and Hutter (1999)
-    
+
     Parameters
     ----------
     dx : float, optional
@@ -157,12 +165,12 @@ def gray99_topo_mass(dx: float = 0.1,
         Cell size of the y axis, by default 0.1
     res_type : str, optional
         Type of thickness output:
-        
-            - 'true_normal': Real thickness in the direction normal to the topography. 
-            - 'vertical': Thickness in the vertical direction. 
-            - 'projected_normal': Thickness normal to the topography is computed from the vertical 
-              thickness projected on the axe normal to the topography. 
-              
+
+            - 'true_normal': Real thickness in the direction normal to the topography.
+            - 'vertical': Thickness in the vertical direction.
+            - 'projected_normal': Thickness normal to the topography is computed from the vertical
+              thickness projected on the axe normal to the topography.
+
         The default is 'true_normal'.
 
     Returns
@@ -186,15 +194,10 @@ def gray99_topo_mass(dx: float = 0.1,
     radius = (wmass**2 + hmass**2) / (2 * hmass)
     norm_offset = (wmass**2 - hmass**2) / (2 * hmass)
     # Z = -np.tile(X, [len(Y), 1])*np.tan(np.deg2rad(20))
-    
-    M = tilupy.make_mass.calotte(X, 
-                                 Y, 
-                                 Z, 
-                                 x0, 
-                                 0, 
-                                 radius, 
-                                 norm_offset=norm_offset, 
-                                 res_type=res_type)
+
+    M = tilupy.make_mass.calotte(
+        X, Y, Z, x0, 0, radius, norm_offset=norm_offset, res_type=res_type
+    )
 
     return X, Y, Z, M
 

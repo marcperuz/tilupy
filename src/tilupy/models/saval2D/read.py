@@ -39,10 +39,10 @@ def extract_saval_ascii(path: str) -> np.ndarray:
     numpy.ndarray
         Values in the ascii file.
     """
-    with open(path, 'r') as f:
+    with open(path, "r") as f:
         lines = f.readlines()
     start_index = 6
-    
+
     h_str = lines[start_index:]
 
     h = [list(map(float, line.split())) for line in h_str if line.strip()]
@@ -52,22 +52,22 @@ def extract_saval_ascii(path: str) -> np.ndarray:
 class Results(tilupy.read.Results):
     """Results of saval2D simulations.
 
-    This class is the results class for saval2D. Reading results from saval2D outputs 
+    This class is the results class for saval2D. Reading results from saval2D outputs
     are done in this class.
-    
-    This class has all the global and quick attributes of the parent class. The quick 
+
+    This class has all the global and quick attributes of the parent class. The quick
     attributes are only computed if needed and can be deleted to clean memory.
-    
-    In addition to these attributes, there are those necessary for the operation of 
+
+    In addition to these attributes, there are those necessary for the operation of
     reading the saval2D results.
-    
+
     Parameters
     ----------
     folder : str
         Path to the folder containing the simulation files.
     raster_topo : str
         Topographic raster name.
-            
+
     Attributes
     ----------
         _simu_inputs : str
@@ -79,16 +79,25 @@ class Results(tilupy.read.Results):
         _params : dict
             Dictionary storing all simulation parameters.
     """
+
     def __init__(self, folder, raster_topo="mntsimulation.asc"):
         super().__init__()
         self._code = "saval2D"
-        
+
         self._folder = folder
         self._folder_output = folder
-        
-        self._simu_inputs = os.path.join(folder, "inputs") if os.path.exists(os.path.join(folder, "inputs")) else None
-        self._simu_outputs = os.path.join(folder, "outputs") if os.path.exists(os.path.join(folder, "outputs")) else None
-        
+
+        self._simu_inputs = (
+            os.path.join(folder, "inputs")
+            if os.path.exists(os.path.join(folder, "inputs"))
+            else None
+        )
+        self._simu_outputs = (
+            os.path.join(folder, "outputs")
+            if os.path.exists(os.path.join(folder, "outputs"))
+            else None
+        )
+
         if not raster_topo.endswith(".asc"):
             raster_topo = raster_topo + ".asc"
         self._raster = raster_topo
@@ -96,8 +105,9 @@ class Results(tilupy.read.Results):
         self._params = dict()
 
         if self._simu_inputs is not None:
-            self._x, self._y, self._zinit = tilupy.raster.read_ascii(os.path.join(self._simu_inputs, 
-                                                                                  self._raster))
+            self._x, self._y, self._zinit = tilupy.raster.read_ascii(
+                os.path.join(self._simu_inputs, self._raster)
+            )
         self._nx, self._ny = len(self._x), len(self._y)
         self._dx = self._x[1] - self._x[0]
         self._dy = self._y[1] - self._y[0]
@@ -106,7 +116,9 @@ class Results(tilupy.read.Results):
         self._params["ny"] = len(self.y)
 
         # Rheology
-        rheol = self.get_rheological_parameters(os.path.join(self._simu_outputs, "log.txt"))
+        rheol = self.get_rheological_parameters(
+            os.path.join(self._simu_outputs, "log.txt")
+        )
         self._params["tau/rho"] = rheol[0]
         self._params["mu"] = rheol[1]
         self._params["xi"] = rheol[2]
@@ -114,7 +126,6 @@ class Results(tilupy.read.Results):
         # Create self._tim
         self._extract_output("X")
 
-        
     def get_rheological_parameters(self, path_to_log: str) -> list[str]:
         """Get rheological parameters of a saval2D simulation.
 
@@ -140,8 +151,7 @@ class Results(tilupy.read.Results):
                 except ValueError:
                     continue
         return values
-        
-    
+
     def get_times(self, path: str) -> list[float]:
         """Get simulation time steps.
 
@@ -156,30 +166,28 @@ class Results(tilupy.read.Results):
             List of recorded time steps.
         """
         t_list = []
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             lines = f.readlines()
-        
+
         start_index = 16
         for line in lines[start_index:]:
-            if line.strip() == '':
+            if line.strip() == "":
                 continue
             else:
                 _, t, _, _, _ = line.split()
                 t_list.append(float(t))
-        
-        return t_list            
-    
-    
-    def _extract_output(self, 
-                        name: str, 
-                        **kwargs
-                        ) -> tilupy.read.TemporalResults2D | tilupy.read.AbstractResults:
+
+        return t_list
+
+    def _extract_output(
+        self, name: str, **kwargs
+    ) -> tilupy.read.TemporalResults2D | tilupy.read.AbstractResults:
         """Result extraction for saval2D files.
 
         Parameters
         ----------
         name : str
-            Wanted output. Can access to variables in :data:`AVAILABLE_OUTPUT`. 
+            Wanted output. Can access to variables in :data:`AVAILABLE_OUTPUT`.
 
         Returns
         -------
@@ -190,108 +198,112 @@ class Results(tilupy.read.Results):
         d = None
         t = None
         notation = None
-        
+
         tim = [0]
         t_list = self.get_times(os.path.join(self._simu_outputs, "log.txt"))
-        
-        _, _, h_init = tilupy.raster.read_ascii(os.path.join(self._simu_inputs, "zdepsimulation.asc"))
-        
+
+        _, _, h_init = tilupy.raster.read_ascii(
+            os.path.join(self._simu_inputs, "zdepsimulation.asc")
+        )
+
         h_list = [h_init]
-        
+
         ux_list = []
         uy_list = []
         u_list = []
         ux_list.append(np.zeros_like(h_init))
         uy_list.append(np.zeros_like(h_init))
         u_list.append(np.zeros_like(h_init))
-        
+
         qx_list = []
         qy_list = []
         q_list = []
         qx_list.append(np.zeros_like(h_init))
         qy_list.append(np.zeros_like(h_init))
         q_list.append(np.zeros_like(h_init))
-        
+
         for T in range(len(t_list)):
-            h_t = extract_saval_ascii(os.path.join(self._simu_outputs, f"resuh{T+1}.asc"))
-            qu_t = extract_saval_ascii(os.path.join(self._simu_outputs, f"resuqu{T+1}.asc"))
-            qv_t = extract_saval_ascii(os.path.join(self._simu_outputs, f"resuqv{T+1}.asc"))
+            h_t = extract_saval_ascii(
+                os.path.join(self._simu_outputs, f"resuh{T + 1}.asc")
+            )
+            qu_t = extract_saval_ascii(
+                os.path.join(self._simu_outputs, f"resuqu{T + 1}.asc")
+            )
+            qv_t = extract_saval_ascii(
+                os.path.join(self._simu_outputs, f"resuqv{T + 1}.asc")
+            )
 
             # Condition to avoid flow velocity on part with no fluid
-            h_t[h_t<0.0001] = 0
-            
+            h_t[h_t < 0.0001] = 0
+
             ux_t = np.divide(qu_t, h_t, out=np.zeros_like(qu_t), where=h_t != 0)
             uy_t = np.divide(qv_t, h_t, out=np.zeros_like(qv_t), where=h_t != 0)
-            
+
             u_t = np.sqrt(ux_t**2 + uy_t**2)
             q_t = np.sqrt(qu_t**2 + qv_t**2)
-            
+
             h_list.append(h_t)
-            
+
             ux_list.append(ux_t)
             uy_list.append(uy_t)
             u_list.append(u_t)
-            
+
             qx_list.append(qu_t)
             qy_list.append(qv_t)
             q_list.append(q_t)
-            
+
             tim.append(t_list[T])
 
         if self._tim is None:
             self._tim = np.array(tim)
-    
-        extracted_outputs = {"h": np.stack(h_list, axis=-1),
-                             "u": np.stack(u_list, axis=-1),
-                             "hu": np.stack(q_list, axis=-1),
-                             "ux": np.stack(ux_list, axis=-1),
-                             "uy": np.stack(uy_list, axis=-1),
-                             "hux": np.stack(qx_list, axis=-1),
-                             "huy": np.stack(qy_list, axis=-1),
-                             }
+
+        extracted_outputs = {
+            "h": np.stack(h_list, axis=-1),
+            "u": np.stack(u_list, axis=-1),
+            "hu": np.stack(q_list, axis=-1),
+            "ux": np.stack(ux_list, axis=-1),
+            "uy": np.stack(uy_list, axis=-1),
+            "hux": np.stack(qx_list, axis=-1),
+            "huy": np.stack(qy_list, axis=-1),
+        }
 
         if name in ["h", "u", "hu", "ux", "uy", "hux", "huy"]:
             d = extracted_outputs[name]
             t = self._tim
-        
+
         if name == "hu2":
             d = extracted_outputs["hu"] * extracted_outputs["u"]
             t = self._tim
-        
+
         elif name == "hvert":
             if self._costh is None:
                 self._costh = self.compute_costh()
             d = extracted_outputs["h"] / self._costh[:, :, np.newaxis]
             t = self._tim
-        
+
         # if name == "ek":
         #     if self._costh is None:
         #             self._costh = self.compute_costh()
-            
+
         #     d = []
         #     for i in range(len(self._tim)):
-        #         d.append(np.sum((np.stack(available_outputs["hu"], axis=-1)[:, :, i] * 
+        #         d.append(np.sum((np.stack(available_outputs["hu"], axis=-1)[:, :, i] *
         #                          np.stack(available_outputs["u"], axis=-1)[:, :, i] *
         #                          self._dx *
         #                          self._dy)
         #                         / self._costh[:, :]))
         #     d = np.array(d)
         #     t = self._tim
-        
+
         if t is None:
             return tilupy.read.AbstractResults(name, d, notation=notation)
 
         else:
             if d.ndim == 3:
-                return tilupy.read.TemporalResults2D(name, 
-                                                     d, 
-                                                     t, 
-                                                     notation=notation, 
-                                                     x=self._x, 
-                                                     y=self._y, 
-                                                     z=self._zinit)
+                return tilupy.read.TemporalResults2D(
+                    name, d, t, notation=notation, x=self._x, y=self._y, z=self._zinit
+                )
         return None
-
 
     def _read_from_file(self, *args, **kwargs):
         """Not useful"""

@@ -137,8 +137,9 @@ To take into account the Chézy coefficient in the flow simulation, corrective t
 Implementation
 --------------
 """
+
 # %%
-# First import required packages and define the spatial domain for visualization. 
+# First import required packages and define the spatial domain for visualization.
 # For following examples we will use a 1D space from -500 to 700 m.
 import numpy as np
 from tilupy.analytic_sol import Dressler_dry
@@ -146,12 +147,12 @@ from tilupy.analytic_sol import Dressler_dry
 x = np.linspace(-500, 700, 1000)
 
 # %%
-# 
+#
 # -------------------
 
 # %%
-# Case: Dressler's solution with dam at :math:`x_0 = 0 m`, initial height :math:`h_l = 6 m` and Chézy 
-# coefficient :math:`C = 40`. 
+# Case: Dressler's solution with dam at :math:`x_0 = 0 m`, initial height :math:`h_l = 6 m` and Chézy
+# coefficient :math:`C = 40`.
 case = Dressler_dry(x_0=0, h_0=6, C=40)
 
 
@@ -168,8 +169,8 @@ ax = case.plot(show_u=True, linestyles=["", ":", "-.", "--", "-"])
 
 # %%
 # Original reference:
-# 
+#
 # Delestre, O., Lucas, C., Ksinant, P.‑A., Darboux, F., Laguerre, C., Vo, T.‑N.‑T., James, F. & Cordier, S., 2013, SWASHES: a compilation of shallow water analytic solutions for hydraulic and environmental studies, International Journal for Numerical Methods in Fluids, v. 72(3), p. 269–300, doi:10.1002/fld.3741.
-# 
-# Dressler, R.F., 1952, Hydraulic resistance effect upon the dam‑break functions, Journal of Research of the National Bureau of Standards, 
+#
+# Dressler, R.F., 1952, Hydraulic resistance effect upon the dam‑break functions, Journal of Research of the National Bureau of Standards,
 # vol. 49(3), p. 217–225.

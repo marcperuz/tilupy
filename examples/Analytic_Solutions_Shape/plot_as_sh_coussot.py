@@ -8,15 +8,15 @@ The frontal lobe shape of the simulated flow at the final step is given by
 
     .. math::
             D = - H - \ln(1 - H)
-            
-where 
+
+where
  - :math:`H`: normalized fluid depth.
  - :math:`D`: normalized distance of the front from the origin.
- 
+
 :math:`H` and :math:`D` are obtained with these expressions:
 
 .. math::
-	D = \frac{\rho g d (\sin(\theta))^2}{\tau_c \cos(\theta)} \text{  and  } H = \frac{\rho g h \sin(\theta)}{\tau_c}
+        D = \frac{\rho g d (\sin(\theta))^2}{\tau_c \cos(\theta)} \text{  and  } H = \frac{\rho g h \sin(\theta)}{\tau_c}
 
 with:
  - :math:`h`: fluid depth.
@@ -29,8 +29,9 @@ with:
 Implementation
 ---------------
 """
+
 # %%
-# First import required packages and define the context. For this example we will use a fluid with a density of :math:`\rho = 1000 kg/m^3`: 
+# First import required packages and define the context. For this example we will use a fluid with a density of :math:`\rho = 1000 kg/m^3`:
 # and :math:`\tau_c = 50 Pa`, with a slope of :math:`\theta = 10°`:
 from tilupy.analytic_sol import Coussot_shape
 import matplotlib.pyplot as plt
@@ -42,12 +43,12 @@ plt.show()
 
 # %%
 # If :math:`\theta = 0°`, the equations are slightly different:
-# 
+#
 # .. math::
 # 	D^* = \frac{{H^*}^2}{2}
-# 
+#
 # with:
-# 
+#
 # .. math::
 # 	D^* = \frac{\rho g d}{\tau_c} \text{  and  } H^* = \frac{\rho g h}{\tau_c}
 
@@ -58,6 +59,6 @@ plt.show()
 
 # %%
 # Original reference:
-#  
-# Coussot, P., Proust, S., & Ancey, C., 1996, Rheological interpretation of deposits of yield stress fluids, 
+#
+# Coussot, P., Proust, S., & Ancey, C., 1996, Rheological interpretation of deposits of yield stress fluids,
 # Journal of Non-Newtonian Fluid Mechanics, v. 66(1), p. 55-70, doi:10.1016/0377-0257(96)01474-7.

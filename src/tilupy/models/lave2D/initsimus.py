@@ -85,12 +85,12 @@ def make_edges_matrices(nx: int, ny: int) -> list[np.ndarray, np.ndarray]:
 
 class ModellingDomain:
     """Mesh of simulation topography
-    
+
     This class represents a structured 2D mesh built either from a raster
     or from user-specified dimensions and spacing.
     It stores the topographic data (z), the grid geometry (x, y, dx, dy, nx, ny),
     and the numbering of edges used for discretization of the domain.
-    
+
     Parameters
     ----------
         raster : numpy.ndarray, str, or None, optional
@@ -98,22 +98,22 @@ class ModellingDomain:
             - If str: path to a raster file readable by :func:`tilupy.raster.read_raster`.
             - If None: grid is generated from :data:`nx`, :data:`ny`, :data:`dx`, :data:`dy`.
         xmin : float, optional
-            Minimum X coordinate of the grid, used if :data:`raster` is None, 
+            Minimum X coordinate of the grid, used if :data:`raster` is None,
             by default 0.0.
         ymin : float, optional
-            Minimum Y coordinate of the grid, used if :data:`raster` is None, 
+            Minimum Y coordinate of the grid, used if :data:`raster` is None,
             by default 0.0.
         nx : int, optional
-            Number of grid points in the X direction, used if :data:`raster` is None, 
+            Number of grid points in the X direction, used if :data:`raster` is None,
             by default None.
         ny : int, optional
-            Number of grid points in the Y direction, used if :data:`raster` is None, 
+            Number of grid points in the Y direction, used if :data:`raster` is None,
             by default None.
         dx : float, optional
             Grid spacing along X, by default 1.0.
         dy : float, optional
             Grid spacing along Y, by default 1.0.
-    
+
     Attributes
     ----------
         _z : numpy.ndarray
@@ -135,15 +135,17 @@ class ModellingDomain:
         _v_edges : numpy.ndarray
             Matrix of vertical edge numbers ([ny-1, nx]).
     """
-    def __init__(self,
-                 raster: np.ndarray = None,
-                 xmin: float = 0,
-                 ymin: float = 0,
-                 nx: int = None,
-                 ny: int = None,
-                 dx: float = 1,
-                 dy: float = 1,
-                 ):
+
+    def __init__(
+        self,
+        raster: np.ndarray = None,
+        xmin: float = 0,
+        ymin: float = 0,
+        nx: int = None,
+        ny: int = None,
+        dx: float = 1,
+        dy: float = 1,
+    ):
         if raster is not None:
             if isinstance(raster, np.ndarray):
                 self._z = raster
@@ -151,13 +153,13 @@ class ModellingDomain:
                 self._ny = raster.shape[0]
                 self._dx = dx
                 self._dy = dy
-                self._x = np.arange(xmin, 
-                                    xmin + (self._nx - 1) * self._dx + self._dx / 2, 
-                                    self._dx)
-                self._y = np.arange(ymin, 
-                                    ymin + (self._ny - 1) * self._dy + self._dy / 2, 
-                                    self._dy)
-                
+                self._x = np.arange(
+                    xmin, xmin + (self._nx - 1) * self._dx + self._dx / 2, self._dx
+                )
+                self._y = np.arange(
+                    ymin, ymin + (self._ny - 1) * self._dy + self._dy / 2, self._dy
+                )
+
             if isinstance(raster, str):
                 self._x, self._y, self._z = tilupy.raster.read_raster(raster)
                 self._nx = len(self._x)
@@ -170,13 +172,14 @@ class ModellingDomain:
             self._ny = ny
             self._dx = dx
             self._dy = dy
-            if (xmin is not None
+            if (
+                xmin is not None
                 and ymin is not None
                 and nx is not None
                 and ny is not None
                 and dx is not None
                 and dy is not None
-                ):
+            ):
                 self._x = np.arange(xmin, xmin + dx * nx + dx / 2, dx)
                 self._y = np.arange(ymin, ymin + dy * ny + dy / 2, dy)
 
@@ -186,16 +189,14 @@ class ModellingDomain:
         if self._nx is not None and self._ny is not None:
             self.set_edges()
 
-
     def set_edges(self) -> None:
         """Compute and assign horizontal and vertical edge number.
-        
+
         Calls :func:`tilupy.initsimus.make_edges_matrices` to build the edge numbering
-        for the grid defined by nx and ny. 
+        for the grid defined by nx and ny.
         Results are stored in attributes :attr:`_h_edges` and :attr:`_v_edges`.
         """
         self._h_edges, self._v_edges = make_edges_matrices(self._nx - 1, self._ny - 1)
-
 
     def get_edge(self, xcoord: float, ycoord: float, cardinal: str) -> int:
         """Get edge number for given coordinates and cardinal direction
@@ -208,23 +209,25 @@ class ModellingDomain:
             Y coordinate of the point.
         cardinal : str
             Cardinal direction of the edge ('N', 'S', 'E', 'W'):
-            
+
                 - 'N': top edge of the cell
                 - 'S': bottom edge of the cell
                 - 'E': right edge of the cell
                 - 'W': left edge of the cell
-        
+
         Returns
         -------
         int
             Edge number corresponding to the requested location and direction.
-        
+
         Raises
         ------
         AssertionError
             If :meth:`set_edges` has not been called before (i.e. :attr:`_h_edges` and :attr:`_v_edges` are None).
         """
-        assert (self._h_edges is not None) and (self._v_edges is not None), "h_edges and v_edges must be computed to get edge number"
+        assert (self._h_edges is not None) and (self._v_edges is not None), (
+            "h_edges and v_edges must be computed to get edge number"
+        )
         ix = np.argmin(np.abs(self._x[:-1] + self._dx / 2 - xcoord))
         iy = np.argmin(np.abs(self._y[:-1] + self._dx / 2 - ycoord))
         if cardinal == "S":
@@ -236,11 +239,16 @@ class ModellingDomain:
         elif cardinal == "E":
             return self._v_edges[-iy - 1, ix + 1]
 
-
-    def get_edges(self, xcoords: np.ndarray, ycoords: np.ndarray, cardinal: str, from_extremities: bool=True) -> dict[str: list[int]]:
+    def get_edges(
+        self,
+        xcoords: np.ndarray,
+        ycoords: np.ndarray,
+        cardinal: str,
+        from_extremities: bool = True,
+    ) -> dict[str : list[int]]:
         """Get edges numbers for a set of coordinates and cardinals direction.
-        
-        If :data:`from_extremities` is True, xcoords and ycoords are treated as the extremities of a segment. 
+
+        If :data:`from_extremities` is True, xcoords and ycoords are treated as the extremities of a segment.
 
         Parameters
         ----------
@@ -266,12 +274,12 @@ class ModellingDomain:
             npts = int(np.ceil(d / min(self._dx, self._dy)))
             xcoords = np.linspace(xcoords[0], xcoords[1], npts + 1)
             ycoords = np.linspace(ycoords[0], ycoords[1], npts + 1)
-            
+
         if self._h_edges is None or self._v_edges is None:
             self.set_edges
-            
+
         res = dict()
-        
+
         # cardinal is a string with any combination of cardinal directions
         for card in cardinal:
             edges_num = []
@@ -279,23 +287,23 @@ class ModellingDomain:
                 edges_num.append(self.get_edge(xcoord, ycoord, card))
             res[card] = list(set(edges_num))  # Duplicate edges are removed
             res[card].sort()
-            
+
         return res
 
 
 class Simu:
     """Simulation configuration and input file generator.
-    
+
     This class manages the setup of lave2D. It creates the necessary input files (topography, numeric
     parameters, rheology, boundary conditions, initial mass) that will be read by lave2D.
-    
+
     Parameters
     ----------
         folder : str
             Directory where simulation files are written. Created if it does not exist.
         name : str
             Base name of the simulation (used as file prefix).
-    
+
     Attributes
     ----------
         _folder : str
@@ -313,6 +321,7 @@ class Simu:
         _dtsorties : float
             Time step for output results.
     """
+
     def __init__(self, folder: str, name: str):
         os.makedirs(folder, exist_ok=True)
         self._folder = folder
@@ -321,12 +330,13 @@ class Simu:
         self._y = None
         self._z = None
 
-
-    def set_topography(self, z: np.ndarray | str, 
-                       x: np.ndarray=None, 
-                       y: np.ndarray=None, 
-                       file_out: str=None
-                       ) -> None:
+    def set_topography(
+        self,
+        z: np.ndarray | str,
+        x: np.ndarray = None,
+        y: np.ndarray = None,
+        file_out: str = None,
+    ) -> None:
         """Set simulation topography and write it as an ASCII grid.
 
         Parameters
@@ -356,31 +366,28 @@ class Simu:
             fname = file_out.split(".")[0]
             if len(fname) > 8:
                 warnings.warns("""Topography file name is too long,
-                               only 8 first characters are retained"""
-                               )
+                               only 8 first characters are retained""")
                 fname = fname[:8]
             elif len(fname) < 8:
                 warnings.warns("""Topography file name is too short and is adapted,
-                               exactly 8 characters needed"""
-                               )
+                               exactly 8 characters needed""")
                 fname = fname.ljust(8, "0")
             file_out = fname + ".asc"
 
-        tilupy.raster.write_ascii(self._x, 
-                                  self._y, 
-                                  self._z, 
-                                  os.path.join(self._folder, file_out))
+        tilupy.raster.write_ascii(
+            self._x, self._y, self._z, os.path.join(self._folder, file_out)
+        )
 
-
-    def set_numeric_params(self,
-                           tmax: float,
-                           dtsorties: float,
-                           paray: float=0.00099,
-                           dtinit: float=0.01,
-                           cfl_const: int=1,
-                           CFL: float=0.2,
-                           alpha_cor_pente: float=1.0,
-                           ) -> None:
+    def set_numeric_params(
+        self,
+        tmax: float,
+        dtsorties: float,
+        paray: float = 0.00099,
+        dtinit: float = 0.01,
+        cfl_const: int = 1,
+        CFL: float = 0.2,
+        alpha_cor_pente: float = 1.0,
+    ) -> None:
         """Set numerical simulation parameters and write them to file.
 
         Parameters
@@ -417,17 +424,18 @@ class Simu:
             fid.write("secmbr0/1".ljust(34, " ") + "{:.0f}\n".format(1))
             fid.write("CL variable (si=0) ?".ljust(34, " ") + "{:d}\n".format(0))
             fid.write("dtsorties".ljust(34, " ") + "{:.12f}\n".format(dtsorties))
-            fid.write("alpha cor pentes".ljust(34, " ") + "{:.12f}".format(alpha_cor_pente))
+            fid.write(
+                "alpha cor pentes".ljust(34, " ") + "{:.12f}".format(alpha_cor_pente)
+            )
 
-
-    def set_rheology(self, tau_rho: float, K_tau: float=0.3) -> None:
+    def set_rheology(self, tau_rho: float, K_tau: float = 0.3) -> None:
         r"""Set Herschel-Bulkley rheology parameters
 
         Rheological parameters are tau/rho and K/tau. See :
-        
-            - Coussot, P., 1994. Steady, laminar, flow of concentrated mud suspensions in open channel. Journal of Hydraulic Research 32, 535-559. doi.org/10.1080/00221686.1994.9728354 
+
+            - Coussot, P., 1994. Steady, laminar, flow of concentrated mud suspensions in open channel. Journal of Hydraulic Research 32, 535-559. doi.org/10.1080/00221686.1994.9728354
                 --> Eq 8 and text after eq 22 for the default value of K/tau
-            - Rickenmann, D. et al., 2006. Comparison of 2D debris-flow simulation models with field events. Computational Geosciences 10, 241-264. doi.org/10.1007/s10596-005-9021-3 
+            - Rickenmann, D. et al., 2006. Comparison of 2D debris-flow simulation models with field events. Computational Geosciences 10, 241-264. doi.org/10.1007/s10596-005-9021-3
                 --> Eq 9
 
         tau_rho : float
@@ -435,7 +443,7 @@ class Simu:
         K_tau : float, optional
             Consistency index divided by yield stress (:math:`K/\tau`).
             By default 0.3, following Rickenmann (2006).
-        
+
         Returns
         -------
         None
@@ -444,17 +452,17 @@ class Simu:
             fid.write("{:.3f}\n".format(tau_rho))
             fid.write("{:.3f}".format(K_tau))
 
-
-    def set_boundary_conditions(self,
-                                xcoords: list,
-                                ycoords: list,
-                                cardinal: str,
-                                discharges: list | float,
-                                times: list=None,
-                                thicknesses: list=None,
-                                tmax: float=9999,
-                                discharge_from_volume: bool=False,
-                                ) -> None:
+    def set_boundary_conditions(
+        self,
+        xcoords: list,
+        ycoords: list,
+        cardinal: str,
+        discharges: list | float,
+        times: list = None,
+        thicknesses: list = None,
+        tmax: float = 9999,
+        discharge_from_volume: bool = False,
+    ) -> None:
         r"""Define and write inflow hydrograph boundary conditions.
 
         Parameters
@@ -463,7 +471,7 @@ class Simu:
             X coordinates of boundary location (two values for segment ends).
         ycoords : list
             Y coordinates of boundary location (two values for segment ends).
-        cardinal : str 
+        cardinal : str
             Boundary orientation ('N', 'S', 'E', 'W').
         discharges : list or float
             If :data:`times` is None: interpreted as inflow volume (:math:`m^3`).
@@ -481,26 +489,27 @@ class Simu:
         Returns
         -------
         None
-        
+
         Raises
         ------
         AttributeError
             If no topography not been set.
         """
         try:
-            modelling_domain = ModellingDomain(self._z,
-                                               self._x[0],
-                                               self._y[0],
-                                               dx=self._x[1] - self._x[0],
-                                               dy=self._y[1] - self._y[0])
+            modelling_domain = ModellingDomain(
+                self._z,
+                self._x[0],
+                self._y[0],
+                dx=self._x[1] - self._x[0],
+                dy=self._y[1] - self._y[0],
+            )
         except AttributeError:
             print("Simulation topography has not been set")
             raise
 
-        edges = modelling_domain.get_edges(xcoords, 
-                                           ycoords, 
-                                           cardinal, 
-                                           from_extremities=True)
+        edges = modelling_domain.get_edges(
+            xcoords, ycoords, cardinal, from_extremities=True
+        )
         edges = edges[cardinal]
 
         if times is None:
@@ -513,7 +522,9 @@ class Simu:
         n_times = len(times)
         n_edges = len(edges)
 
-        assert n_times == len(discharges), "discharges and time vectors must be the same length"
+        assert n_times == len(discharges), (
+            "discharges and time vectors must be the same length"
+        )
 
         if thicknesses is None:
             thicknesses = [1 for i in range(n_times)]
@@ -531,13 +542,13 @@ class Simu:
                 qn = discharges[i] / (n_edges * dd)
                 qt = 0
                 for i_edge, edge in enumerate(edges):
-                    fid.write("\t{:d} {:.7E} {:.7E} {:.7E}\n".format(edge, 
-                                                                     thicknesses[i], 
-                                                                     qn, 
-                                                                     qt))
+                    fid.write(
+                        "\t{:d} {:.7E} {:.7E} {:.7E}\n".format(
+                            edge, thicknesses[i], qn, qt
+                        )
+                    )
 
-
-    def set_init_mass(self, mass_raster: str, h_min: float=0.01) -> None:
+    def set_init_mass(self, mass_raster: str, h_min: float = 0.01) -> None:
         """Set initial debris-flow mass from a raster file.
 
         Reads an ASCII raster of initial thickness and interpolates it onto
@@ -559,34 +570,35 @@ class Simu:
         # but results are then written on grid cell centers
         x2 = x[1:] - (x[1] - x[0]) / 2
         y2 = y[1:] - (y[1] - y[0]) / 2
-        
+
         y2 = y2[::-1]
-        
-        fm = RegularGridInterpolator((y, x),
-                                     m,
-                                     method="linear",
-                                     bounds_error=False,
-                                     fill_value=None)
+
+        fm = RegularGridInterpolator(
+            (y, x), m, method="linear", bounds_error=False, fill_value=None
+        )
         x_mesh, y_mesh = np.meshgrid(x2, y2)
         m2 = fm((y_mesh, x_mesh))
         m2[m2 < h_min] = h_min
-        np.savetxt(os.path.join(self._folder, self._name + ".cin"),
-                   m2.flatten(),
-                   header="0.000000E+00",
-                   comments="",
-                   fmt="%.10E")
+        np.savetxt(
+            os.path.join(self._folder, self._name + ".cin"),
+            m2.flatten(),
+            header="0.000000E+00",
+            comments="",
+            fmt="%.10E",
+        )
 
 
-def write_simu(raster_topo: str, 
-               raster_mass: str, 
-               tmax: float, 
-               dt_im: float,
-               simulation_name: str,
-               lave2D_exe_folder: str,
-               rheology_type: str,
-               rheology_params: dict,
-               folder_out: str = None,
-               ) -> None:
+def write_simu(
+    raster_topo: str,
+    raster_mass: str,
+    tmax: float,
+    dt_im: float,
+    simulation_name: str,
+    lave2D_exe_folder: str,
+    rheology_type: str,
+    rheology_params: dict,
+    folder_out: str = None,
+) -> None:
     """
     Prepares all input files required for a Lave2D simulation and saves them in a dedicated folder.
 
@@ -605,18 +617,18 @@ def write_simu(raster_topo: str,
     lave2D_exe_folder : str
         Path to the folder containing "Lave2_Arc.exe" and "vf2marc.exe".
     rheology_type : str
-        Rheology to use for the simulation. 
+        Rheology to use for the simulation.
     rheology_params : dict
         Necessary parameters for the rheology. For this case:
             - tau_rho
             - K_tau
     folder_out : str, optional
         Output folder where simulation inputs will be stored.
-    
+
     Returns
     -------
     None
-        
+
     Raises
     ------
     ValueError
@@ -624,33 +636,32 @@ def write_simu(raster_topo: str,
     """
     if folder_out is None:
         folder_out = "."
-    
+
     if rheology_type != "Herschel_Bulkley":
         raise ValueError("Rheology type must be 'Herschel_Bulkley'.")
-    
+
     # output_file = os.path.join(folder_out, "lave2D")
 
     os.makedirs(folder_out, exist_ok=True)
-    
-    shutil.copy2(os.path.join(lave2D_exe_folder, "Lave2_Arc.exe"),
-                 folder_out)
-    shutil.copy2(os.path.join(lave2D_exe_folder, "vf2marc.exe"), 
-                 folder_out)
-    
+
+    shutil.copy2(os.path.join(lave2D_exe_folder, "Lave2_Arc.exe"), folder_out)
+    shutil.copy2(os.path.join(lave2D_exe_folder, "vf2marc.exe"), folder_out)
+
     simu_lave2D = Simu(folder_out, simulation_name)
     simu_lave2D.set_topography(raster_topo)
     simu_lave2D.set_init_mass(raster_mass)
     simu_lave2D.set_rheology(rheology_params["tau_rho"], rheology_params["K_tau"])
     simu_lave2D.set_numeric_params(tmax, dt_im)
 
-    ## Not used in simulation, but the .cli file is needed 
-    simu_lave2D.set_boundary_conditions([0, 0],  # X min and max coords for input flux
-                                        [1, 2],  # Y min and max coord for input flux
-                                        "W",  # Cardinal direction (Flow from East to West)
-                                        [0, 0],  # Discharge hydrogram
-                                        times=[0, tmax + 1],  # Corresponding times
-                                        thicknesses=[0, 0],  # Thickness hydrogramm
-                                        )
+    ## Not used in simulation, but the .cli file is needed
+    simu_lave2D.set_boundary_conditions(
+        [0, 0],  # X min and max coords for input flux
+        [1, 2],  # Y min and max coord for input flux
+        "W",  # Cardinal direction (Flow from East to West)
+        [0, 0],  # Discharge hydrogram
+        times=[0, tmax + 1],  # Corresponding times
+        thicknesses=[0, 0],  # Thickness hydrogramm
+    )
 
 
 """

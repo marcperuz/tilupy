@@ -19,22 +19,23 @@ Keys:
         Type of label representation (e.g., "symbol" for symbolic labels).
 """
 
+
 class Notation:
     """Notation system for physical quantities, symbols, or variables.
 
     This class allows the definition of a notation with a name, long name, gender, symbol, and unit.
     It provides properties to access and modify these attributes, and a method to retrieve the long name
     in a specific language.
-    
+
     Parameters
     ----------
     name : str
         The short name or identifier of the notation.
     long_name : tilupy.notations.LongName or str, optional
-        The long name of the notation. If a dictionary is provided, it is converted to a 
+        The long name of the notation. If a dictionary is provided, it is converted to a
         :any:`tilupy.notations.LongName` object. By default None.
     gender : tilupy.notations.Gender, optional
-        The gender associated with the notation. If a dictionary is provided, it is converted to a 
+        The gender associated with the notation. If a dictionary is provided, it is converted to a
         :obj:`tilupy.notations.Gender` object. By default None.
     symbol : str, optional
         The symbol representing the notation. By default None.
@@ -54,19 +55,21 @@ class Notation:
     _unit : tilupy.notations.Unit
         The unit associated with the notation (e.g., physical unit).
     """
-    def __init__(self, 
-                 name: str, 
-                 long_name: tilupy.notations.LongName | str = None, 
-                 gender: tilupy.notations.Gender | str = None, 
-                 symbol: str = None, 
-                 unit: tilupy.notations.Unit = None):
+
+    def __init__(
+        self,
+        name: str,
+        long_name: tilupy.notations.LongName | str = None,
+        gender: tilupy.notations.Gender | str = None,
+        symbol: str = None,
+        unit: tilupy.notations.Unit = None,
+    ):
         self._name = name
         self._long_name = long_name
         self._gender = gender
         self._symbol = symbol
         self._unit = unit
-    
-    
+
     @property
     def name(self):
         """Get name.
@@ -77,11 +80,11 @@ class Notation:
             Attribute :attr:`_name`
         """
         return self._name
-    
+
     @name.setter
     def name(self, value: str):
         """Set name.
-        
+
         Parameters
         ----------
         value : str
@@ -91,7 +94,7 @@ class Notation:
             self._name = None
         else:
             self._name = value
-    
+
     @property
     def unit(self):
         """Get unit.
@@ -106,7 +109,7 @@ class Notation:
     @unit.setter
     def unit(self, value: str):
         """Set unit.
-        
+
         Parameters
         ----------
         value : tilupy.notations.Unit
@@ -131,7 +134,7 @@ class Notation:
     @gender.setter
     def gender(self, value):
         """Set unit.
-        
+
         Parameters
         ----------
         value : tilupy.notations.Gender
@@ -143,7 +146,7 @@ class Notation:
             self._gender = Gender(**value)
         else:
             self._gender = value
-            
+
     @property
     def symbol(self):
         """Get symbol.
@@ -154,11 +157,11 @@ class Notation:
             Attribute :attr:`_symbol`
         """
         return self._symbol
-    
+
     @symbol.setter
     def symbol(self, value: str):
         """Set symbol.
-        
+
         Parameters
         ----------
         value : str
@@ -183,7 +186,7 @@ class Notation:
     @long_name.setter
     def long_name(self, value):
         """Set long name.
-        
+
         Parameters
         ----------
         value : tilupy.notations.LongName
@@ -196,20 +199,17 @@ class Notation:
         else:
             self._long_name = value
 
-    def get_long_name(self, 
-                      language: str = None, 
-                      gender: str = None
-                      ) -> str:
+    def get_long_name(self, language: str = None, gender: str = None) -> str:
         """Retrieve the long name of the notation in the specified language and gender form.
 
-        The method retrieves the long name in the specified language (defaulting to the language 
-        in :data:`tilupy.notations.LABEL_OPTIONS`). If a gender is provided, the method returns 
+        The method retrieves the long name in the specified language (defaulting to the language
+        in :data:`tilupy.notations.LABEL_OPTIONS`). If a gender is provided, the method returns
         the gender-specific form of the long name.
 
         Parameters
         ----------
         language : str, optional
-            The language in which to retrieve the long name. If not provided, the language from 
+            The language in which to retrieve the long name. If not provided, the language from
             :data:`tilupy.notations.LABEL_OPTIONS` is used.
         gender : str, optional
             The gender form of the long name to retrieve. If not provided, the default form is returned.
@@ -227,7 +227,7 @@ class Notation:
 
         if isinstance(self._long_name, dict):
             return self._long_name[language]
-        
+
         res = getattr(self._long_name, language)
         if gender is not None:
             res = res[gender]
@@ -241,7 +241,7 @@ class Unit(pd.Series):
     This class allows the creation of unit objects as combinations of base units (e.g., "Pa", "N", "kg")
     with their respective exponents. It supports basic operations like multiplication and provides
     a method to generate a LaTeX-formatted label for the unit combination.
-    
+
     Parameters
     ----------
     series : pandas.Series, optional
@@ -256,13 +256,11 @@ class Unit(pd.Series):
     ValueError
         If a key in `kwargs` is not in `Unit.UNITS`.
     """
-    
+
     UNITS = ["Pa", "N", "kg", "m", "s", "J"]
     """List of available units."""
 
-    def __init__(self, 
-                 series: pd.Series = None, 
-                 **kwargs):
+    def __init__(self, series: pd.Series = None, **kwargs):
         if series is not None:
             super().__init__(series)
         else:
@@ -271,7 +269,6 @@ class Unit(pd.Series):
                 if key not in Unit.UNITS:
                     raise ValueError("unrecognized unit")
                 self[key] = kwargs[key]
-
 
     def __mul__(self, other):
         """Multiply two Unit objects.
@@ -292,7 +289,6 @@ class Unit(pd.Series):
         tmp = self.add(other, fill_value=0)
         return Unit(tmp[tmp != 0])
 
-
     def get_label(self):
         """Generate a LaTeX-formatted string representation of the unit.
 
@@ -312,8 +308,7 @@ class Unit(pd.Series):
         positives = self[self >= 1].reindex(Unit.UNITS).dropna()
         negatives = self[self < 0].reindex(Unit.UNITS).dropna()
         text_label = [
-            index + "$^{:.0f}$".format(positives[index])
-            for index in positives.index
+            index + "$^{:.0f}$".format(positives[index]) for index in positives.index
         ]
         text_label += [
             index + "$^{{{:.0f}}}$".format(negatives[index])
@@ -334,9 +329,10 @@ class LongName(object):
     Parameters
     ----------
     **kwargs : dict
-        Arbitrary keyword arguments. Each key-value pair is added as an attribute to 
+        Arbitrary keyword arguments. Each key-value pair is added as an attribute to
         the object.
     """
+
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -350,9 +346,10 @@ class Gender(object):
     Parameters
     ----------
     **kwargs : dict
-        Arbitrary keyword arguments. Each key-value pair is added as an attribute to 
+        Arbitrary keyword arguments. Each key-value pair is added as an attribute to
         the object.
     """
+
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -380,125 +377,113 @@ Also some operators:
     - int
 """
 
-NOTATIONS["x"] = Notation("x",
-                          symbol="X",
-                          unit=Unit(m=1),
-                          long_name=LongName(english="X", 
-                                             french="X"),
-                          gender=Gender(english=None, 
-                                        french="f"),
-                          )
-NOTATIONS["y"] = Notation("y",
-                          symbol="Y",
-                          unit=Unit(m=1),
-                          long_name=LongName(english="Y", 
-                                             french="Y"),
-                          gender=Gender(english=None, 
-                                        french="f"),
-                          )
-NOTATIONS["d"] = Notation("d",
-                          symbol="D",
-                          unit=Unit(m=1),
-                          long_name=LongName(english="Distance", 
-                                             french="Distance"),
-                          gender=Gender(english=None, 
-                                        french="f"),
-                          )
-NOTATIONS["z"] = Notation("z",
-                          symbol="z",
-                          unit=Unit(m=1),
-                          long_name=LongName(english="Altitude", 
-                                             french="Altitude"),
-                          gender=Gender(english=None, 
-                                        french="f"),
-                          )
-NOTATIONS["t"] = Notation("t",
-                          symbol="t",
-                          unit=Unit(s=1),
-                          long_name=LongName(english="Time", 
-                                             french="Temps"),
-                          gender=Gender(english=None, 
-                                        french="m"),
-                          )
-NOTATIONS["xy"] = Notation("xy",
-                           symbol="XY",
-                           unit=Unit(m=2),
-                           long_name=LongName(english="Surface", 
-                                              french="Surface"),
-                           gender=Gender(english=None, 
-                                         french="f"),
-                           )
-NOTATIONS["h"] = Notation("h",
-                          symbol="h",
-                          unit=Unit(m=1),
-                          long_name=LongName(english="Thickness", 
-                                             french="Epaisseur"),
-                          gender=Gender(english=None, 
-                                        french="f"),
-                          )
-NOTATIONS["hvert"] = Notation("hvert",
-                              symbol="h^v",
-                              unit=Unit(m=1),
-                              long_name=LongName(english="Vertical thickness", 
-                                                 french="Epaisseur verticale"),
-                              gender=Gender(english=None, 
-                                            french="f"),
-                              )
-NOTATIONS["u"] = Notation("u",
-                          symbol="u",
-                          unit=Unit(m=1, s=-1),
-                          long_name=LongName(english="Velocity", 
-                                             french="Vitesse"),
-                          gender=Gender(english=None, 
-                                        french="f"),
-                          )
-NOTATIONS["hu"] = Notation("hu",
-                           symbol="hu",
-                           unit=Unit(m=2, s=-1),
-                           long_name=LongName(english="Momentum", 
-                                              french="Moment"),
-                           gender=Gender(english=None, 
-                                        french="m"),
-                           )
-NOTATIONS["hu2"] = Notation("hu2",
-                            symbol="hu2",
-                            unit=Unit(m=3, s=-2),
-                            long_name=None,
-                            gender=None,
-                            )
-NOTATIONS["ek"] = Notation("ek",
-                           symbol="ek",
-                           unit=Unit(J=1),
-                           long_name=LongName(english="Kinetic energy", 
-                                              french="Energie cinétique"),
-                           gender=Gender(english=None, 
-                                         french="f"),
-                           )
+NOTATIONS["x"] = Notation(
+    "x",
+    symbol="X",
+    unit=Unit(m=1),
+    long_name=LongName(english="X", french="X"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["y"] = Notation(
+    "y",
+    symbol="Y",
+    unit=Unit(m=1),
+    long_name=LongName(english="Y", french="Y"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["d"] = Notation(
+    "d",
+    symbol="D",
+    unit=Unit(m=1),
+    long_name=LongName(english="Distance", french="Distance"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["z"] = Notation(
+    "z",
+    symbol="z",
+    unit=Unit(m=1),
+    long_name=LongName(english="Altitude", french="Altitude"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["t"] = Notation(
+    "t",
+    symbol="t",
+    unit=Unit(s=1),
+    long_name=LongName(english="Time", french="Temps"),
+    gender=Gender(english=None, french="m"),
+)
+NOTATIONS["xy"] = Notation(
+    "xy",
+    symbol="XY",
+    unit=Unit(m=2),
+    long_name=LongName(english="Surface", french="Surface"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["h"] = Notation(
+    "h",
+    symbol="h",
+    unit=Unit(m=1),
+    long_name=LongName(english="Thickness", french="Epaisseur"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["hvert"] = Notation(
+    "hvert",
+    symbol="h^v",
+    unit=Unit(m=1),
+    long_name=LongName(english="Vertical thickness", french="Epaisseur verticale"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["u"] = Notation(
+    "u",
+    symbol="u",
+    unit=Unit(m=1, s=-1),
+    long_name=LongName(english="Velocity", french="Vitesse"),
+    gender=Gender(english=None, french="f"),
+)
+NOTATIONS["hu"] = Notation(
+    "hu",
+    symbol="hu",
+    unit=Unit(m=2, s=-1),
+    long_name=LongName(english="Momentum", french="Moment"),
+    gender=Gender(english=None, french="m"),
+)
+NOTATIONS["hu2"] = Notation(
+    "hu2",
+    symbol="hu2",
+    unit=Unit(m=3, s=-2),
+    long_name=None,
+    gender=None,
+)
+NOTATIONS["ek"] = Notation(
+    "ek",
+    symbol="ek",
+    unit=Unit(J=1),
+    long_name=LongName(english="Kinetic energy", french="Energie cinétique"),
+    gender=Gender(english=None, french="f"),
+)
 
-NOTATIONS["max"] = Notation("max",
-                            symbol="max",
-                            unit=None,
-                            long_name=LongName(english="Maximum", 
-                                               french=dict(m="Maximum", f="Maximale")),
-                            gender=None,
-                            )
-NOTATIONS["int"] = Notation("int",
-                            symbol="int",
-                            unit=None,
-                            long_name=LongName(english="Integrate", 
-                                               french=dict(m="Intégré", f="Intégrée")),
-                            gender=None,
-                            )
+NOTATIONS["max"] = Notation(
+    "max",
+    symbol="max",
+    unit=None,
+    long_name=LongName(english="Maximum", french=dict(m="Maximum", f="Maximale")),
+    gender=None,
+)
+NOTATIONS["int"] = Notation(
+    "int",
+    symbol="int",
+    unit=None,
+    long_name=LongName(english="Integrate", french=dict(m="Intégré", f="Intégrée")),
+    gender=None,
+)
 
 
-def get_notation(name: str, 
-                 language: str = None
-                 ) -> tilupy.notations.Notation:
+def get_notation(name: str, language: str = None) -> tilupy.notations.Notation:
     """Retrieve or construct a Notation object for a given name.
 
-    This function attempts to fetch a predefined notation from the global :data:`tilupy.notations.NOTATIONS` 
-    dictionary. If the notation is not found, it constructs a new :class:`tilupy.notations.Notation` object 
-    based on the provided name. For composite names (e.g., "state_operator"), it recursively resolves the 
+    This function attempts to fetch a predefined notation from the global :data:`tilupy.notations.NOTATIONS`
+    dictionary. If the notation is not found, it constructs a new :class:`tilupy.notations.Notation` object
+    based on the provided name. For composite names (e.g., "state_operator"), it recursively resolves the
     state and operator, then combines them using :func:`tilupy.notations.add_operator`.
 
     Parameters
@@ -519,11 +504,9 @@ def get_notation(name: str,
     except KeyError:
         strings = name.split("_")
         if len(strings) == 1:
-            notation = Notation(name, 
-                                symbol=name, 
-                                unit=None, 
-                                long_name=name, 
-                                gender=None)
+            notation = Notation(
+                name, symbol=name, unit=None, long_name=name, gender=None
+            )
         else:
             state = get_notation(strings[0])
             operator = get_notation(strings[1])
@@ -531,21 +514,16 @@ def get_notation(name: str,
                 axis = strings[2]
             else:
                 axis = None
-            notation = add_operator(state, 
-                                    operator, 
-                                    axis=axis, 
-                                    language=language)
+            notation = add_operator(state, operator, axis=axis, language=language)
 
     return notation
 
 
-def get_operator_unit(name: str, 
-                      axis: str
-                      ) -> tilupy.notations.Unit:
+def get_operator_unit(name: str, axis: str) -> tilupy.notations.Unit:
     """Determine the unit associated with an operator based on its name and axis.
 
-    This function returns a :class:`tilupy.notations.Unit` object corresponding to the operator's 
-    name and the axis it operates on. For example, an integral operator ("int") has different units 
+    This function returns a :class:`tilupy.notations.Unit` object corresponding to the operator's
+    name and the axis it operates on. For example, an integral operator ("int") has different units
     depending on whether it integrates over time ("t") or space ("x", "y", "xy").
 
     Parameters
@@ -573,10 +551,11 @@ def get_operator_unit(name: str,
     return unit
 
 
-def make_long_name(notation: tilupy.notations.Notation, 
-                   operator: tilupy.notations.Notation, 
-                   language: str = None
-                   ) -> str:
+def make_long_name(
+    notation: tilupy.notations.Notation,
+    operator: tilupy.notations.Notation,
+    language: str = None,
+) -> str:
     """Construct a long name for a notation combined with an operator.
 
     This function generates a readable long name by combining the long names of a notation and an operator.
@@ -589,7 +568,7 @@ def make_long_name(notation: tilupy.notations.Notation,
     operator : tilupy.notations.Notation
         The operator notation object.
     language : str, optional
-        The language to use for the long name. If not provided, the default language from 
+        The language to use for the long name. If not provided, the default language from
         :data:`tilupy.notations.LABEL_OPTIONS` is used. By default None.
 
     Returns
@@ -615,15 +594,16 @@ def make_long_name(notation: tilupy.notations.Notation,
     return res
 
 
-def add_operator(notation: tilupy.notations.Notation | str, 
-                 operator: tilupy.notations.Notation | str, 
-                 axis: str = None, 
-                 language: str = None
-                 ) -> tilupy.notations.Notation:
+def add_operator(
+    notation: tilupy.notations.Notation | str,
+    operator: tilupy.notations.Notation | str,
+    axis: str = None,
+    language: str = None,
+) -> tilupy.notations.Notation:
     """Combine a notation with an operator to create a new notation.
 
-    This function constructs a new :class:`tilupy.notations.Notation` object by combining 
-    a base notation with an operator. It handles the symbol, unit, and long name of the 
+    This function constructs a new :class:`tilupy.notations.Notation` object by combining
+    a base notation with an operator. It handles the symbol, unit, and long name of the
     resulting notation, taking into account the operator's axis (if any).
 
     Parameters
@@ -635,7 +615,7 @@ def add_operator(notation: tilupy.notations.Notation | str,
     axis : str, optional
         The axis over which the operator acts (e.g., "t", "x", "y"). By default None.
     language : str, optional
-        The language to use for the long name. If not provided, the default language from 
+        The language to use for the long name. If not provided, the default language from
         :data:`tilupy.notations.LABEL_OPTIONS` is used. By default None.
 
     Returns
@@ -672,22 +652,24 @@ def add_operator(notation: tilupy.notations.Notation | str,
     else:
         unit = notation.unit * unit_operator
 
-    res = Notation(name=notation.name + "_" + operator.name,
-                   symbol=symbol,
-                   unit=unit,
-                   long_name=make_long_name(notation, operator, language=language),
-                   )
+    res = Notation(
+        name=notation.name + "_" + operator.name,
+        symbol=symbol,
+        unit=unit,
+        long_name=make_long_name(notation, operator, language=language),
+    )
     return res
 
 
-def get_label(notation: tilupy.notations.Notation,
-              with_unit: bool = True, 
-              label_type: str = None, 
-              language: str = None
-              ) -> str:
+def get_label(
+    notation: tilupy.notations.Notation,
+    with_unit: bool = True,
+    label_type: str = None,
+    language: str = None,
+) -> str:
     """Generate a formatted label for a notation.
 
-    This function creates a label for a notation, either in literal form (long name) 
+    This function creates a label for a notation, either in literal form (long name)
     or symbolic form (symbol). It can optionally include the unit in the label.
 
     Parameters
@@ -698,10 +680,10 @@ def get_label(notation: tilupy.notations.Notation,
         If True, the unit is included in the label. By default True.
     label_type : str, optional
         The type of label to generate: "litteral" (long name) or "symbol" (symbol).
-        If not provided, the default label type from :data:`tilupy.notations.LABEL_OPTIONS` 
+        If not provided, the default label type from :data:`tilupy.notations.LABEL_OPTIONS`
         is used. By default None.
     language : str, optional
-        The language to use for the label. If not provided, the default language from 
+        The language to use for the label. If not provided, the default language from
         :data:`tilupy.notations.LABEL_OPTIONS` is used.
         By default None.
 
@@ -735,8 +717,8 @@ def get_label(notation: tilupy.notations.Notation,
 def set_label_options(**kwargs):
     """Update the global label options.
 
-    This function updates the global :data:`tilupy.notations.LABEL_OPTIONS` dictionary 
-    with the provided keyword arguments. It allows dynamic configuration of label 
+    This function updates the global :data:`tilupy.notations.LABEL_OPTIONS` dictionary
+    with the provided keyword arguments. It allows dynamic configuration of label
     generation settings, such as language and label type.
 
     Parameters
@@ -749,9 +731,7 @@ def set_label_options(**kwargs):
     LABEL_OPTIONS.update(**kwargs)
 
 
-def readme_to_params(file: str, 
-                     readme_param_match: dict = None
-                     ) -> dict:
+def readme_to_params(file: str, readme_param_match: dict = None) -> dict:
     """Convert a README file into a dictionary of parameters.
 
     This function reads a README file and extracts key-value pairs, optionally using a mapping dictionary
@@ -795,7 +775,7 @@ def make_rheol_string_fmt(rheoldict: dict) -> str:
     ----------
     rheoldict : dict
         A dictionary of rheological parameters (e.g., "delta1", "ksi").
-    
+
     Returns
     -------
     str
@@ -814,9 +794,7 @@ def make_rheol_string_fmt(rheoldict: dict) -> str:
     return text
 
 
-def make_rheol_string(rheoldict: dict, 
-                      law: str
-                      ) -> str | list[str]:
+def make_rheol_string(rheoldict: dict, law: str) -> str | list[str]:
     """Generate formatted strings for rheological parameters.
 
     This function creates formatted strings for rheological parameters based on the provided dictionary and rheological law.
@@ -850,9 +828,9 @@ def make_rheol_string(rheoldict: dict,
             text = txt_fmt.format(rheoldict["delta1"][i]).replace(".", "p")
         if law == "voellmy":
             txt_fmt = "delta1_{:05.2f}_ksi_{:06.1f}"
-            text = txt_fmt.format(
-                rheoldict["delta1"][i], rheoldict["ksi"][i]
-            ).replace(".", "p")
+            text = txt_fmt.format(rheoldict["delta1"][i], rheoldict["ksi"][i]).replace(
+                ".", "p"
+            )
         if law == "pouliquen_2002":
             txt_fmt = "delta1_{:05.2f}_L_{:05.2f}"
             text = txt_fmt.format(

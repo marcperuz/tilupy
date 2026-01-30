@@ -6,27 +6,28 @@ import scipy
 import pytopomap.plot
 
 
-def gray99(nx: int = None,
-           ny: int = None,
-           dx: float = 0.01,
-           dy: float = 0.01,
-           xmin: float = -0.4,
-           x1: float = 1.75,
-           x2: float = 2.15,
-           xmax: float = 3.2,
-           ymax: float = 0.6,
-           R: float = 1.1,
-           theta1: float = 40,
-           theta2: float = 0,
-           maxz: float = None,
-           plot: bool = False,
-           ) -> list[np.ndarray]:
+def gray99(
+    nx: int = None,
+    ny: int = None,
+    dx: float = 0.01,
+    dy: float = 0.01,
+    xmin: float = -0.4,
+    x1: float = 1.75,
+    x2: float = 2.15,
+    xmax: float = 3.2,
+    ymax: float = 0.6,
+    R: float = 1.1,
+    theta1: float = 40,
+    theta2: float = 0,
+    maxz: float = None,
+    plot: bool = False,
+) -> list[np.ndarray]:
     """Construct channel as in Gray et all 99.
 
     Input coordinates are in curvilinear coordinates along the reference
     topography following the channel bottom. Output coordinates are in the
     fixed cartesian frame.
-    
+
     Parameters
     ----------
     nx : int
@@ -88,10 +89,11 @@ def gray99(nx: int = None,
     # Superficial topography : channel
     # alpha=1/(2*R)*np.sin(0.5*np.pi*(x-x2)/(x1-x2))**2
     # alpha=1/(2*R)*np.abs(x-x2)**1/np.abs(x1-x2)**1
-    alpha = (1
-             / (2 * R)
-             * (3 * ((x - x2) / (x1 - x2)) ** 2 - 2 * ((x - x2) / (x1 - x2)) ** 3)
-             )
+    alpha = (
+        1
+        / (2 * R)
+        * (3 * ((x - x2) / (x1 - x2)) ** 2 - 2 * ((x - x2) / (x1 - x2)) ** 3)
+    )
     alpha[x > x2] = 0
     alpha[x < x1] = 1 / (2 * R)
     alpha = np.tile(alpha.reshape((nx, 1)), (1, ny))
@@ -149,14 +151,18 @@ def gray99(nx: int = None,
     Xout = np.tile(Xout.reshape((nx, 1)), (1, ny))
     Yout = np.linspace(Ymesh.min(), Ymesh.max(), ny)
     Yout = np.tile(Yout.reshape((1, ny)), (nx, 1))
-    Zout = scipy.interpolate.griddata((Xmesh.reshape(nx * ny), Ymesh.reshape(nx * ny)),
-                                       Z.reshape(nx * ny),
-                                       (Xout, Yout),
-                                       method="cubic")
-    Ztmp = scipy.interpolate.griddata((Xmesh.reshape(nx * ny), Ymesh.reshape(nx * ny)),
-                                      Z.reshape(nx * ny),
-                                      (Xout, Yout),
-                                      method="nearest")
+    Zout = scipy.interpolate.griddata(
+        (Xmesh.reshape(nx * ny), Ymesh.reshape(nx * ny)),
+        Z.reshape(nx * ny),
+        (Xout, Yout),
+        method="cubic",
+    )
+    Ztmp = scipy.interpolate.griddata(
+        (Xmesh.reshape(nx * ny), Ymesh.reshape(nx * ny)),
+        Z.reshape(nx * ny),
+        (Xout, Yout),
+        method="nearest",
+    )
     ind = np.isnan(Zout)
     Zout[ind] = Ztmp[ind]
 
@@ -166,42 +172,41 @@ def gray99(nx: int = None,
 
     if plot:
         if theta2 == 0:
-            blod, thin = pytopomap.plot.get_contour_intervals(np.nanmin(Zout), 
-                                                              np.nanmax(Zout))
+            blod, thin = pytopomap.plot.get_contour_intervals(
+                np.nanmin(Zout), np.nanmax(Zout)
+            )
             level_min = thin
         else:
             level_min = None
-        pytopomap.plot.plot_topo(Zout.T, 
-                                 Xout[:, 1], 
-                                 Yout[1, :], 
-                                 level_min=level_min)
+        pytopomap.plot.plot_topo(Zout.T, Xout[:, 1], Yout[1, :], level_min=level_min)
 
     return Xout[:, 1], Yout[1, :], Zout.T
 
 
-def channel(nx: int = None,
-            ny: int = None,
-            dx: float = None,
-            dy: float = None,
-            xmin: float = -0.4,
-            xmax: float = 3.6,
-            ymax: float = 0.5,
-            xstart_channel: float = 0.65,
-            xend_channel: float = 2.3,
-            xstart_trans: float = 0.4,
-            xend_trans: float = 2.75,
-            R: float = 1.1,
-            bend: float = 0.2,
-            nbends: int = 1,
-            theta_start: float = 40,
-            theta_channel: float = 40,
-            theta_end: float = 0,
-            plot: bool = False,
-            maxh: float = None,
-            interp_method: str = "linear",
-            ) -> list[np.ndarray]:
-    """Generate channel with potential multiple bends. 
-    
+def channel(
+    nx: int = None,
+    ny: int = None,
+    dx: float = None,
+    dy: float = None,
+    xmin: float = -0.4,
+    xmax: float = 3.6,
+    ymax: float = 0.5,
+    xstart_channel: float = 0.65,
+    xend_channel: float = 2.3,
+    xstart_trans: float = 0.4,
+    xend_trans: float = 2.75,
+    R: float = 1.1,
+    bend: float = 0.2,
+    nbends: int = 1,
+    theta_start: float = 40,
+    theta_channel: float = 40,
+    theta_end: float = 0,
+    plot: bool = False,
+    maxh: float = None,
+    interp_method: str = "linear",
+) -> list[np.ndarray]:
+    """Generate channel with potential multiple bends.
+
     Input coordinates are curvilinear along the flattened topography.
 
     Parameters
@@ -299,15 +304,15 @@ def channel(nx: int = None,
         return xx
 
     alpha = np.zeros((nx, ny))
-    
+
     ind = (xtopo > xstart_channel) & (xtopo < xend_channel)
     alpha[ind] = 1 / (2 * R)
-    
+
     ind = (xtopo > xstart_trans) & (xtopo <= xstart_channel)
-    alpha[ind] = (1 / (2 * R) * trans_function(xtopo[ind], xstart_channel, xstart_trans))
-    
+    alpha[ind] = 1 / (2 * R) * trans_function(xtopo[ind], xstart_channel, xstart_trans)
+
     ind = (xtopo >= xend_channel) & (xtopo < xend_trans)
-    alpha[ind] = (1 / (2 * R) * trans_function(xtopo[ind], xend_channel, xend_trans))
+    alpha[ind] = 1 / (2 * R) * trans_function(xtopo[ind], xend_channel, xend_trans)
 
     # the thalweg is centered on y=0 outside [xstart_channel,xend_channel]. Inbetween,
     # it is given by a cos**2
@@ -325,22 +330,20 @@ def channel(nx: int = None,
         step = (xend_channel - xstart_channel) / nbends
 
         ind = (xtopo > xstart_channel) & (xtopo < xstart_channel + step / 2)
-        thalweg[ind] = end_bend(xtopo[ind], 
-                                xstart_channel, 
-                                xstart_channel + step / 2)
-        
+        thalweg[ind] = end_bend(xtopo[ind], xstart_channel, xstart_channel + step / 2)
+
         ind = (xtopo >= xend_channel - step / 2) & (xtopo < xend_channel)
-        thalweg[ind] = (-1) ** (nbends + 1) * end_bend(xtopo[ind], 
-                                                       xend_channel, 
-                                                       xend_channel - step / 2)
-        
+        thalweg[ind] = (-1) ** (nbends + 1) * end_bend(
+            xtopo[ind], xend_channel, xend_channel - step / 2
+        )
+
         if nbends > 1:
             ind = (xtopo >= xstart_channel + step / 2) & (
                 xtopo < xend_channel - step / 2
             )
-            thalweg[ind] = mid_bend(xtopo[ind],
-                                    xstart_channel + step / 2,
-                                    xstart_channel + (3 / 2) * step)
+            thalweg[ind] = mid_bend(
+                xtopo[ind], xstart_channel + step / 2, xstart_channel + (3 / 2) * step
+            )
 
     htopo = alpha * (ytopo - thalweg) ** 2
 
@@ -355,36 +358,34 @@ def channel(nx: int = None,
     # angle of bz, and using then -sin(slope_angle)=d(bz)/d(xtopo)
 
     slope_angle = np.zeros((nx, ny))
-    
+
     ind = xtopo < xstart_trans
     slope_angle[ind] = theta_start
-    
+
     ind = xtopo >= xend_trans
     slope_angle[ind] = theta_end
-    
+
     ind = (xtopo >= xstart_channel) & (xtopo < xend_channel)
     slope_angle[ind] = theta_channel
 
     ind = (xtopo >= xstart_trans) & (xtopo < xstart_channel)
     slope_angle[ind] = (xtopo[ind] - xstart_trans) / (xstart_channel - xstart_trans)
-    slope_angle[ind] = (slope_angle[ind] * (theta_channel - theta_start) + theta_start)
+    slope_angle[ind] = slope_angle[ind] * (theta_channel - theta_start) + theta_start
 
     ind = (xtopo >= xend_channel) & (xtopo < xend_trans)
     slope_angle[ind] = (xtopo[ind] - xend_trans) / (xend_channel - xend_trans)
-    slope_angle[ind] = (slope_angle[ind] * (theta_channel - theta_end) + theta_end)
+    slope_angle[ind] = slope_angle[ind] * (theta_channel - theta_end) + theta_end
 
-    bz = scipy.integrate.cumulative_trapezoid(-np.sin(slope_angle), 
-                                              xtopo, 
-                                              axis=0, 
-                                              initial=0)
+    bz = scipy.integrate.cumulative_trapezoid(
+        -np.sin(slope_angle), xtopo, axis=0, initial=0
+    )
     bz = bz - np.min(bz)
 
     # Get the coordinates of (xtopo,ytopo) in the cartesian reference frame
     # by=ytopo
-    bx = scipy.integrate.cumulative_trapezoid(np.cos(slope_angle), 
-                                              xtopo, 
-                                              axis=0, 
-                                              initial=0)
+    bx = scipy.integrate.cumulative_trapezoid(
+        np.cos(slope_angle), xtopo, axis=0, initial=0
+    )
     bx = bx + xmin * np.cos(theta_start)
 
     # Vector normal to topography in cartesian coordinates
@@ -399,28 +400,30 @@ def channel(nx: int = None,
     Xout = np.linspace(xcart[0, 0], xcart[-1, 0], nx)
     Yout = ytopo
     Xout = np.tile(Xout[:, np.newaxis], (1, ny))
-    Zout = scipy.interpolate.griddata((xcart.reshape(nx * ny), ytopo.reshape(nx * ny)),
-                                      zcart.reshape(nx * ny),
-                                      (Xout, Yout),
-                                      method=interp_method)
-    Ztmp = scipy.interpolate.griddata((xcart.reshape(nx * ny), ytopo.reshape(nx * ny)),
-                                      zcart.reshape(nx * ny),
-                                      (Xout, Yout),
-                                      method="nearest")
+    Zout = scipy.interpolate.griddata(
+        (xcart.reshape(nx * ny), ytopo.reshape(nx * ny)),
+        zcart.reshape(nx * ny),
+        (Xout, Yout),
+        method=interp_method,
+    )
+    Ztmp = scipy.interpolate.griddata(
+        (xcart.reshape(nx * ny), ytopo.reshape(nx * ny)),
+        zcart.reshape(nx * ny),
+        (Xout, Yout),
+        method="nearest",
+    )
     ind = np.isnan(Zout)
     Zout[ind] = Ztmp[ind]
 
     if plot:
         if theta_end == 0:
-            blod, thin = pytopomap.plot.get_contour_intervals(np.nanmin(Zout), 
-                                                              np.nanmax(Zout))
+            blod, thin = pytopomap.plot.get_contour_intervals(
+                np.nanmin(Zout), np.nanmax(Zout)
+            )
             level_min = thin
         else:
             level_min = None
-        pytopomap.plot.plot_topo(Zout.T, 
-                                 Xout[:, 1], 
-                                 Yout[1, :], 
-                                 level_min=level_min)
+        pytopomap.plot.plot_topo(Zout.T, Xout[:, 1], Yout[1, :], level_min=level_min)
 
     return Xout[:, 1], Yout[1, :], Zout.T, thalweg
 

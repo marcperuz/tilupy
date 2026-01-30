@@ -14,7 +14,9 @@ import tilupy.raster
 README_PARAM_MATCH = dict(tmax="tmax", CFL="cflhyp", h_min="eps0", dt_im_output="dt_im")
 """Dictionary of correspondence between parameters in read_me file and param file."""
 
-SHALTOP_LAW_ID = dict(No_Friction=1, Herschel_Bulkley=61, Voellmy=8, Bingham=6, Coulomb=1, Coulomb_muI=7)
+SHALTOP_LAW_ID = dict(
+    No_Friction=1, Herschel_Bulkley=61, Voellmy=8, Bingham=6, Coulomb=1, Coulomb_muI=7
+)
 """Dictionary of correspondence between the name of rheological laws and the corresponding ID in SHALTOP.
 
 Correspondence :
@@ -28,14 +30,13 @@ Correspondence :
 """
 
 
-def raster_to_shaltop_txtfile(file_in: str, 
-                              file_out: str, 
-                              folder_out: str=None
-                              ) -> dict:
+def raster_to_shaltop_txtfile(
+    file_in: str, file_out: str, folder_out: str = None
+) -> dict:
     """Convert a raster file to a Shaltop ASCII text format.
 
-    Reads a raster (formats readable by :func:`tilupy.raster.read_raster`) and saves it as a 
-    ASCII text file with values flattened column-wise and rows flipped vertically. 
+    Reads a raster (formats readable by :func:`tilupy.raster.read_raster`) and saves it as a
+    ASCII text file with values flattened column-wise and rows flipped vertically.
 
     Parameters
     ----------
@@ -51,7 +52,7 @@ def raster_to_shaltop_txtfile(file_in: str,
     -------
     dict
         Dictionary containing grid metadata:
-        
+
             - 'x0': X coordinate of the first column.
             - 'y0': Y coordinate of the first row.
             - 'dx': Grid spacing along X.
@@ -63,24 +64,16 @@ def raster_to_shaltop_txtfile(file_in: str,
         file_out = os.path.join(folder_out, file_out)
 
     x, y, rast = tilupy.raster.read_raster(file_in)
-    np.savetxt(file_out,
-               np.reshape(np.flip(rast, axis=0), (rast.size, 1)),
-               fmt="%.12G")
+    np.savetxt(file_out, np.reshape(np.flip(rast, axis=0), (rast.size, 1)), fmt="%.12G")
 
-    res = dict(x0=x[0], 
-               y0=y[0], 
-               dx=x[1] - x[0], 
-               dy=y[1] - y[0], 
-               nx=len(x), 
-               ny=len(y))
+    res = dict(x0=x[0], y0=y[0], dx=x[1] - x[0], dy=y[1] - y[0], nx=len(x), ny=len(y))
 
     return res
 
 
-def write_params_file(params: dict, 
-                      directory: str=None, 
-                      file_name: str="params.txt"
-                      ) -> None:
+def write_params_file(
+    params: dict, directory: str = None, file_name: str = "params.txt"
+) -> None:
     """Write a dictionary of parameters to a text file.
 
     Each key-value pair in the dictionary is written on a separate line.
@@ -98,34 +91,37 @@ def write_params_file(params: dict,
     """
     if directory is None:
         directory = os.getcwd()
-        
+
     with open(os.path.join(directory, file_name), "w") as file_params:
         for name in params:
             val = params[name]
-            if (isinstance(val, int)
+            if (
+                isinstance(val, int)
                 or isinstance(val, np.int64)
                 or isinstance(val, np.int32)
-                ):
+            ):
                 file_params.write("{:s} {:d}\n".format(name, val))
-                
-            if (isinstance(val, float)
+
+            if (
+                isinstance(val, float)
                 or isinstance(val, np.float64)
                 or isinstance(val, np.float32)
-                ):
+            ):
                 file_params.write("{:s} {:.8G}\n".format(name, val))
-                
+
             if isinstance(val, str):
                 file_params.write("{:s} {:s}\n".format(name, val))
 
 
-def write_simu(raster_topo: str, 
-               raster_mass: str,
-               tmax : float,
-               dt_im : float,
-               rheology_type: str,
-               rheology_params: dict,
-               folder_out: str=None,
-               ) -> None:
+def write_simu(
+    raster_topo: str,
+    raster_mass: str,
+    tmax: float,
+    dt_im: float,
+    rheology_type: str,
+    rheology_params: dict,
+    folder_out: str = None,
+) -> None:
     """
     Prepares the input files required for a SHALTOP simulation and saves them in a dedicated folder.
 
@@ -140,17 +136,17 @@ def write_simu(raster_topo: str,
     dt_im : float
         Output image interval (in time steps).
     rheology_type : str
-        Rheology to use for the simulation. 
+        Rheology to use for the simulation.
     rheology_params : dict
         Necessary parameters for the rheology. For instance:
-        
+
             - delta1
             - ksi
             - tau_density
             etc.
     folder_out : str, optional
         Output folder where simulation inputs will be saved.
-    
+
     Raises
     ------
     ValueError
@@ -158,9 +154,9 @@ def write_simu(raster_topo: str,
     """
     if folder_out is None:
         folder_out = "."
-    
+
     # output_file = os.path.join(folder_out, "shaltop")
-    
+
     os.makedirs(folder_out, exist_ok=True)
 
     x, y, z = tilupy.raster.read_raster(raster_topo)
@@ -171,35 +167,38 @@ def write_simu(raster_topo: str,
 
     if rheology_type not in SHALTOP_LAW_ID:
         raise ValueError(f"Wrong law, choose in: {SHALTOP_LAW_ID}")
-    
-    params = dict(nx=len(x),
-                  ny=len(y),
-                  per=x[-1],
-                  pery=y[-1],
-                  tmax=tmax,
-                  dt_im=dt_im,
-                  initz=0,
-                  file_z_init="z.d",
-                  ipr=0,
-                  file_m_init="m.d",
-                  folder_output="data2",
-                  icomp=SHALTOP_LAW_ID[rheology_type],
-                  **rheology_params)
+
+    params = dict(
+        nx=len(x),
+        ny=len(y),
+        per=x[-1],
+        pery=y[-1],
+        tmax=tmax,
+        dt_im=dt_im,
+        initz=0,
+        file_z_init="z.d",
+        ipr=0,
+        file_m_init="m.d",
+        folder_output="data2",
+        icomp=SHALTOP_LAW_ID[rheology_type],
+        **rheology_params,
+    )
     write_params_file(params, directory=folder_out, file_name="params.txt")
 
 
-def write_job_files(dirs: list[str],
-                    param_files: list[str],
-                    file_job: str,
-                    job_name: str,
-                    max_time_hours: int=24,
-                    ncores_per_node: int=6,
-                    partitions: str="cpuall,data,datanew",
-                    shaltop_file: str="shaltop",
-                    folder_conf_in_job: str=None,
-                    replace_path: list=None,
-                    number_conf_file: bool=True,
-                    ) -> None:
+def write_job_files(
+    dirs: list[str],
+    param_files: list[str],
+    file_job: str,
+    job_name: str,
+    max_time_hours: int = 24,
+    ncores_per_node: int = 6,
+    partitions: str = "cpuall,data,datanew",
+    shaltop_file: str = "shaltop",
+    folder_conf_in_job: str = None,
+    replace_path: list = None,
+    number_conf_file: bool = True,
+) -> None:
     """
     Write job/conf files for slurm jobs. The conf contains all the commands
     needed to run each simulation (one command per simulation).
@@ -254,9 +253,7 @@ def write_job_files(dirs: list[str],
         for i in range(ntasks):
             if replace_path is not None:
                 folder = dirs[i].replace(replace_path[0], replace_path[1])
-                param_file = param_files[i].replace(
-                    replace_path[0], replace_path[1]
-                )
+                param_file = param_files[i].replace(replace_path[0], replace_path[1])
             else:
                 folder = dirs[i]
                 param_file = param_files[i]
@@ -292,12 +289,9 @@ def write_job_files(dirs: list[str],
         job_file.write(line.format(ntasks, path_conf_in_job))
 
 
-def make_simus(law: str, 
-               rheol_params: dict, 
-               folder_data: str, 
-               folder_out: str, 
-               readme_file: str
-               )  -> None:
+def make_simus(
+    law: str, rheol_params: dict, folder_data: str, folder_out: str, readme_file: str
+) -> None:
     """Write shaltop initial file for simple slope test case
 
     Reads topography and initial mass files in ASCII format,
@@ -367,9 +361,8 @@ def make_simus(law: str,
         file_txt += 'shaltop "" ' + simu_text + ".txt\n"
         file_txt += "end_time=`date +%s`\n"
         file_txt += "elapsed_time=$(($end_time - $start_time))\n"
-        file_txt += ('string_time="${start_time} ' + simu_text + ' ${elapsed_time}"\n')
+        file_txt += 'string_time="${start_time} ' + simu_text + ' ${elapsed_time}"\n'
         file_txt += "echo ${string_time} >> simulation_duration.txt\n\n"
 
     with open(run_shaltop_file, "w") as fid:
         fid.write(file_txt)
-

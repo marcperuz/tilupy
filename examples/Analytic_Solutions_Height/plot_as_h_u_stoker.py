@@ -74,6 +74,7 @@ with :math:`c_m` is the front shock wave speed, obtained as the solution of the 
 Implementation
 --------------
 """
+
 # %%
 # First import required packages and define the spatial domain for visualization.
 # For following examples we will use a 1D space from -5.5 to 6 m.
@@ -83,11 +84,11 @@ from tilupy.analytic_sol import Stoker_SARKHOSH_wet
 x = np.linspace(-5.5, 6, 1000)
 
 # %%
-# 
+#
 # -------------------
 
 # %%
-# Case: Stocker's solution with dam at :math:`x_0 = 0 m`, initial fluid height :math:`h_0 = 0.5 m` and initial 
+# Case: Stocker's solution with dam at :math:`x_0 = 0 m`, initial fluid height :math:`h_0 = 0.5 m` and initial
 # domain height :math:`h_r = 0.05 m`
 case = Stoker_SARKHOSH_wet(h_0=0.5, h_r=0.025)
 
@@ -95,34 +96,34 @@ case = Stoker_SARKHOSH_wet(h_0=0.5, h_r=0.025)
 # %%
 # Compute and plot fluid height at times :math:`t = {0, 0.5, 1, 1.5, 2} s`.
 case.compute_h(x, [0, 0.5, 1, 1.5, 2])
-ax = case.plot(show_h=True,  linestyles=["", ":", "-.", "--", "-"])
+ax = case.plot(show_h=True, linestyles=["", ":", "-.", "--", "-"])
 
 
 # %%
 # Compute and plot fluid velocity at times :math:`t = {0, 0.5, 1, 1.5, 2} s`.
 case.compute_u(x, [0, 0.5, 1, 1.5, 2])
-ax = case.plot(show_u=True,  linestyles=["", ":", "-.", "--", "-"])
+ax = case.plot(show_u=True, linestyles=["", ":", "-.", "--", "-"])
 
 # %%
-# 
+#
 # -------------------
 
 # %%
 # Original reference:
-# 
-# Stoker, J.J., 1957, Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics, 
+#
+# Stoker, J.J., 1957, Water Waves: The Mathematical Theory with Applications, Pure and Applied Mathematics,
 # vol. 4, Interscience Publishers, New York, USA.
 
 
 # %%
 # Papier original (pas d'accès)
 # https://www.researchgate.net/publication/230513364_Water_Waves_The_Mathematical_Theory_with_Applications
-# 
+#
 # Code matlab:
 # https://github.com/psarkhosh/Stoker_solution
-# 
+#
 # Article utilisant les travaux
 # https://www.mdpi.com/2073-4441/15/21/3841#
-# 
+#
 # Article domaine humide sur pente inclinée (pas d'accès)
 # https://ascelibrary.org/doi/10.1061/%28ASCE%29HY.1943-7900.0001683

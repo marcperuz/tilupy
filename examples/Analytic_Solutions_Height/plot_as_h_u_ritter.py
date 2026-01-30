@@ -66,8 +66,9 @@ where the positions of the rarefaction wave front and the dry front are:
 Implementation
 --------------
 """
+
 # %%
-# First import required packages and define the spatial domain for visualization. 
+# First import required packages and define the spatial domain for visualization.
 # For following examples we will use a 1D space from -25 to 45 m.
 import numpy as np
 from tilupy.analytic_sol import Ritter_dry
@@ -75,7 +76,7 @@ from tilupy.analytic_sol import Ritter_dry
 x = np.linspace(-25, 45, 1000)
 
 # %%
-# 
+#
 # -------------------
 
 # %%
@@ -95,7 +96,7 @@ case_1.compute_u(x, [0, 2, 4, 6, 8])
 ax = case_1.plot(show_u=True, linestyles=["", ":", "-.", "--", "-"])
 
 # %%
-# 
+#
 # -------------------
 
 # %%
@@ -108,12 +109,12 @@ case_2.compute_h(x, 6.0)
 ax = case_2.plot(show_h=True, linestyles=["-"])
 
 # %%
-# 
+#
 # -------------------
 
 # %%
 # Original reference:
-# 
+#
 # ID Poisson. Swashes. ID Poisson, [online]. Available at: https://www.idpoisson.fr/swashes/ ; accessed June 2025.
-# 
+#
 # Ritter, A., 1892, Die Fortpflanzung der Wasserwellen, Zeitschrift des Vereines Deutscher Ingenieure, vol. 36(33), p. 947–954.

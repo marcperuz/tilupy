@@ -15,7 +15,7 @@ def process_results(
     folder=None,
     param_files=None,
     kwargs_read=None,
-    **kwargs_fn
+    **kwargs_fn,
 ):
     assert model is not None
 
@@ -28,8 +28,7 @@ def process_results(
     print(folder, param_files)
 
     param_files = [
-        os.path.basename(x)
-        for x in glob.glob(os.path.join(folder, param_files))
+        os.path.basename(x) for x in glob.glob(os.path.join(folder, param_files))
     ]
 
     if len(param_files) == 0:
@@ -51,12 +50,7 @@ def process_results(
 
 
 def to_raster(
-    model=None,
-    res_name="h",
-    param_files=None,
-    folder=None,
-    kwargs_read=None,
-    **kwargs
+    model=None, res_name="h", param_files=None, folder=None, kwargs_read=None, **kwargs
 ):
     kw = dict(fmt="asc")
     kw.update(kwargs)
@@ -68,17 +62,12 @@ def to_raster(
         folder=folder,
         param_files=param_files,
         kwargs_read=kwargs_read,
-        **kw
+        **kw,
     )
 
 
 def plot_results(
-    model=None,
-    res_name="h",
-    param_files=None,
-    folder=None,
-    kwargs_read=None,
-    **kwargs
+    model=None, res_name="h", param_files=None, folder=None, kwargs_read=None, **kwargs
 ):
     kw = dict(save=True)
     kw.update(kwargs)
@@ -90,7 +79,7 @@ def plot_results(
         folder=folder,
         param_files=param_files,
         kwargs_read=kwargs_read,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -129,25 +118,25 @@ def _tilupy_plot():
     parser = _get_parser("tilupy_plot", "Plot thin-layer simulation results")
     parser.add_argument(
         "--fmt",
-        help=("Plot output format " "(any accepted by matplotlib.savefig)"),
+        help=("Plot output format (any accepted by matplotlib.savefig)"),
         default="png",
         type=str,
     )
     parser.add_argument(
         "--vmin",
-        help=("Minimum plotted value, " "adapted to data by default"),
+        help=("Minimum plotted value, adapted to data by default"),
         default=None,
         type=float,
     )
     parser.add_argument(
         "--vmax",
-        help=("Maximum plotted value, " "adapted to data by default"),
+        help=("Maximum plotted value, adapted to data by default"),
         default=None,
         type=float,
     )
     parser.add_argument(
         "--minval_abs",
-        help=("Minimum plotted absolute value," " adapted to data by default"),
+        help=("Minimum plotted absolute value, adapted to data by default"),
         default=None,
         type=float,
     )
@@ -156,12 +145,10 @@ def _tilupy_plot():
 
 
 def _tilupy_to_raster():
-    parser = _get_parser(
-        "tilupy_to_raster", "Convert simulation results to rasters"
-    )
+    parser = _get_parser("tilupy_to_raster", "Convert simulation results to rasters")
     parser.add_argument(
         "--fmt",
-        help=("File output format, " "tif/tiff requires rasterio"),
+        help=("File output format, tif/tiff requires rasterio"),
         default="asc",
         type=str,
         choices=["tif", "tiff", "txt", "asc", "ascii"],

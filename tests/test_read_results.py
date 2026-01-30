@@ -43,7 +43,7 @@ def test_get_output(folder_data, simu_data, args, expected):
     output = res.get_output(args[1])
     assert output.d.ndim == expected[0]
     assert isinstance(output, expected[1])
-    
+
 
 @pytest.mark.parametrize(
     "args, expected",
@@ -147,13 +147,16 @@ def test_plot_cmd(folder_data, folder_plots, simu_data, args, expected):
             figsize=(10 / 2.54, 10 / 2.54),
         )
 
+
 @pytest.fixture
 def simu_data_lave2D():
-    res = dict(folder=os.path.join(os.path.dirname(__file__), "data", "gray99", "lave2D"),
-               simu_name="projects",
-               raster_name="toposimu",
-               )
+    res = dict(
+        folder=os.path.join(os.path.dirname(__file__), "data", "gray99", "lave2D"),
+        simu_name="projects",
+        raster_name="toposimu",
+    )
     return res
+
 
 @pytest.mark.parametrize(
     "args, expected",
@@ -166,22 +169,27 @@ def simu_data_lave2D():
     ],
 )
 def test_get_output_lave2D(simu_data_lave2D, args, expected):
-    res = tiread.get_results("lave2D",
-                             folder=simu_data_lave2D["folder"], 
-                             name=simu_data_lave2D["simu_name"], 
-                             raster=simu_data_lave2D["raster_name"])
-    
+    res = tiread.get_results(
+        "lave2D",
+        folder=simu_data_lave2D["folder"],
+        name=simu_data_lave2D["simu_name"],
+        raster=simu_data_lave2D["raster_name"],
+    )
+
     output = res.get_output(args)
-    
+
     assert output.d.ndim == expected[0]
     assert isinstance(output, expected[1])
-    
+
+
 @pytest.fixture
 def simu_data_saval2D():
-    res = dict(folder=os.path.join(os.path.dirname(__file__), "data", "gray99", "saval2D"),
-               raster_name="mntsimulation",
-               )
+    res = dict(
+        folder=os.path.join(os.path.dirname(__file__), "data", "gray99", "saval2D"),
+        raster_name="mntsimulation",
+    )
     return res
+
 
 @pytest.mark.parametrize(
     "args, expected",
@@ -194,11 +202,13 @@ def simu_data_saval2D():
     ],
 )
 def test_get_output_saval2D(simu_data_saval2D, args, expected):
-    res = tiread.get_results("saval2D",
-                             folder=simu_data_saval2D["folder"],
-                             raster_topo=simu_data_saval2D["raster_name"])
-    
+    res = tiread.get_results(
+        "saval2D",
+        folder=simu_data_saval2D["folder"],
+        raster_topo=simu_data_saval2D["raster_name"],
+    )
+
     output = res.get_output(args)
-    
+
     assert output.d.ndim == expected[0]
     assert isinstance(output, expected[1])

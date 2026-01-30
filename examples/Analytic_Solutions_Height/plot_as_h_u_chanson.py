@@ -117,6 +117,7 @@ with the celerity of the wave front :math:`U(t)` solution of:
 Implementation
 --------------
 """
+
 # %%
 # First import required packages and define the spatial domain for visualization.
 # For following examples we will use a 1D space from -600 to 600 m.
@@ -126,13 +127,13 @@ from tilupy.analytic_sol import Chanson_dry
 x = np.linspace(-600, 600, 1000)
 
 # %%
-# 
+#
 # -------------------
 
 # %%
 # Case: Chanson's solution with dam at :math:`x_0 = 0 m`, initial height :math:`h_0 = 10 m` and friction coefficient
 # :math:`f = 0.05`
-case = Chanson_dry(h_0=10, x_0 = 0, f=0.05)
+case = Chanson_dry(h_0=10, x_0=0, f=0.05)
 
 
 # %%
@@ -142,10 +143,10 @@ ax = case.plot(show_h=True, linestyles=["", ":", "-.", "--", "-"])
 
 
 # %%
-# 
+#
 # -------------------
 
 # %%
 # Original reference:
-# 
+#
 # Chanson, H., 2005, Applications of the Saint‑Venant Equations and Method of Characteristics to the Dam Break Wave Problem. https://espace.library.uq.edu.au/view/UQ:9438

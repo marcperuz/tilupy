@@ -9,17 +9,18 @@ import tilupy.read
 from tilupy import notations
 
 # Dictionnary with results names lookup table, to match code output names
-LOOKUP_NAMES = dict(h="rho",
-                    hvert="rho",
-                    ux="u",
-                    uy="ut",
-                    u="unorm",
-                    hu="momentum",
-                    ek="ek",
-                    vol="vol",
-                    ep="ep",
-                    etot="etot",
-                    )
+LOOKUP_NAMES = dict(
+    h="rho",
+    hvert="rho",
+    ux="u",
+    uy="ut",
+    u="unorm",
+    hu="momentum",
+    ek="ek",
+    vol="vol",
+    ep="ep",
+    etot="etot",
+)
 """Dictionary of correspondance, to match code output names."""
 
 # Classify results
@@ -71,20 +72,22 @@ FORCES_OUTPUT = []
         - pcorrdt : pressure correction (time step)
         - pcorrdiv : pressure correction (divergence)
 """
- 
+
 for force in ["facc", "fcurv", "ffric", "fgrav", "finert", "fpression"]:
     FORCES_OUTPUT.append(force + "x")
     FORCES_OUTPUT.append(force + "y")
 
-FORCES_OUTPUT += ["shearx",
-                  "sheary",
-                  "shearz",
-                  "normalx",
-                  "normaly",
-                  "normalz",
-                  "pbottom",
-                  "pcorrdt",
-                  "pcorrdiv"]
+FORCES_OUTPUT += [
+    "shearx",
+    "sheary",
+    "shearz",
+    "normalx",
+    "normaly",
+    "normalz",
+    "pbottom",
+    "pcorrdt",
+    "pcorrdiv",
+]
 
 INTEGRATED_OUTPUT = ["ek", "ep", "etot"]
 """Integrated energy quantities.
@@ -128,10 +131,7 @@ def read_params(file: str) -> dict:
     return params
 
 
-def read_file_bin(file: str, 
-                  nx: int, 
-                  ny: int
-                  ) -> np.ndarray:
+def read_file_bin(file: str, nx: int, ny: int) -> np.ndarray:
     """Read shaltop .bin result file.
 
     Parameters
@@ -181,22 +181,22 @@ def read_file_init(file: str, nx: int, ny: int) -> np.ndarray:
 class Results(tilupy.read.Results):
     """Results of shaltop simulations.
 
-    This class is the results class for shaltop. Reading results from shaltop outputs 
+    This class is the results class for shaltop. Reading results from shaltop outputs
     are done in this class.
-    
-    This class has all the global and quick attributes of the parent class. The quick 
+
+    This class has all the global and quick attributes of the parent class. The quick
     attributes are only computed if needed and can be deleted to clean memory.
-    
-    In addition to these attributes, there are those necessary for the operation of 
+
+    In addition to these attributes, there are those necessary for the operation of
     reading the shaltop results.
-            
+
     Parameters
     ----------
         folder : str
             Path to the folder containing the simulation files.
         file_params : str
             Name of the simulation parameters file.
-    
+
     Attributes
     ----------
         _htype : str
@@ -206,36 +206,39 @@ class Results(tilupy.read.Results):
         _params : dict
             Dictionary of the simulation parameters.
     """
+
     def __init__(self, folder=None, file_params=None, **varargs):
         super().__init__()
         self._code = "shaltop"
-        
+
         try:
             if "folder_base" in varargs:
-                raise UserWarning("Variable name has changed: 'folder_base' -> 'folder'")
+                raise UserWarning(
+                    "Variable name has changed: 'folder_base' -> 'folder'"
+                )
         except UserWarning as w:
             print(f"[WARNING] {w}")
-        if "folder_base" in varargs :
+        if "folder_base" in varargs:
             folder = varargs["folder_base"]
 
         if folder is None:
             folder = os.getcwd()
-        self._folder = folder 
-            
+        self._folder = folder
+
         if file_params is None:
             file_params = "params.txt"
         if "." not in file_params:
             file_params = file_params + ".txt"
         file_params = os.path.join(folder, file_params)
         self._params = read_params(file_params)
-        
+
         # Folder where results are stored
         if "folder_output" not in self._params:
-            self._folder_output = os.path.join(self._folder, 
-                                               "data2")
+            self._folder_output = os.path.join(self._folder, "data2")
         else:
-            self._folder_output = os.path.join(self._folder, 
-                                               self._params["folder_output"])
+            self._folder_output = os.path.join(
+                self._folder, self._params["folder_output"]
+            )
 
         self._x, self._y = self.get_axes(**self._params)
         self._nx, self._ny = len(self._x), len(self._y)
@@ -249,11 +252,11 @@ class Results(tilupy.read.Results):
         self._tim = np.loadtxt(os.path.join(self._folder_output, "time_im.d"))
         file_tforces = os.path.join(self._folder_output, "time_forces.d")
         if os.path.isfile(file_tforces):
-            self._tforces = np.loadtxt(os.path.join(self._folder_output, 
-                                                   "time_forces.d"))
+            self._tforces = np.loadtxt(
+                os.path.join(self._folder_output, "time_forces.d")
+            )
         else:
             self._tforces = []
-
 
     def get_zinit(self, zinit=None) -> np.ndarray:
         """Get zinit, the initial topography.
@@ -271,15 +274,14 @@ class Results(tilupy.read.Results):
             zinit = np.squeeze(read_file_bin(path_zinit, self._nx, self._ny))
         return zinit
 
-
     def get_axes(self, **varargs) -> tuple[np.ndarray, np.ndarray]:
         """Get X and Y axes.
 
         varargs : dict
             All parameters needed to compute the axes :
-            :data:`x0`, :data:`y0`, :data:`nx`, :data:`ny`, :data:`per`, 
+            :data:`x0`, :data:`y0`, :data:`nx`, :data:`ny`, :data:`per`,
             :data:`pery` and :data:`coord_pos`.
-        
+
         Returns
         -------
         tuple[numpy.ndarray, numpy.ndarray]
@@ -321,7 +323,6 @@ class Results(tilupy.read.Results):
 
         return x, y
 
-
     def get_u(self) -> np.ndarray:
         """Compute velocity norm from results.
 
@@ -345,19 +346,17 @@ class Results(tilupy.read.Results):
         [Fx, Fy] = np.gradient(self._zinit, np.flip(self._y), self._x)
         u = u * self._costh[:, :, np.newaxis]
         ut = ut * self._costh[:, :, np.newaxis]
-        d = np.sqrt(u**2 + ut**2 + (Fx[:, :, np.newaxis] * u + Fy[:, :, np.newaxis] * ut) ** 2)
-        
+        d = np.sqrt(
+            u**2 + ut**2 + (Fx[:, :, np.newaxis] * u + Fy[:, :, np.newaxis] * ut) ** 2
+        )
+
         return d
 
-
-    def _read_from_file(self, 
-                        name: str, 
-                        operator: str, 
-                        axis: str=None, 
-                        **kwargs
-                        ) -> tilupy.read.StaticResults2D | tilupy.read.TemporalResults0D:
+    def _read_from_file(
+        self, name: str, operator: str, axis: str = None, **kwargs
+    ) -> tilupy.read.StaticResults2D | tilupy.read.TemporalResults0D:
         """Read output from specific files.
-        
+
         Can access to data in :data:`READ_FROM_FILE_OUTPUT`.
 
         Parameters
@@ -378,14 +377,13 @@ class Results(tilupy.read.Results):
 
         if name in ["u", "hu", "h"]:
             if operator in ["max"] and axis in [None, "t"]:
-                file = os.path.join(self._folder_output, 
-                                    LOOKUP_NAMES[name] + operator + ".bin")
+                file = os.path.join(
+                    self._folder_output, LOOKUP_NAMES[name] + operator + ".bin"
+                )
                 d = np.squeeze(read_file_bin(file, self._nx, self._ny))
-                res = tilupy.read.StaticResults2D("_".join([name, operator]), 
-                                                  d, 
-                                                  x=self._x, 
-                                                  y=self._y, 
-                                                  z=self._zinit)
+                res = tilupy.read.StaticResults2D(
+                    "_".join([name, operator]), d, x=self._x, y=self._y, z=self._zinit
+                )
 
         if (name, operator) == ("hu2", "int"):
             array = np.loadtxt(os.path.join(self._folder_output, "ek.d"))
@@ -395,17 +393,19 @@ class Results(tilupy.read.Results):
 
         return res
 
-
-    def _extract_output(self, 
-                        name: str, 
-                        **kwargs
-                        )-> tilupy.read.TemporalResults2D | tilupy.read.TemporalResults0D | tilupy.read.AbstractResults:
+    def _extract_output(
+        self, name: str, **kwargs
+    ) -> (
+        tilupy.read.TemporalResults2D
+        | tilupy.read.TemporalResults0D
+        | tilupy.read.AbstractResults
+    ):
         """Result extraction for shaltop files.
 
         Parameters
         ----------
         name : str
-            Wanted output. Can access to variables in :data:`AVAILABLE_OUTPUT`, :data:`INTEGRATED_OUTPUT` 
+            Wanted output. Can access to variables in :data:`AVAILABLE_OUTPUT`, :data:`INTEGRATED_OUTPUT`
             and :data:`FORCES_OUTPUT`.
 
         Returns
@@ -421,12 +421,11 @@ class Results(tilupy.read.Results):
         if name in ["h", "ux", "uy", "hvert"]:
             if self._costh is None:
                 self._costh = self.compute_costh()
-                
-            file = os.path.join(self._folder_output, 
-                                LOOKUP_NAMES[name] + ".bin")
-            
+
+            file = os.path.join(self._folder_output, LOOKUP_NAMES[name] + ".bin")
+
             d = read_file_bin(file, self._nx, self._ny)
-            
+
             if name == "hvert":
                 d = d / self._costh[:, :, np.newaxis]
             if name in ["ux", "uy"]:
@@ -448,8 +447,9 @@ class Results(tilupy.read.Results):
             t = self._tim
 
         if name in INTEGRATED_OUTPUT:
-            array = np.loadtxt(os.path.join(self._folder_output, 
-                                            LOOKUP_NAMES[name] + ".d"))
+            array = np.loadtxt(
+                os.path.join(self._folder_output, LOOKUP_NAMES[name] + ".d")
+            )
             d = array[:, 1]
             if "density" in self._params:
                 density = self._params["density"]
@@ -462,10 +462,9 @@ class Results(tilupy.read.Results):
             file = os.path.join(self._folder_output, name + ".bin")
             d = read_file_bin(file, self._nx, self._ny)
             t = self._tforces
-            notation = notations.Notation(name,
-                                          long_name=name,
-                                          unit=notations.Unit(Pa=1, kg=-1, m=3),
-                                          symbol=name)
+            notation = notations.Notation(
+                name, long_name=name, unit=notations.Unit(Pa=1, kg=-1, m=3), symbol=name
+            )
 
         if d is None:
             file = os.path.join(self._folder_output, name)
@@ -475,30 +474,19 @@ class Results(tilupy.read.Results):
             elif os.path.isfile(file + ".d"):
                 d = np.loadtxt(file + ".d")
 
-        if ("h_thresh" in kwargs
-            and kwargs["h_thresh"] is not None
-            and d.ndim == 3):
-            d = tilupy.read.use_thickness_threshold(self, 
-                                                    d, 
-                                                    kwargs["h_thresh"])
+        if "h_thresh" in kwargs and kwargs["h_thresh"] is not None and d.ndim == 3:
+            d = tilupy.read.use_thickness_threshold(self, d, kwargs["h_thresh"])
 
         if t is None:
             return tilupy.read.AbstractResults(name, d, notation=notation)
 
         else:
             if d.ndim == 3:
-                return tilupy.read.TemporalResults2D(name, 
-                                                     d, 
-                                                     t, 
-                                                     notation=notation, 
-                                                     x=self._x, 
-                                                     y=self._y, 
-                                                     z=self._zinit)
+                return tilupy.read.TemporalResults2D(
+                    name, d, t, notation=notation, x=self._x, y=self._y, z=self._zinit
+                )
             if d.ndim == 1:
-                return tilupy.read.TemporalResults0D(name, 
-                                                     d, 
-                                                     t, 
-                                                     notation=notation)
+                return tilupy.read.TemporalResults0D(name, d, t, notation=notation)
         return None
 
     # def get_temporal_output(self, name, d=None, t=None, **varargs):

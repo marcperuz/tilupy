@@ -41,12 +41,13 @@ def CSI(pred: np.ndarray, obs: np.ndarray) -> float:
     return TP / (TP + FP + FN)
 
 
-def diff_runout(x_contour: np.ndarray, 
-                y_contour: np.ndarray, 
-                point_ref: tuple[float, float], 
-                section: np.ndarray | shapely.geometry.LineString = None, 
-                orientation: str = "W-E"
-                ) -> float:
+def diff_runout(
+    x_contour: np.ndarray,
+    y_contour: np.ndarray,
+    point_ref: tuple[float, float],
+    section: np.ndarray | shapely.geometry.LineString = None,
+    orientation: str = "W-E",
+) -> float:
     """Compute runout distance difference between a reference point and its projection on a contour,
     optionally along a specified section line.
 
@@ -68,12 +69,12 @@ def diff_runout(x_contour: np.ndarray,
         By default None.
     orientation : str, optional
         Orientation of the section line. Must be one of:
-            
+
             - "W-E" (West-East, default)
             - "E-W" (East-West)
             - "S-N" (South-North)
             - "N-S" (North-South)
-            
+
         This determines how the intersection point is selected if multiple intersections exist.
         By default "W-E".
 
@@ -85,9 +86,7 @@ def diff_runout(x_contour: np.ndarray,
         The distance is signed, depending on the projection direction.
     """
     npts = len(x_contour)
-    contour = geom.LineString(
-        [(x_contour[i], y_contour[i]) for i in range(npts)]
-    )
+    contour = geom.LineString([(x_contour[i], y_contour[i]) for i in range(npts)])
     point = geom.Point(point_ref)
     if section is None:
         return point.distance(contour)
@@ -125,9 +124,9 @@ def diff_runout(x_contour: np.ndarray,
     return section.project(intersection) - section.project(point)
 
 
-def revert_line(line: shapely.geometry.LineString, 
-                orientation: str = "W-E"
-                ) -> shapely.geometry.LineString:
+def revert_line(
+    line: shapely.geometry.LineString, orientation: str = "W-E"
+) -> shapely.geometry.LineString:
     """Revert a line geometry if its orientation does not match the specified direction.
 
     This function checks the orientation of the input line (based on the coordinates of its first and last points)
@@ -140,7 +139,7 @@ def revert_line(line: shapely.geometry.LineString,
         Input line geometry to be checked and potentially reverted.
     orientation : str, optional
         Desired cardinal direction for the line. Must be one of:
-            
+
             - "W-E" (West-East, default): The line should start at the west end (smaller x-coordinate).
             - "E-W" (East-West): The line should start at the east end (larger x-coordinate).
             - "S-N" (South-North): The line should start at the south end (smaller y-coordinate).
@@ -171,15 +170,15 @@ def revert_line(line: shapely.geometry.LineString,
     return line
 
 
-def get_contour(x: np.ndarray,
-                y: np.ndarray,
-                z: np.ndarray,
-                zlevels: list[float],
-                indstep: int = 1, 
-                maxdist: float = 30, 
-                closed_contour: bool = True
-                ) -> tuple[dict[float, np.ndarray], 
-                           dict[float, np.ndarray]]:
+def get_contour(
+    x: np.ndarray,
+    y: np.ndarray,
+    z: np.ndarray,
+    zlevels: list[float],
+    indstep: int = 1,
+    maxdist: float = 30,
+    closed_contour: bool = True,
+) -> tuple[dict[float, np.ndarray], dict[float, np.ndarray]]:
     """Extract contour lines from a 2D grid of values at specified levels.
 
     This function computes contour lines for a given 2D field :data:`z` defined on the grid :data:`(x, y)`,
@@ -262,12 +261,15 @@ def get_contour(x: np.ndarray,
     return xcontour, ycontour
 
 
-def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2D,
-                extraction_mode: str = "axis",
-                data_threshold: float = 1e-3,
-                **extraction_params,
-                ) -> tuple[tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D, 
-                           float | tuple[np.ndarray] | np.ndarray]:
+def get_profile(
+    data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2D,
+    extraction_mode: str = "axis",
+    data_threshold: float = 1e-3,
+    **extraction_params,
+) -> tuple[
+    tilupy.read.TemporalResults1D | tilupy.read.StaticResults1D,
+    float | tuple[np.ndarray] | np.ndarray,
+]:
     """Extract profile with different modes and options.
 
     Parameters
@@ -276,37 +278,37 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
         Data to extract the profile from.
     extraction_mode : str, optional
         Method to extract profiles:
-        
+
             - "axis": Extracts a profile along an axis.
             - "coordinates": Extracts a profile along specified coordinates.
             - "shapefile": Extracts a profile along a shapefile (polylines).
-        
+
         Be default "axis".
-        
+
     data_threshold : float, optional
         Minimum value to consider as part of the profile, by default 1e-3.
-        
+
     extraction_params : dict, optional
         Different parameters to be entered depending on the extraction method chosen:
-        
+
             - If :data:`extraction_mode == "axis"`:
-            
+
                 - :data:`axis`: str, optional
                     Axis where to extract the profile ['X', 'Y'], by default 'Y'.
                 - :data:`profile_position`: float, optional
                     Position where to extract the profile. If None choose the median.
                     By default None.
                 Must be read: profile in :data:`axis = profile_position m`.
-            
+
             - If :data:`extraction_mode == "coordinates"`:
-            
+
                 - :data:`xcoord`: numpy.ndarray, optional
                     X coordinates of the profile, by default :attr:`_x`.
                 - :data:`ycoord`: numpy.ndarray, optional
                     Y coordinates of the profile, by default :data:`[0., 0., ...]`.
-            
+
             - If :data:`extraction_mode == "shapefile"`:
-            
+
                 - :data:`path`: str
                     Path to the shapefile.
                 - :data:`x_origin`: float, optional
@@ -319,9 +321,9 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
                     Size of a pixel along the Y coordinate in the shapefile's coordinate system, by default :data:`_y[1] - _y[0]` (EPSG:2154).
                 - :data:`step`: float, optional
                     Spatial step between profile points, by default 10.0.
-                    
+
         By default None
-        
+
     Returns
     -------
     tuple[tilupy.read.TemporalResults1D or tilupy.read.StaticResults1D, float or tuple[np.ndarray] or np.ndarray]
@@ -329,14 +331,14 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
             Extracted profiles.
         float or tuple[np.ndarray] or numpy.ndarray
             Specific output depending on :data:`extraction_mode`:
-            
+
                 - If :data:`extraction_mode == "axis"`: float
                     Position of the profile.
                 - If :data:`extraction_mode == "coordinates"`: tuple[numpy.ndarray]
                     X coordinates, Y coordinates and distance values.
                 - If :data:`extraction_mode == "shapefile"`: numpy.ndarray
                     Distance values.
-                            
+
     Raises
     ------
     ValueError
@@ -362,13 +364,18 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
     ValueError
         If invalid :data:`extraction_mode`.
     """
-    if not isinstance(data, tilupy.read.TemporalResults2D) and not isinstance(data, tilupy.read.StaticResults2D):
+    if not isinstance(data, tilupy.read.TemporalResults2D) and not isinstance(
+        data, tilupy.read.StaticResults2D
+    ):
         raise ValueError("Can only extract profile from 2D data.")
-    
+
     y_coord, x_coord = data.y, data.x
-    y_size, x_size, = len(y_coord), len(x_coord)
+    (
+        y_size,
+        x_size,
+    ) = len(y_coord), len(x_coord)
     data_field = data.d.copy()
-    
+
     # Apply mask on data
     data_field[data_field <= data_threshold] = 0
 
@@ -377,92 +384,112 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
     if extraction_mode == "axis":
         # Create specific params if not given
         if "axis" not in extraction_params:
-            extraction_params["axis"] = 'Y'
+            extraction_params["axis"] = "Y"
         if "profile_position" not in extraction_params:
             extraction_params["profile_position"] = None
-        
+
         # Check errors
-        if extraction_params["axis"] not in ['x', 'X', 'y', 'Y']:
+        if extraction_params["axis"] not in ["x", "X", "y", "Y"]:
             raise ValueError("Invalid axis: 'X' or 'Y'.")
         extraction_params["axis"] = extraction_params["axis"].upper()
-        
+
         # Depending on "profile_position" type, choose median or position value
         if extraction_params["profile_position"] is None:
-            if extraction_params["axis"] == 'X':
-                extraction_params["profile_index"] = x_size//2
-                closest_value=x_coord[extraction_params["profile_index"]]
+            if extraction_params["axis"] == "X":
+                extraction_params["profile_index"] = x_size // 2
+                closest_value = x_coord[extraction_params["profile_index"]]
             else:
-                extraction_params["profile_index"] = y_size//2
-                closest_value=y_coord[extraction_params["profile_index"]]
-        
-        elif isinstance(extraction_params["profile_position"], float) or isinstance(extraction_params["profile_position"], int):
+                extraction_params["profile_index"] = y_size // 2
+                closest_value = y_coord[extraction_params["profile_index"]]
+
+        elif isinstance(extraction_params["profile_position"], float) or isinstance(
+            extraction_params["profile_position"], int
+        ):
             coord_val = extraction_params["profile_position"]
             x_index, y_index = None, None
-            
-            if extraction_params["axis"] == 'X':
+
+            if extraction_params["axis"] == "X":
                 if not isinstance(x_coord, np.ndarray):
                     x_coord = np.array(x_coord)
-                
+
                 x_index = np.argmin(np.abs(x_coord - coord_val))
                 closest_value = x_coord[x_index]
-                
+
                 if x_index is None:
                     raise ValueError(f"Find no values, must be: {x_coord}")
                 extraction_params["profile_index"] = x_index
             else:
                 if not isinstance(y_coord, np.ndarray):
                     y_coord = np.array(y_coord)
-                
+
                 y_index = np.argmin(np.abs(y_coord - coord_val))
                 closest_value = y_coord[y_index]
-                
+
                 if y_index is None:
                     raise ValueError(f"Find no values, must be: {y_coord}")
                 extraction_params["profile_index"] = y_index
-                            
+
         else:
-            raise ValueError("Invalid format for 'profile_position'. Must be None or float position.")
+            raise ValueError(
+                "Invalid format for 'profile_position'. Must be None or float position."
+            )
 
         # Return profiles
-        if extraction_params["axis"] == 'X':
+        if extraction_params["axis"] == "X":
             if isinstance(data, tilupy.read.TemporalResults2D):
-                return (tilupy.read.TemporalResults1D(name=data.name,
-                                                      d=data_field[:, extraction_params["profile_index"], :],
-                                                      t=data.t,
-                                                      coords=data.y,
-                                                      coords_name='y',
-                                                      notation=data.notation),
-                        closest_value)
+                return (
+                    tilupy.read.TemporalResults1D(
+                        name=data.name,
+                        d=data_field[:, extraction_params["profile_index"], :],
+                        t=data.t,
+                        coords=data.y,
+                        coords_name="y",
+                        notation=data.notation,
+                    ),
+                    closest_value,
+                )
             else:
-                return (tilupy.read.StaticResults1D(name=data.name,
-                                                    d=data_field[:, extraction_params["profile_index"]],
-                                                    coords=data.y,
-                                                    coords_name='y',
-                                                    notation=data.notation),
-                        closest_value)
+                return (
+                    tilupy.read.StaticResults1D(
+                        name=data.name,
+                        d=data_field[:, extraction_params["profile_index"]],
+                        coords=data.y,
+                        coords_name="y",
+                        notation=data.notation,
+                    ),
+                    closest_value,
+                )
         else:
             if isinstance(data, tilupy.read.TemporalResults2D):
-                return (tilupy.read.TemporalResults1D(name=data.name,
-                                                      d=data_field[extraction_params["profile_index"], :, :],
-                                                      t=data.t,
-                                                      coords=data.x,
-                                                      coords_name='x',
-                                                      notation=data.notation),
-                        closest_value)
+                return (
+                    tilupy.read.TemporalResults1D(
+                        name=data.name,
+                        d=data_field[extraction_params["profile_index"], :, :],
+                        t=data.t,
+                        coords=data.x,
+                        coords_name="x",
+                        notation=data.notation,
+                    ),
+                    closest_value,
+                )
             else:
-                return (tilupy.read.StaticResults1D(name=data.name,
-                                                    d=data_field[extraction_params["profile_index"], :],
-                                                    coords=data.x,
-                                                    coords_name='x',
-                                                    notation=data.notation),
-                        closest_value)
-        
+                return (
+                    tilupy.read.StaticResults1D(
+                        name=data.name,
+                        d=data_field[extraction_params["profile_index"], :],
+                        coords=data.x,
+                        coords_name="x",
+                        notation=data.notation,
+                    ),
+                    closest_value,
+                )
+
     elif extraction_mode == "coordinates":
         if "xcoord" not in extraction_params:
             extraction_params["xcoord"] = x_coord[:]
         if "ycoord" not in extraction_params:
             extraction_params["ycoord"] = [0] * len(x_coord)
-        
+
         # Check errors
         if not isinstance(extraction_params["xcoord"], np.ndarray):
             if isinstance(extraction_params["xcoord"], list):
@@ -474,52 +501,58 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
                 extraction_params["ycoord"] = np.array(extraction_params["ycoord"])
             else:
                 raise ValueError("Invalid format for 'ycoord'. Must be a numpy array.")
-        
+
         if extraction_params["xcoord"].ndim != 1:
             raise ValueError("Invild dimension. 'xcoord' must be a 1d array.")
         if extraction_params["ycoord"].ndim != 1:
             raise ValueError("Invild dimension. 'ycoord' must be a 1d array.")
-        
+
         if len(extraction_params["xcoord"]) != len(extraction_params["ycoord"]):
-            raise ValueError(f"'xcoord' and 'ycoord' must have same size: ({len(extraction_params['xcoord'])}, {len(extraction_params['ycoord'])})")
-        
+            raise ValueError(
+                f"'xcoord' and 'ycoord' must have same size: ({len(extraction_params['xcoord'])}, {len(extraction_params['ycoord'])})"
+            )
+
         # Extract index from nearest value of xcoord and ycoord
         x_distances = np.abs(x_coord[None, :] - extraction_params["xcoord"][:, None])
         y_distances = np.abs(y_coord[None, :] - extraction_params["ycoord"][:, None])
-        
+
         x_indexes = np.argmin(x_distances, axis=1)
         y_indexes = np.argmin(y_distances, axis=1)
 
         # Compute distance
         x_values = x_coord[x_indexes]
         y_values = y_coord[y_indexes]
-        
+
         dx = np.diff(x_values)
         dy = np.diff(y_values)
-        
+
         distance = np.sqrt(dx**2 + dy**2)
         distance = np.concatenate(([0], np.cumsum(distance)))
 
         # Return profile
         if isinstance(data, tilupy.read.TemporalResults2D):
-            return (tilupy.read.TemporalResults1D(name=data.name,
-                                                  d=data_field[y_indexes, x_indexes, :],
-                                                  t=data.t,
-                                                  coords=distance,
-                                                  coords_name='d'),
-                    (x_values, 
-                     y_values, 
-                     distance))
+            return (
+                tilupy.read.TemporalResults1D(
+                    name=data.name,
+                    d=data_field[y_indexes, x_indexes, :],
+                    t=data.t,
+                    coords=distance,
+                    coords_name="d",
+                ),
+                (x_values, y_values, distance),
+            )
         else:
-            return (tilupy.read.StaticResults1D(name=data.name,
-                                                d=data_field[y_indexes, x_indexes],
-                                                coords=distance,
-                                                coords_name='d'),
-                    (x_values, 
-                     y_values, 
-                     distance))
+            return (
+                tilupy.read.StaticResults1D(
+                    name=data.name,
+                    d=data_field[y_indexes, x_indexes],
+                    coords=distance,
+                    coords_name="d",
+                ),
+                (x_values, y_values, distance),
+            )
 
-    elif extraction_mode == "shapefile" :
+    elif extraction_mode == "shapefile":
         if "path" not in extraction_params:
             extraction_params["path"] = None
         if "x_origin" not in extraction_params:
@@ -532,32 +565,41 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
             extraction_params["y_pixsize"] = y_coord[1] - y_coord[0]
         if "step" not in extraction_params:
             extraction_params["step"] = 10
-        
+
         # Check errors
         if extraction_params["path"] is None:
             raise ValueError("No path to the shape file given.")
 
-        if not isinstance(extraction_params["x_origin"], float) and not isinstance(extraction_params["x_origin"], int):
+        if not isinstance(extraction_params["x_origin"], float) and not isinstance(
+            extraction_params["x_origin"], int
+        ):
             raise ValueError("'x_origin' must be float.")
-        if not isinstance(extraction_params["y_origin"], float) and not isinstance(extraction_params["y_origin"], int):
+        if not isinstance(extraction_params["y_origin"], float) and not isinstance(
+            extraction_params["y_origin"], int
+        ):
             raise ValueError("'y_origin' must be float.")
-        if not isinstance(extraction_params["x_pixsize"], float) and not isinstance(extraction_params["x_pixsize"], int):
+        if not isinstance(extraction_params["x_pixsize"], float) and not isinstance(
+            extraction_params["x_pixsize"], int
+        ):
             raise ValueError("'x_pixsize' must be float.")
-        if not isinstance(extraction_params["y_pixsize"], float) and not isinstance(extraction_params["y_pixsize"], int):
+        if not isinstance(extraction_params["y_pixsize"], float) and not isinstance(
+            extraction_params["y_pixsize"], int
+        ):
             raise ValueError("'y_pixsize' must be float.")
-        
-        if not isinstance(extraction_params["step"], float) and not isinstance(extraction_params["step"], int):
+
+        if not isinstance(extraction_params["step"], float) and not isinstance(
+            extraction_params["step"], int
+        ):
             raise ValueError("'step' must be float.")
-        
+
         # Import specific module and define extraction function
         from shapely.geometry import LineString, MultiLineString
         from shapely.ops import linemerge
         import geopandas as gpd
         from affine import Affine
-        
+
         def extract_lines_from_shp_file(shapefile_path):
-            """Extract LineString objects from a shapefile.
-            """
+            """Extract LineString objects from a shapefile."""
             gdf = gpd.read_file(shapefile_path)
             lines = []
             for geom in gdf.geometry:
@@ -570,26 +612,25 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
             if not lines:
                 raise ValueError("No Linestring found.")
             return lines
-        
+
         lines = extract_lines_from_shp_file(extraction_params["path"])
-        
+
         # If multiple lines, merge them together
         merged = linemerge(lines)
         if isinstance(merged, LineString):
             profile_line = merged
         else:
             profile_line = LineString([pt for line in merged for pt in line.coords])
-        
+
         # Construct the affine transformation
-        transform = (Affine.translation(extraction_params["x_origin"], 
-                                        extraction_params["y_origin"]) 
-                        * Affine.scale(extraction_params["x_pixsize"], 
-                                    -extraction_params["y_pixsize"]))
+        transform = Affine.translation(
+            extraction_params["x_origin"], extraction_params["y_origin"]
+        ) * Affine.scale(
+            extraction_params["x_pixsize"], -extraction_params["y_pixsize"]
+        )
         inv = ~transform  # invert : (x, y) -> (row, col)
 
-        distances = np.arange(0, 
-                                profile_line.length, 
-                                extraction_params["step"])
+        distances = np.arange(0, profile_line.length, extraction_params["step"])
         points = [profile_line.interpolate(d) for d in distances]
 
         # Conversion coordinates -> indexes
@@ -606,28 +647,38 @@ def get_profile(data: tilupy.read.TemporalResults2D | tilupy.read.StaticResults2
                     values.append(data_field[r, c, t])
                     valid_distances.append(d)
             all_values.append(values)
-        
+
         all_values = np.array(all_values)
         valid_distances = np.array(valid_distances)
 
         # Return profile
         if isinstance(data, tilupy.read.TemporalResults2D):
-            return (tilupy.read.TemporalResults1D(name=data.name,
-                                                  d=all_values.T,
-                                                  t=data.t,
-                                                  coords=valid_distances,
-                                                  coords_name="d",
-                                                  notation=data.notation),
-                    valid_distances)
+            return (
+                tilupy.read.TemporalResults1D(
+                    name=data.name,
+                    d=all_values.T,
+                    t=data.t,
+                    coords=valid_distances,
+                    coords_name="d",
+                    notation=data.notation,
+                ),
+                valid_distances,
+            )
         else:
-            return (tilupy.read.StaticResults1D(name=data.name,
-                                                d=all_values.T,
-                                                coords=valid_distances,
-                                                coords_name="d",
-                                                notation=data.notation),
-                    valid_distances)
-    else :
-        raise ValueError("Invalid 'extraction_mode': 'axis', 'coordinates' or 'shapefile'.")
+            return (
+                tilupy.read.StaticResults1D(
+                    name=data.name,
+                    d=all_values.T,
+                    coords=valid_distances,
+                    coords_name="d",
+                    notation=data.notation,
+                ),
+                valid_distances,
+            )
+    else:
+        raise ValueError(
+            "Invalid 'extraction_mode': 'axis', 'coordinates' or 'shapefile'."
+        )
 
 
 def format_path_linux(path: str) -> str:

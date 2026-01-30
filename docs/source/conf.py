@@ -12,29 +12,30 @@ import sys
 from sphinx_gallery.sorting import FileNameSortKey
 
 import plotly.io as pio
-pio.renderers.default = 'sphinx_gallery'
+
+pio.renderers.default = "sphinx_gallery"
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'tilupy'
-copyright = '2025, Marc Peruzzetto'
-author = 'Marc Peruzzetto'
-release = '1.3.0'
+project = "tilupy"
+copyright = "2025, Marc Peruzzetto"
+author = "Marc Peruzzetto"
+release = "1.3.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-sys.path.insert(0, os.path.abspath('../../src/'))
+sys.path.insert(0, os.path.abspath("../../src/"))
 print(sys.path)
 
 extensions = [
-    'autoapi.extension',
-    'sphinx.ext.autodoc',
-    'sphinx_gallery.gen_gallery',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.napoleon', # for Google/NumPy style docstrings
-    'sphinx.ext.intersphinx',
+    "autoapi.extension",
+    "sphinx.ext.autodoc",
+    "sphinx_gallery.gen_gallery",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.napoleon",  # for Google/NumPy style docstrings
+    "sphinx.ext.intersphinx",
 ]
 
 # Napoleon settings
@@ -56,23 +57,27 @@ napoleon_attr_annotations = True
 # sphinx-gallery configuration
 sphinx_gallery_conf = {
     # path to your example scripts
-    'examples_dirs': ['../../examples/preprocessing',
-                      '../../examples/postprocessing',
-                      '../../examples/Analytic_Solutions_Height',
-                      '../../examples/Analytic_Solutions_Front',
-                      '../../examples/Analytic_Solutions_Shape'],
+    "examples_dirs": [
+        "../../examples/preprocessing",
+        "../../examples/postprocessing",
+        "../../examples/Analytic_Solutions_Height",
+        "../../examples/Analytic_Solutions_Front",
+        "../../examples/Analytic_Solutions_Shape",
+    ],
     # path to where to save gallery generated output
-    'gallery_dirs': ['auto_examples/preprocessing',
-                     'auto_examples/postprocessing',
-                     'auto_examples/Analytic_Solutions_Height',
-                     'auto_examples/Analytic_Solutions_Front',
-                     'auto_examples/Analytic_Solutions_Shape'],
+    "gallery_dirs": [
+        "auto_examples/preprocessing",
+        "auto_examples/postprocessing",
+        "auto_examples/Analytic_Solutions_Height",
+        "auto_examples/Analytic_Solutions_Front",
+        "auto_examples/Analytic_Solutions_Shape",
+    ],
     # specify that examples should be ordered according to filename
-    'within_subsection_order': FileNameSortKey,
+    "within_subsection_order": FileNameSortKey,
 }
 
 # sphinx-autoapi configuration
-autoapi_dirs = ['../../src']
+autoapi_dirs = ["../../src"]
 autoapi_options = {
     "members",
     "undoc-members",
@@ -80,13 +85,13 @@ autoapi_options = {
     "show-module-summary",
     "special-members",  # optionnel, si tu veux aussi les __init__ etc.
 }
-autoapi_type = 'python'
-autoapi_template_dir = '_templates'
+autoapi_type = "python"
+autoapi_template_dir = "_templates"
 autoapi_private_members = False
 
 # intersphinx configuration
 intersphinx_mapping = {
-    'pytopomap': ("https://pytopomap.readthedocs.io/en/latest/", None),
+    "pytopomap": ("https://pytopomap.readthedocs.io/en/latest/", None),
 }
 
 # templates_path = ['_templates']
@@ -95,6 +100,6 @@ intersphinx_mapping = {
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
-html_css_files = ['custom.css']
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]

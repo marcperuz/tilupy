@@ -7,15 +7,17 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pytopomap.plot as pyplt
 
-def plot_shotgather(x: np.ndarray, 
-                    t: np.ndarray, 
-                    data: np.ndarray, 
-                    xlabel: str="X (m)", 
-                    ylabel: str="Time (s)", 
-                    **kwargs
-                    ) -> matplotlib.axes._axes.Axes:
+
+def plot_shotgather(
+    x: np.ndarray,
+    t: np.ndarray,
+    data: np.ndarray,
+    xlabel: str = "X (m)",
+    ylabel: str = "Time (s)",
+    **kwargs,
+) -> matplotlib.axes._axes.Axes:
     """Plot shotgather image.
-    
+
     Plot shotgather like image, with vertical axis as time and horizontal axis
     and spatial dimension. This is a simple call to plot_shotgather, but
     input data is transposed because in tilupy the last axis is time by
@@ -51,19 +53,20 @@ def plot_shotgather(x: np.ndarray,
     return axe
 
 
-def plot_heatmaps(df,
-                  values,
-                  index,
-                  columns,
-                  aggfunc="mean",
-                  figsize=None,
-                  ncols=3,
-                  heatmap_kws=None,
-                  notations=None,
-                  best_values=None,
-                  plot_best_value="point",
-                  text_kwargs=None,
-                  ) -> matplotlib.figure.Figure:
+def plot_heatmaps(
+    df,
+    values,
+    index,
+    columns,
+    aggfunc="mean",
+    figsize=None,
+    ncols=3,
+    heatmap_kws=None,
+    notations=None,
+    best_values=None,
+    plot_best_value="point",
+    text_kwargs=None,
+) -> matplotlib.figure.Figure:
     """Plot one or several heatmaps from a pandas DataFrame.
 
     Each heatmap is created by pivoting the DataFrame with the given
@@ -199,17 +202,14 @@ def plot_heatmaps(df,
                     text_kwargs = dict(default_kwargs, **text_kwargs)
                 for i, j in zip(indx, indy):
                     axe.text(
-                        i + 0.5,
-                        j + 0.5,
-                        "{:.2g}".format(array[j, i]),
-                        **text_kwargs
+                        i + 0.5, j + 0.5, "{:.2g}".format(array[j, i]), **text_kwargs
                     )
                 text_kwargs2 = dict(text_kwargs, fontweight="bold")
                 axe.text(
                     ind[i2] + 0.5,
                     i2 + 0.5,
                     "{:.2g}".format(array[i2, ind[i2]]),
-                    **text_kwargs2
+                    **text_kwargs2,
                 )
 
     axes = np.array(axes).reshape((nrows, ncols))
