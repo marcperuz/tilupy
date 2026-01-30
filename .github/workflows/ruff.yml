@@ -8,3 +8,19 @@ jobs:
       - uses: astral-sh/ruff-action@v3
         with:
           args: "check --fix"
+      - name: Run Ruff (auto-fix)
+        run: |
+          ruff check . --fix
+          ruff format .
+      - name: Commit and push changes (if any)
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git pull origin main
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git commit -a -m "style(ruff) lint with ruff"
+          git push origin HEAD:main
+
