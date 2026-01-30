@@ -164,7 +164,7 @@ labels = dict(
     diff_runout="$\Delta_L$ (m)",
 )
 heatmap_kws = dict(xticklabels=["10°", "15°", "20°", "25°"])
-tilupy.plot.plot_heatmaps(
+fig = tilupy.plot.plot_heatmaps(
     calib_res,
     ["CSI", "diff_runout"],
     "h_threshs",
@@ -176,6 +176,7 @@ tilupy.plot.plot_heatmaps(
     heatmap_kws=heatmap_kws,
     plot_best_value="text",
 )
+fig.tight_layout()
 
 
 # %%
