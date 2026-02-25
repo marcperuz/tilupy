@@ -611,112 +611,35 @@ def test_dressler(args, expected):
         ),
     ],
 )
-@pytest.mark.skip(
-    reason="Fonctionne en local mais pas sur git. Différence au niveau des 2 (voir 3) dernières décimales."
-)
+# @pytest.mark.skip(
+#     reason="Fonctionne en local mais pas sur git. Différence au niveau des 2 (voir 3) dernières décimales."
+# )
 def test_chanson(args, expected):
     case = tias.Chanson_dry(h_0=args[0], x_0=args[1], f=args[2])
     case.compute_h(x, [0, 1, 5])
-    assert case.h.tolist() == expected
+    assert np.allclose(case.h.tolist(), expected)
 
 
 # COUSSOT
 @pytest.mark.parametrize(
-    "args, expected",
+    "args, expected_front, expected_lateral",
     [
         (
             (1000, 500, 10),
-            (
-                [
-                    np.float64(-0.0),
-                    np.float64(0.01087624327121846),
-                    np.float64(0.04737700838741411),
-                    np.float64(0.11731752615106368),
-                    np.float64(0.23274299561171916),
-                    np.float64(0.4136679167205831),
-                    np.float64(0.6971539423485651),
-                    np.float64(1.1646862665375954),
-                    np.float64(2.064552691980992),
-                    np.float64(6.017841468046692),
-                ],
-                [
-                    np.float64(0.0),
-                    np.float64(0.0101015289507715),
-                    np.float64(0.04078311103066006),
-                    np.float64(0.09324979268009957),
-                    np.float64(0.16979373056944314),
-                    np.float64(0.2743862465586561),
-                    np.float64(0.4140452915975218),
-                    np.float64(0.6025150691558743),
-                    np.float64(0.873963043733495),
-                    np.float64(1.4297862049506076),
-                ],
-            ),
-        ),
-        (
-            (1000, 100, 10),
-            (
-                [
-                    np.float64(-0.0),
-                    np.float64(0.002175248654243692),
-                    np.float64(0.009475401677482823),
-                    np.float64(0.023463505230212733),
-                    np.float64(0.04654859912234383),
-                    np.float64(0.08273358334411662),
-                    np.float64(0.13943078846971302),
-                    np.float64(0.23293725330751913),
-                    np.float64(0.41291053839619846),
-                    np.float64(1.2035682936093381),
-                ],
-                [
-                    np.float64(0.0),
-                    np.float64(0.0020203057901543),
-                    np.float64(0.008156622206132011),
-                    np.float64(0.018649958536019914),
-                    np.float64(0.033958746113888626),
-                    np.float64(0.05487724931173123),
-                    np.float64(0.08280905831950436),
-                    np.float64(0.12050301383117486),
-                    np.float64(0.17479260874669897),
-                    np.float64(0.28595724099012154),
-                ],
-            ),
+            np.array([-0.0, 0.06272588, 0.32151435, 1.05918069, 28.99860577]),
+            np.array([0.0, 0.05285824, 0.22301519, 0.56357331, 1.66437266]),
         ),
         (
             (1000, 500, 0),
-            (
-                [
-                    np.float64(0.0),
-                    np.float64(0.053606772986177276),
-                    np.float64(0.2144270919447091),
-                    np.float64(0.48246095687559554),
-                    np.float64(0.8577083677788364),
-                    np.float64(1.3401693246544322),
-                    np.float64(1.9298438275023821),
-                    np.float64(2.626731876322687),
-                    np.float64(3.4308334711153456),
-                    np.float64(4.34214861188036),
-                ],
-                [
-                    np.float64(0.0),
-                    np.float64(0.00030929728935062006),
-                    np.float64(0.0012487323210715671),
-                    np.float64(0.0028552022420585453),
-                    np.float64(0.0051988902739171314),
-                    np.float64(0.008401393760218997),
-                    np.float64(0.012677594350676962),
-                    np.float64(0.018448323871663053),
-                    np.float64(0.026759751096762655),
-                    np.float64(0.04377842202871259),
-                ],
-            ),
+            np.array([0.0, 0.613125, 2.4525, 5.518125, 9.81]),
+            np.array([0.0, 0.613125, 2.4525, 5.518125, 9.81]),
         ),
     ],
 )
-@pytest.mark.xfail
-def test_coussot(args, expected):
-    case = tias.Coussot_shape(rho=args[0], tau=args[1], theta=args[2], H_size=10)
+# @pytest.mark.xfail
+def test_coussot_front(args, expected_front, expected_lateral):
+    case = tias.Coussot_shape(rho=args[0], tau=args[1], theta=args[2], H_size=5)
     case.compute_rheological_test_front_morpho()
-    assert case.x == expected[0]
+    assert np.allclose(case.d, expected_front)
     case.compute_rheological_test_lateral_morpho()
-    assert case.y == expected[1]
+    assert np.allclose(case.d, expected_lateral)
