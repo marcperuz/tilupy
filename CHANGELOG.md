@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## [v2.0.2](https://github.com/marcperuz/tilupy/releases/tag/v2.0.2) - 2026-01-30 10:57:06+00:00
+
+Minor fix in calibration functions
+
+### Bug Fixes
+
+- calibration:
+  - fix minor issues in calibration.py ([07f078f](https://github.com/marcperuz/tilupy/commit/07f078f5d9c4cd23a767b824ff0d8a98eabe40a5))
+
+### Documentation
+
+- examples:
+  - add exmaple to combine multiple simulations results ([df86b1b](https://github.com/marcperuz/tilupy/commit/df86b1bd4deb9dedf7adb0ee572e8813ba9c33f1))
+  - correct sentence ([01b4af2](https://github.com/marcperuz/tilupy/commit/01b4af256e3a55b0a500b922d7b0bf0722c5aa52))
+  - add example data and geopandas requirement for shpinx doc ([8b5068e](https://github.com/marcperuz/tilupy/commit/8b5068eeb8294639c16a23a0eb4abe686696487f))
+  - add example for calibration along with associated data ([6092238](https://github.com/marcperuz/tilupy/commit/60922380ddf879dcfac2dc30a98c3e95686d6749))
+
+- example:
+  - fix data and figure formatting in calibration example ([80b3502](https://github.com/marcperuz/tilupy/commit/80b3502c2b9737dffbf018f223ad4337aff3ff17))
+
 ## [v2.0.1](https://github.com/marcperuz/tilupy/releases/tag/v2.0.1) - 2026-01-23 17:35:09+00:00
 
 Minor updates, add required dependencies and downloading tools.
