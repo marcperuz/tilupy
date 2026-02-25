@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## [v2.0.3](https://github.com/marcperuz/tilupy/releases/tag/v2.0.3) - 2026-02-25 15:57:45+00:00
+
+Minor bug fixes and new features
+
+### Feature
+
+- plot:
+  - add option to provide axes as input in plot_heatmaps ([32660d1](https://github.com/marcperuz/tilupy/commit/32660d10baf98b02edc392eca6f1c8a6ea8dcf99))
+
+### Bug Fixes
+
+- plot:
+  - use copy of parameters dict instead of direct access ([ab313f1](https://github.com/marcperuz/tilupy/commit/ab313f1bd4702db984141e0a73cce477e2b41d08))
+
+- analytic_sol:
+  - correct lateral shape in Coussot solution ([a3c9b23](https://github.com/marcperuz/tilupy/commit/a3c9b231c16b795d016538ccfc9f0bfdd2686be3))
+
 ## [v2.0.2](https://github.com/marcperuz/tilupy/releases/tag/v2.0.2) - 2026-01-30 10:57:06+00:00
 
 Minor fix in calibration functions
