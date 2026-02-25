@@ -1959,20 +1959,25 @@ class Coussot_shape(Shape_result):
         self._d = np.array(d)
 
     def compute_rheological_test_lateral_morpho(self) -> None:
-        r"""Compute the shape of the lateral lobe from the normalized fluid depth for a rheological test on an inclined
-        surface by following :
+        r"""Compute the shape of the lateral lobe from the normalized fluid depth for a rheological test following,
+         on an inclined plane :
 
         .. math::
                 D = 1 - \sqrt{1 - H^2}
-        """
-        D = []
-        d = []
-        for H_val in self._H:
-            D.append(1 - np.sqrt(1 - (H_val**2)))
-            d.append(self.X_to_x(D[-1]))
 
-        self._D = np.array(D)
-        self._d = np.array(d)
+        If :math:`\theta = 0`, the lateral and front lobe are similar and we apply compute_rheological_test_front_morpho
+        instead
+        """
+        if self._theta == 0.0:
+            self.compute_rheological_test_front_morpho()
+        else:
+            D = []
+            d = []
+            for H_val in self._H:
+                D.append(1 - np.sqrt(1 - (H_val**2)))
+                d.append(self.X_to_x(D[-1]))
+            self._D = np.array(D)
+            self._d = np.array(d)
 
     def compute_slump_test_hf(self, h_init: float) -> float:
         r"""Compute the final fluid depth for a cylindrical slump test following :
