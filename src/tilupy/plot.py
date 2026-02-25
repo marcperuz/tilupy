@@ -128,9 +128,9 @@ def plot_heatmaps(
             kws = dict()
         elif isinstance(heatmap_kws, dict):
             if values[i] in heatmap_kws:
-                kws = heatmap_kws[values[i]]
+                kws = heatmap_kws[values[i]].copy()
             else:
-                kws = heatmap_kws
+                kws = heatmap_kws.copy()
 
         if "cmap" not in kws:
             minval = data.min().min()
