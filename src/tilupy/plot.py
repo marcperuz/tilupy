@@ -58,6 +58,7 @@ def plot_heatmaps(
     values,
     index,
     columns,
+    axs=None,
     aggfunc="mean",
     figsize=None,
     ncols=3,
@@ -82,6 +83,9 @@ def plot_heatmaps(
         Column name to use as rows of the pivot table.
     columns : str
         Column name to use as columns of the pivot table.
+    axes : matplotlib.Axes or list(matplotlib.Axes), optional
+        Axe or list of Axes where results will be plotted. If None,
+        they are created iteratively. By default, None.
     aggfunc : str or callable, optional
         Aggregation function applied when multiple values exist for
         a given (index, column) pair. By default "mean".
@@ -113,14 +117,22 @@ def plot_heatmaps(
         The matplotlib Figure containing the heatmaps.
     """
     nplots = len(values)
-    ncols = min(nplots, ncols)
-    nrows = int(np.ceil(nplots / ncols))
-    fig = plt.figure(figsize=figsize)
-    axes = []
+    add_axs = axs is None
+    if add_axs:
+        ncols = min(nplots, ncols)
+        nrows = int(np.ceil(nplots / ncols))
+        fig = plt.figure(figsize=figsize)
+        axes = []
+    else:
+        axes = axs
+        fig = axs.flat[0].figure
 
     for i in range(nplots):
-        axe = fig.add_subplot(nrows, ncols, i + 1)
-        axes.append(axe)
+        if add_axs:
+            axe = fig.add_subplot(nrows, ncols, i + 1)
+            axes.append(axe)
+        else:
+            axe = axes.flat[i]
         data = df.pivot_table(
             index=index, columns=columns, values=values[i], aggfunc=aggfunc
         ).astype(float)
@@ -212,23 +224,29 @@ def plot_heatmaps(
                     **text_kwargs2,
                 )
 
-    axes = np.array(axes).reshape((nrows, ncols))
-    for i in range(nrows):
-        for j in range(1, ncols):
-            axes[i, j].set_ylabel("")
-            # axes[i, j].set_yticklabels([])
+    if add_axs:
+        axes = np.array(axes).reshape((nrows, ncols))
+        for i in range(nrows):
+            for j in range(1, ncols):
+                axes[i, j].set_ylabel("")
+                # axes[i, j].set_yticklabels([])
 
-    for i in range(nrows - 1):
-        for j in range(ncols):
-            axes[i, j].set_xlabel("")
-            # axes[i, j].set_xticklabels([])
+        for i in range(nrows - 1):
+            for j in range(ncols):
+                axes[i, j].set_xlabel("")
+                # axes[i, j].set_xticklabels([])
 
     if notations is not None:
-        for i in range(nrows):
-            axes[i, 0].set_ylabel(notations[index])
-        for j in range(ncols):
-            axes[-1, j].set_xlabel(notations[columns])
+        if add_axs:
+            for i in range(nrows):
+                axes[i, 0].set_ylabel(notations[index])
+            for j in range(ncols):
+                axes[-1, j].set_xlabel(notations[columns])
+        else:
+            for ax in axes.flatten():
+                ax.set_ylabel(notations[index])
+                ax.set_xlabel(notations[columns])
 
     # fig.tight_layout()
 
-    return fig
+    return fig, axes
