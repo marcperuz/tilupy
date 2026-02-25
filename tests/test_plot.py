@@ -1,7 +1,5 @@
 import pytest
-import numpy as np
 import pandas as pd
-import scipy
 import os
 
 import matplotlib.pyplot as plt
