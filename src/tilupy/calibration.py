@@ -120,7 +120,7 @@ def eval_simus(
             iend = (i + 1) * nc
             res.iloc[istart:iend, :] = simus2.loc[i, :].copy()
 
-    ind_param = res.columns.get_loc(param)
+    ind_params = [res.columns.get_loc(param) for param in recorded_params]
     ind_calib_param = res.columns.get_loc(calib_parameter_name)
     inds_method = [res.columns.get_loc(method) for method in methods]
     for i, simu in enumerate(simus_list):
@@ -130,8 +130,8 @@ def eval_simus(
             kws = methods_kws[j]
             kws[calib_parameter_name] = calib_parameters
             _, calib_res = fn[method](simu, **kws)
-            for param in recorded_params:
-                res.iloc[istart:iend, ind_param] = simu._params[param]
+            for ii, param in enumerate(recorded_params):
+                res.iloc[istart:iend, ind_params[ii]] = simu._params[param]
             res.iloc[istart:iend, ind_calib_param] = calib_parameters
             res.iloc[istart:iend, inds_method[j]] = calib_res
 
