@@ -1,5 +1,3 @@
-import pytest
-
 import pandas as pd
 import tilupy.download_data
 
