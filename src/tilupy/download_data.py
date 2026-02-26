@@ -4,6 +4,7 @@ import requests
 import zipfile
 import io
 import os
+import pandas as pd
 
 
 def import_frankslide_dem(folder_out: str = None, file_out: str = None) -> str:
@@ -91,3 +92,13 @@ def import_shaltop_frankslide(folder_out: str = "./shaltop_frankslide"):
     r = requests.get(url)
     z = zipfile.ZipFile(io.BytesIO(r.content))
     z.extractall(folder_out)
+
+
+def import_shaltop_mus_calibrated(sep=";"):
+    """Import database of friction coefficients calibrated with Shaltop with the Coulomb rheology"""
+    url = "https://zenodo.org/records/18791119/files/mus_calibrated.csv"
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    contenu = io.StringIO(response.text)
+    df = pd.read_csv(contenu, sep=sep)
+    return df
