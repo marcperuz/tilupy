@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [v2.0.4](https://github.com/marcperuz/tilupy/releases/tag/v2.0.4) - 2026-02-25 18:26:12+00:00
+
+Minor bug fix
+
+### Bug Fixes
+
+- calibration:
+  - fix column index choice for calibration result construction ([c40760b](https://github.com/marcperuz/tilupy/commit/c40760bb1bcbc3a1a54b3ca81463df5ca4b22f8b))
+
 ## [v2.0.3](https://github.com/marcperuz/tilupy/releases/tag/v2.0.3) - 2026-02-25 15:57:45+00:00
 
 Minor bug fixes and new features
