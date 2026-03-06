@@ -291,7 +291,7 @@ def plot_shaltop_mus_calibrated(data : pd.DataFrame=None,
 
     #Decorate
     ax.set_xlabel('Volume (m$^3$)')
-    ax.set_ylabel('$\mu_S$')
+    ax.set_ylabel('$\\mu_S$')
 
     if publication_date is not None:
         ax.set_title('10.5281/zenodo.18791118, ' + publication_date)
@@ -327,5 +327,7 @@ def plot_shaltop_mus_calibrated(data : pd.DataFrame=None,
     mu_deltas = np.tan(np.deg2rad(deltas))
     ax2.set_yticks(mu_deltas)
     ax2.set_yticklabels(['{:.0f}'.format(delta) for delta in deltas])
-    ax2.set_ylabel('$\delta$ (°)')
+    ax2.set_ylabel('$\\delta$ (°)')
+
+    return ax
 

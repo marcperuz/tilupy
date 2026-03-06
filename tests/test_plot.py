@@ -42,3 +42,6 @@ def test_plot_heatmaps2(calib_results_coulomb):
         calib_results_coulomb, ["CSI", "diff_runout"], "h_threshs", "delta1", axs=axes
     )
     assert axes.shape == (2, 3)
+
+def test_plot_shaltop_mus_calibrated():
+    ax = tiplot.plot_shaltop_mus_calibrated()
