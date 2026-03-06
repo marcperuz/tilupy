@@ -254,13 +254,15 @@ def plot_heatmaps(
 
     return fig, axes
 
-def plot_shaltop_mus_calibrated(data : pd.DataFrame=None, 
-                                publication_date : str=None,
-                                plot_lucas_law : bool=True,
-                                ax=None,
-                                figsize=None,
-                                ) -> matplotlib.axes._axes.Axes:
-    """ Plot friction coefficient calibrated with Shaltop
+
+def plot_shaltop_mus_calibrated(
+    data: pd.DataFrame = None,
+    publication_date: str = None,
+    plot_lucas_law: bool = True,
+    ax=None,
+    figsize=None,
+) -> matplotlib.axes._axes.Axes:
+    """Plot friction coefficient calibrated with Shaltop
 
     Plot the friction coefficient calibrated with Shaltop as a function of landslide
     volume, with seaborn.scatterplot. The data used to create the plot is downloaded from zenodo if not given
@@ -279,28 +281,27 @@ def plot_shaltop_mus_calibrated(data : pd.DataFrame=None,
     if data is None:
         data, publication_date = tilupy.download_data.import_shaltop_mus_calibrated()
     # Default plot options, are updated with provided kwargs
-    plot_kw = dict(data=data, x='volume (m3)', y='mus', hue='calibration data')
-    
+    plot_kw = dict(data=data, x="volume (m3)", y="mus", hue="calibration data")
+
     if ax is None:
         _, ax = plt.subplots(figsize=figsize)
-    ax.grid(axis='both', which='both', zorder=-1)
-    sns.scatterplot(**plot_kw, ax=ax, zorder=1) 
-    ax.set_xscale('log')
-    #ax.set_yscale('log')
-    
+    ax.grid(axis="both", which="both", zorder=-1)
+    sns.scatterplot(**plot_kw, ax=ax, zorder=1)
+    ax.set_xscale("log")
+    # ax.set_yscale('log')
 
-    #Decorate
-    ax.set_xlabel('Volume (m$^3$)')
-    ax.set_ylabel('$\\mu_S$')
+    # Decorate
+    ax.set_xlabel("Volume (m$^3$)")
+    ax.set_ylabel("$\\mu_S$")
 
     if publication_date is not None:
-        ax.set_title('10.5281/zenodo.18791118, ' + publication_date)
+        ax.set_title("10.5281/zenodo.18791118, " + publication_date)
 
     if plot_lucas_law:
-        vmin, vmax=ax.get_xlim()
+        vmin, vmax = ax.get_xlim()
         v = np.linspace(np.log10(vmin), np.log10(vmax))
         v = 10**v
-        mu_lucas = v**(-0.0774)
+        mu_lucas = v ** (-0.0774)
         mu_inf = mu_lucas * 10 ** (0.0667 * 1.96)
         mu_sup = mu_lucas * 10 ** (-0.0667 * 1.96)
         ax.fill_between(
@@ -309,25 +310,24 @@ def plot_shaltop_mus_calibrated(data : pd.DataFrame=None,
             mu_sup,
             edgecolor=[0, 0, 0, 0],
             facecolor=[0.5, 0.5, 0.5, 0.3],
-            zorder=0.5
+            zorder=0.5,
         )
         ax.plot(v, mu_lucas, "-", color="grey", zorder=0.5)
         ax.set_xlim(vmin, vmax)
 
-    #Add corresponding deltas values on the right y axis
+    # Add corresponding deltas values on the right y axis
     mu_min, mu_max = ax.get_ylim()
     delta_min = np.rad2deg(np.arctan(mu_min))
-    delta_min = 5*np.ceil(delta_min/5)
+    delta_min = 5 * np.ceil(delta_min / 5)
     delta_max = np.rad2deg(np.arctan(mu_max))
-    delta_max = 5*np.floor(delta_max/5)
+    delta_max = 5 * np.floor(delta_max / 5)
     ax2 = ax.twinx()
     ax2.set_ylim([mu_min, mu_max])
     ax2.grid(False)
-    deltas = np.arange(delta_min, delta_max+1, 5)
+    deltas = np.arange(delta_min, delta_max + 1, 5)
     mu_deltas = np.tan(np.deg2rad(deltas))
     ax2.set_yticks(mu_deltas)
-    ax2.set_yticklabels(['{:.0f}'.format(delta) for delta in deltas])
-    ax2.set_ylabel('$\\delta$ (°)')
+    ax2.set_yticklabels(["{:.0f}".format(delta) for delta in deltas])
+    ax2.set_ylabel("$\\delta$ (°)")
 
     return ax
-
