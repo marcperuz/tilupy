@@ -96,9 +96,29 @@ def import_shaltop_frankslide(folder_out: str = "./shaltop_frankslide"):
 
 def import_shaltop_mus_calibrated(sep=";"):
     """Import database of friction coefficients calibrated with Shaltop with the Coulomb rheology"""
+    
+    # Load data
     url = "https://zenodo.org/records/18791119/files/mus_calibrated.csv"
     response = requests.get(url, stream=True)
     response.raise_for_status()
     contenu = io.StringIO(response.text)
     df = pd.read_csv(contenu, sep=sep)
-    return df
+
+    # Get publication date
+    params = {
+        "sort": "mostrecent",
+        "page": 1,
+        "size": 1,  # On veut juste la plus récente
+        "q": "conceptrecid:18791118"
+    }
+    response = requests.get("https://zenodo.org/api/records", params=params)
+    if response.status_code != 200:
+        raise Exception(f"Request error : {response.status_code}, {response.text}")
+    data = response.json()
+    if data["hits"]["hits"]:
+        latest = data["hits"]["hits"][0]
+        publication_date =  latest["metadata"]["publication_date"]
+    else:
+        raise Exception("conceptrecid 18791118 not found.")
+
+    return df, publication_date
