@@ -45,4 +45,4 @@ def test_plot_heatmaps2(calib_results_coulomb):
 
 
 def test_plot_shaltop_mus_calibrated():
-    ax = tiplot.plot_shaltop_mus_calibrated()
+    tiplot.plot_shaltop_mus_calibrated()
