@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## [v2.1.0](https://github.com/marcperuz/tilupy/releases/tag/v2.1.0) - 2026-03-09 09:44:12+00:00
+
+New functions to download and plot a database of friction coefficients calibrated with Shaltop
+
+### Feature
+
+- download:
+  - add function to download shaltop calibrated mus from zenodo ([3526c3b](https://github.com/marcperuz/tilupy/commit/3526c3b34fd57372b69355ab6ab17cca1133fdf7))
+  - get date of zenodo update for mus calibrated with shaltop ([1cdbe93](https://github.com/marcperuz/tilupy/commit/1cdbe93b4b3772dcece450a20fb8f974ae9549ca))
+
+- plot:
+  - add function to plot mus values calibrated with shaltop ([ba07516](https://github.com/marcperuz/tilupy/commit/ba075169e72c3bf08482c2c4f8f97a65686049a6))
+  - improve plot shaltop_mus_calibrated function ([7e3f2fe](https://github.com/marcperuz/tilupy/commit/7e3f2fe6f6698eaf111458f54021355857f81b0e))
+
+### Bug Fixes
+
+- plot:
+  - correct axe type name for documentation ([9d89cff](https://github.com/marcperuz/tilupy/commit/9d89cff255822269b12830c89c3388fa38973872))
+
 ## [v2.0.4](https://github.com/marcperuz/tilupy/releases/tag/v2.0.4) - 2026-02-25 18:26:12+00:00
 
 Minor bug fix
