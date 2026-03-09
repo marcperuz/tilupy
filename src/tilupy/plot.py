@@ -259,8 +259,9 @@ def plot_shaltop_mus_calibrated(
     data: pd.DataFrame = None,
     publication_date: str = None,
     plot_lucas_law: bool = True,
-    ax=None,
-    figsize=None,
+    step_delta: float = 5,
+    ax: plt.axes.Axes = None,
+    figsize: tuple = None,
 ) -> matplotlib.axes._axes.Axes:
     """Plot friction coefficient calibrated with Shaltop
 
@@ -274,8 +275,14 @@ def plot_shaltop_mus_calibrated(
         from zenodo.
     publication_date : str
         string YYYY-MM-DD with the date for the data version
-    kwargs : dict
-        arguments passed on to seaborn.scatterplot function
+    plot_lucas_law : bool
+        Plot the lucas law mu=V**(-0.0774) with associated confidence interval
+    step_delta : float
+        Step between delta angles on the right axis. Default is 5.
+    ax : plt.axes.Axes
+        Axe instance where plot must be done. If None, an axe instance is created. Deafault is None.
+    figsize : tuple
+        If ax is None, size of the figure to be created in inches. Default is None.
     """
 
     if data is None:
@@ -318,13 +325,13 @@ def plot_shaltop_mus_calibrated(
     # Add corresponding deltas values on the right y axis
     mu_min, mu_max = ax.get_ylim()
     delta_min = np.rad2deg(np.arctan(mu_min))
-    delta_min = 5 * np.ceil(delta_min / 5)
+    delta_min = step_delta * np.ceil(delta_min / step_delta)
     delta_max = np.rad2deg(np.arctan(mu_max))
-    delta_max = 5 * np.floor(delta_max / 5)
+    delta_max = step_delta * np.floor(delta_max / step_delta)
     ax2 = ax.twinx()
     ax2.set_ylim([mu_min, mu_max])
     ax2.grid(False)
-    deltas = np.arange(delta_min, delta_max + 1, 5)
+    deltas = np.arange(delta_min, delta_max + step_delta / 2, step_delta)
     mu_deltas = np.tan(np.deg2rad(deltas))
     ax2.set_yticks(mu_deltas)
     ax2.set_yticklabels(["{:.0f}".format(delta) for delta in deltas])
