@@ -260,7 +260,7 @@ def plot_shaltop_mus_calibrated(
     publication_date: str = None,
     plot_lucas_law: bool = True,
     step_delta: float = 5,
-    ax: plt.axes.Axes = None,
+    ax: matplotlib.axes._axes.Axes = None,
     figsize: tuple = None,
 ) -> matplotlib.axes._axes.Axes:
     """Plot friction coefficient calibrated with Shaltop
@@ -279,7 +279,7 @@ def plot_shaltop_mus_calibrated(
         Plot the lucas law mu=V**(-0.0774) with associated confidence interval
     step_delta : float
         Step between delta angles on the right axis. Default is 5.
-    ax : plt.axes.Axes
+    ax : matplotlib.axes._axes.Axes
         Axe instance where plot must be done. If None, an axe instance is created. Deafault is None.
     figsize : tuple
         If ax is None, size of the figure to be created in inches. Default is None.
