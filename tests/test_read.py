@@ -143,9 +143,11 @@ def test_centermass(gaussian_temporal_results):
     res = simu.center_of_mass()
     meanx = np.linspace(simu.x[0] + 0.2 * Dx, simu.x[-1] - 0.4 * Dx, nt)
     meany = np.linspace(simu.y[0] + 0.3 * Dy, simu.x[-1] - 0.3 * Dy, nt)
+    vol = np.sum(simu._h, axis=(0, 1))
+    meanz = np.sum(simu._h**2 / 2, axis=(0, 1)) / vol
     maxdiffx = np.max(np.abs(res.d[0, :] - meanx))
     maxdiffy = np.max(np.abs(res.d[1, :] - meany))
-    maxdiffz = np.max(np.abs(res.d[2, :] - 0))
+    maxdiffz = np.max(np.abs(res.d[2, :] - meanz))
     # assert (res.d[0, 0] == meanx[0]) & (res.d[1, 0] == meany[0])
     assert (maxdiffx < 0.05) & (maxdiffy < 0.05) & (maxdiffz < 0.05)
     # assert simu._zinit.shape == (len(simu.x), len(simu.y))
