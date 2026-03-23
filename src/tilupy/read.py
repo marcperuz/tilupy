@@ -1849,32 +1849,35 @@ class Results:
         tilupy.read.TemporalResults0D
             Values of center of mass coordinates.
         """
-        dx = self._x[1] - self._x[0]
-        dy = self._y[1] - self._y[0]
         # Make meshgrid
         X, Y = np.meshgrid(self._x, np.flip(self._y))
+        Z = self.z.copy()
 
-        if self._h is None:
-            self.h
-
-        # Weights for coordinates average (volume in cell / total volume)
-        h2 = self._h.copy()
+        # Ignore thicknesses below given threshold
+        h2 = self.h.copy()
         if h_thresh is not None:
             h2[h2 < h_thresh] = 0
-        if self._costh is None:
-            self._costh = self.compute_costh()
-        w = h2 / self._costh[:, :, np.newaxis] * dx * dy
+
+        # Get the coordinates of the center of mass at each cell.
+        # It corresponds to the cell coordinates + half the thickness in the direction normal to topograpy
+        # COmpute the unit vector perpendicular to the topography
+        nx, ny, nz = tilupy.utils.normal_vector(self.x, self.y, self.z)
+        X = X[:, :, np.newaxis] + 0.5 * h2 * nx[:, :, np.newaxis]
+        Y = Y[:, :, np.newaxis] + 0.5 * h2 * ny[:, :, np.newaxis]
+        Z = Z[:, :, np.newaxis] + 0.5 * h2 * nz[:, :, np.newaxis]
+
+        # Weights for coordinates average (volume in cell / total volume)
+        w = (
+            h2 / self.costh[:, :, np.newaxis]
+        )  # Multiplication by dx*dy is useless as it then simplies
         vol = np.nansum(w, axis=(0, 1))
         w = w / vol[np.newaxis, np.newaxis, :]
         # Compute center of mass coordinates
         nt = h2.shape[2]
         coord = np.zeros((3, nt))
-        tmp = X[:, :, np.newaxis] * w
-        coord[0, :] = np.nansum(tmp, axis=(0, 1))
-        tmp = Y[:, :, np.newaxis] * w
-        coord[1, :] = np.nansum(tmp, axis=(0, 1))
-        tmp = self._zinit[:, :, np.newaxis] * w
-        coord[2, :] = np.nansum(tmp, axis=(0, 1))
+        coord[0, :] = np.nansum(X * w, axis=(0, 1))
+        coord[1, :] = np.nansum(Y * w, axis=(0, 1))
+        coord[2, :] = np.nansum(Z * w, axis=(0, 1))
 
         # Make TemporalResults
         res = TemporalResults0D(

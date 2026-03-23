@@ -11,6 +11,41 @@ import shapely.ops
 import tilupy.read
 
 
+def normal_vector(
+    x: np.ndarray, y: np.ndarray, z: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute unit vector normal to the topography
+
+    Return x, y, and z coordinated of the unit vector normal to the topography oriented upwards
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Array of length N with x-coordinates
+    y : numpy.ndarray
+        Array of length M with y-coordinates
+    z : numpy.ndarray
+        MxN array of topography. z[0,0] has coordinates x[0], y[-1],
+        z[-1, -1] has coordinates x[-1], y[0]
+
+    Returns
+    -------
+    nx : numpy.ndarray
+        MxN array with x coordinate of the unit upward normal vector
+    ny : numpy.ndarray
+        MxN array with y coordinate of the unit upward normal vector
+    nz : numpy.ndarray
+        MxN array with z coordinate of the unit upward normal vector
+    """
+
+    [Fy, Fx] = np.gradient(z, y, x)
+    norm = np.sqrt(1 + Fx**2 + Fy**2)
+    nz = 1 / norm
+    nx = -Fx / norm
+    ny = -Fy / norm
+    return nx, ny, nz
+
+
 def CSI(pred: np.ndarray, obs: np.ndarray) -> float:
     """Compute the Critical Success Index (CSI).
 
