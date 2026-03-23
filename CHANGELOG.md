@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [v2.1.1](https://github.com/marcperuz/tilupy/releases/tag/v2.1.1) - 2026-03-23 10:00:03+00:00
+
+*No description*
+
+### Bug Fixes
+
+- read:
+  - correct center of mass calculation ([e4103f6](https://github.com/marcperuz/tilupy/commit/e4103f6f72d6cbaf8a34ce2ffbd573710b5885a7))
+
 ## [v2.1.0](https://github.com/marcperuz/tilupy/releases/tag/v2.1.0) - 2026-03-09 09:44:12+00:00
 
 New functions to download and plot a database of friction coefficients calibrated with Shaltop
